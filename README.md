@@ -13,38 +13,38 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/yourusername/FlutterIPTV/actions/workflows/ci.yml">
-    <img src="https://github.com/yourusername/FlutterIPTV/actions/workflows/ci.yml/badge.svg" alt="CI">
+  <a href="https://github.com/shnulaa/FlutterIPTV/actions/workflows/ci.yml">
+    <img src="https://github.com/shnulaa/FlutterIPTV/actions/workflows/ci.yml/badge.svg" alt="CI">
   </a>
-  <a href="https://github.com/yourusername/FlutterIPTV/actions/workflows/build-release.yml">
-    <img src="https://github.com/yourusername/FlutterIPTV/actions/workflows/build-release.yml/badge.svg" alt="Build and Release">
+  <a href="https://github.com/shnulaa/FlutterIPTV/actions/workflows/build-release.yml">
+    <img src="https://github.com/shnulaa/FlutterIPTV/actions/workflows/build-release.yml/badge.svg" alt="Build and Release">
   </a>
-  <a href="https://github.com/yourusername/FlutterIPTV/releases/latest">
-    <img src="https://img.shields.io/github/v/release/yourusername/FlutterIPTV?include_prereleases" alt="Release">
+  <a href="https://github.com/shnulaa/FlutterIPTV/releases/latest">
+    <img src="https://img.shields.io/github/v/release/shnulaa/FlutterIPTV?include_prereleases" alt="Release">
   </a>
-  <a href="https://github.com/yourusername/FlutterIPTV/releases/latest">
-    <img src="https://img.shields.io/github/downloads/yourusername/FlutterIPTV/total" alt="Downloads">
+  <a href="https://github.com/shnulaa/FlutterIPTV/releases/latest">
+    <img src="https://img.shields.io/github/downloads/shnulaa/FlutterIPTV/total" alt="Downloads">
   </a>
   <a href="LICENSE">
-    <img src="https://img.shields.io/github/license/yourusername/FlutterIPTV" alt="License">
+    <img src="https://img.shields.io/github/license/shnulaa/FlutterIPTV" alt="License">
   </a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/yourusername/FlutterIPTV/releases/latest">
+  <a href="https://github.com/shnulaa/FlutterIPTV/releases/latest">
     <img src="https://img.shields.io/badge/Download-Windows-blue?style=for-the-badge&logo=windows" alt="Download Windows">
   </a>
-  <a href="https://github.com/yourusername/FlutterIPTV/releases/latest">
+  <a href="https://github.com/shnulaa/FlutterIPTV/releases/latest">
     <img src="https://img.shields.io/badge/Download-Android-green?style=for-the-badge&logo=android" alt="Download Android">
   </a>
-  <a href="https://github.com/yourusername/FlutterIPTV/releases/latest">
+  <a href="https://github.com/shnulaa/FlutterIPTV/releases/latest">
     <img src="https://img.shields.io/badge/Download-Android%20TV-orange?style=for-the-badge&logo=android" alt="Download Android TV">
   </a>
 </p>
 
 ---
 
-## ✨ Features
+## �?Features
 
 ### 📺 Multi-Platform Support
 - **Windows (PC)** - Full keyboard and mouse support
@@ -68,7 +68,7 @@
 - Automatic playlist refresh
 - Support for multiple playlists
 
-### 🗂️ Channel Organization
+### 🗂�?Channel Organization
 - Automatic grouping by categories
 - Search channels by name or group
 - Favorites with drag-and-drop reordering
@@ -129,7 +129,7 @@
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/FlutterIPTV.git
+   git clone https://github.com/shnulaa/FlutterIPTV.git
    cd FlutterIPTV
    ```
 
@@ -171,14 +171,14 @@ flutter build appbundle --release
 lib/
 ├── main.dart                    # App entry point
 ├── core/
-│   ├── database/               # SQLite database helper
-│   ├── models/                 # Data models
-│   ├── navigation/             # App router
-│   ├── platform/               # Platform detection
-│   ├── services/               # Service locator
-│   ├── theme/                  # App theme
-│   ├── utils/                  # Utilities (M3U parser, etc.)
-│   └── widgets/                # Reusable widgets
+�?  ├── database/               # SQLite database helper
+�?  ├── models/                 # Data models
+�?  ├── navigation/             # App router
+�?  ├── platform/               # Platform detection
+�?  ├── services/               # Service locator
+�?  ├── theme/                  # App theme
+�?  ├── utils/                  # Utilities (M3U parser, etc.)
+�?  └── widgets/                # Reusable widgets
 └── features/
     ├── channels/               # Channels listing
     ├── epg/                    # Electronic Program Guide
