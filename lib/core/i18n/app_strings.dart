@@ -251,7 +251,7 @@ class _AppStringsDelegate extends LocalizationsDelegate<AppStrings> {
         'goBack': '返回',
         'playbackSettings': '播放设置',
         'playbackSpeed': '播放速度',
-        'shortcutsHint': '左/右: 快进退 • 上/下: 音量 • 回车: 播放/暂停 • M: 静音',
+        'shortcutsHint': '左/右: 快进退 • 上/下: 换台 • 回车: 播放/暂停 • M: 静音',
         'lotusIptv': 'Lotus IPTV',
         'professionalIptvPlayer': '专业 IPTV 播放器',
         'searchChannels': '搜索频道',
@@ -378,7 +378,7 @@ class _AppStringsDelegate extends LocalizationsDelegate<AppStrings> {
         'playbackSettings': 'Playback Settings',
         'playbackSpeed': 'Playback Speed',
         'shortcutsHint':
-            'Left/Right: Seek • Up/Down: Volume • Enter: Play/Pause • M: Mute',
+            'Left/Right: Seek • Up/Down: Change Channel • Enter: Play/Pause • M: Mute',
         'lotusIptv': 'Lotus IPTV',
         'professionalIptvPlayer': 'Professional IPTV Player',
         'searchChannels': 'Search Channels',

@@ -35,7 +35,7 @@ class ChannelProvider extends ChangeNotifier {
         'channels',
         where: 'playlist_id = ? AND is_active = 1',
         whereArgs: [playlistId],
-        orderBy: 'group_name, name',
+        orderBy: 'id ASC',
       );
 
       _channels = results.map((r) => Channel.fromMap(r)).toList();
@@ -62,7 +62,7 @@ class ChannelProvider extends ChangeNotifier {
         SELECT c.* FROM channels c
         INNER JOIN playlists p ON c.playlist_id = p.id
         WHERE c.is_active = 1 AND p.is_active = 1
-        ORDER BY c.group_name, c.name
+        ORDER BY c.id ASC
       ''');
 
       _channels = results.map((r) => Channel.fromMap(r)).toList();

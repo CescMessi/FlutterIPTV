@@ -10,6 +10,7 @@ import '../../../core/widgets/tv_focusable.dart';
 import '../../../core/platform/platform_detector.dart';
 import '../providers/player_provider.dart';
 import '../../favorites/providers/favorites_provider.dart';
+import '../../channels/providers/channel_provider.dart';
 
 class PlayerScreen extends StatefulWidget {
   final String channelUrl;
@@ -44,7 +45,18 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   void _startPlayback() {
     final playerProvider = context.read<PlayerProvider>();
-    playerProvider.playUrl(widget.channelUrl, name: widget.channelName);
+    final channelProvider = context.read<ChannelProvider>();
+
+    try {
+      // Try to find the matching channel to enable playlist navigation
+      final channel = channelProvider.channels.firstWhere(
+        (c) => c.url == widget.channelUrl,
+      );
+      playerProvider.playChannel(channel);
+    } catch (_) {
+      // Fallback if channel object not found
+      playerProvider.playUrl(widget.channelUrl, name: widget.channelName);
+    }
   }
 
   void _startHideControlsTimer() {
@@ -105,15 +117,19 @@ class _PlayerScreenState extends State<PlayerScreen> {
       return KeyEventResult.handled;
     }
 
-    // Volume up
-    if (key == LogicalKeyboardKey.arrowUp) {
-      playerProvider.setVolume(playerProvider.volume + 0.1);
+    // Previous Channel (Up)
+    if (key == LogicalKeyboardKey.arrowUp ||
+        key == LogicalKeyboardKey.channelUp) {
+      final channelProvider = context.read<ChannelProvider>();
+      playerProvider.playPrevious(channelProvider.filteredChannels);
       return KeyEventResult.handled;
     }
 
-    // Volume down
-    if (key == LogicalKeyboardKey.arrowDown) {
-      playerProvider.setVolume(playerProvider.volume - 0.1);
+    // Next Channel (Down)
+    if (key == LogicalKeyboardKey.arrowDown ||
+        key == LogicalKeyboardKey.channelDown) {
+      final channelProvider = context.read<ChannelProvider>();
+      playerProvider.playNext(channelProvider.filteredChannels);
       return KeyEventResult.handled;
     }
 
