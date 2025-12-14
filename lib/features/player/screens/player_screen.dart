@@ -315,15 +315,19 @@ class _PlayerScreenState extends State<PlayerScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  widget.channelName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                Consumer<PlayerProvider>(
+                  builder: (context, provider, _) {
+                    return Text(
+                      provider.currentChannel?.name ?? widget.channelName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    );
+                  },
                 ),
                 Consumer<PlayerProvider>(
                   builder: (context, provider, _) {
