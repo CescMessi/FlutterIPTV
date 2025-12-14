@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:media_kit/media_kit.dart';
+import 'core/i18n/app_strings.dart';
 
 import 'dart:io';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -67,11 +69,22 @@ class FlutterIPTVApp extends StatelessWidget {
       child: Consumer<SettingsProvider>(
         builder: (context, settings, _) {
           return MaterialApp(
-            title: 'FlutterIPTV',
+            title: AppStrings.of(context)?.lotusIptv ?? 'Lotus IPTV',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.darkTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: ThemeMode.dark,
+            locale: settings.locale,
+            supportedLocales: const [
+              Locale('en', ''),
+              Locale('zh', ''),
+            ],
+            localizationsDelegates: const [
+              AppStrings.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
             // Use shortcuts for TV remote support
             shortcuts: <ShortcutActivator, Intent>{
               ...WidgetsApp.defaultShortcuts,

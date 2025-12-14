@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/tv_focusable.dart';
+import '../../../core/i18n/app_strings.dart';
 import '../../channels/providers/channel_provider.dart';
 import '../providers/playlist_provider.dart';
 
@@ -17,11 +18,15 @@ class PlaylistManagerScreen extends StatefulWidget {
 class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _urlController = TextEditingController();
+  final FocusNode _nameFocusNode = FocusNode();
+  final FocusNode _urlFocusNode = FocusNode();
 
   @override
   void dispose() {
     _nameController.dispose();
     _urlController.dispose();
+    _nameFocusNode.dispose();
+    _urlFocusNode.dispose();
     super.dispose();
   }
 
@@ -31,9 +36,9 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         backgroundColor: AppTheme.backgroundColor,
-        title: const Text(
-          'Playlist Manager',
-          style: TextStyle(
+        title: Text(
+          AppStrings.of(context)?.playlistManager ?? 'Playlist Manager',
+          style: const TextStyle(
             color: AppTheme.textPrimary,
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -78,9 +83,9 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
-            'Add New Playlist',
-            style: TextStyle(
+          Text(
+            AppStrings.of(context)?.addNewPlaylist ?? 'Add New Playlist',
+            style: const TextStyle(
               color: AppTheme.textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -89,47 +94,56 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
           const SizedBox(height: 16),
 
           // Name Input
-          TextField(
-            controller: _nameController,
-            style: const TextStyle(color: AppTheme.textPrimary),
-            decoration: InputDecoration(
-              hintText: 'Playlist Name',
-              hintStyle: TextStyle(color: AppTheme.textMuted),
-              prefixIcon:
-                  const Icon(Icons.label_outline, color: AppTheme.textMuted),
-              filled: true,
-              fillColor: AppTheme.cardColor,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide:
-                    const BorderSide(color: AppTheme.primaryColor, width: 2),
+          TVFocusable(
+            onSelect: () => _nameFocusNode.requestFocus(),
+            child: TextField(
+              controller: _nameController,
+              focusNode: _nameFocusNode,
+              style: const TextStyle(color: AppTheme.textPrimary),
+              decoration: InputDecoration(
+                hintText:
+                    AppStrings.of(context)?.playlistName ?? 'Playlist Name',
+                hintStyle: const TextStyle(color: AppTheme.textMuted),
+                prefixIcon:
+                    const Icon(Icons.label_outline, color: AppTheme.textMuted),
+                filled: true,
+                fillColor: AppTheme.cardColor,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      const BorderSide(color: AppTheme.primaryColor, width: 2),
+                ),
               ),
             ),
           ),
           const SizedBox(height: 12),
 
           // URL Input
-          TextField(
-            controller: _urlController,
-            style: const TextStyle(color: AppTheme.textPrimary),
-            decoration: InputDecoration(
-              hintText: 'M3U/M3U8 URL',
-              hintStyle: TextStyle(color: AppTheme.textMuted),
-              prefixIcon: const Icon(Icons.link, color: AppTheme.textMuted),
-              filled: true,
-              fillColor: AppTheme.cardColor,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide:
-                    const BorderSide(color: AppTheme.primaryColor, width: 2),
+          TVFocusable(
+            onSelect: () => _urlFocusNode.requestFocus(),
+            child: TextField(
+              controller: _urlController,
+              focusNode: _urlFocusNode,
+              style: const TextStyle(color: AppTheme.textPrimary),
+              decoration: InputDecoration(
+                hintText: AppStrings.of(context)?.playlistUrl ?? 'M3U/M3U8 URL',
+                hintStyle: const TextStyle(color: AppTheme.textMuted),
+                prefixIcon: const Icon(Icons.link, color: AppTheme.textMuted),
+                filled: true,
+                fillColor: AppTheme.cardColor,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      const BorderSide(color: AppTheme.primaryColor, width: 2),
+                ),
               ),
             ),
           ),
@@ -155,8 +169,10 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
                             ),
                           )
                         : const Icon(Icons.add_rounded, size: 20),
-                    label: Text(
-                        provider.isLoading ? 'Importing...' : 'Add from URL'),
+                    label: Text(provider.isLoading
+                        ? (AppStrings.of(context)?.importing ?? 'Importing...')
+                        : (AppStrings.of(context)?.addFromUrl ??
+                            'Add from URL')),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primaryColor,
                       foregroundColor: Colors.white,
@@ -174,7 +190,7 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
                 child: OutlinedButton.icon(
                   onPressed: () => _pickFile(provider),
                   icon: const Icon(Icons.folder_open_rounded, size: 20),
-                  label: const Text('From File'),
+                  label: Text(AppStrings.of(context)?.fromFile ?? 'From File'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppTheme.primaryColor,
                     side: const BorderSide(color: AppTheme.primaryColor),
@@ -276,9 +292,9 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
-            'No Playlists',
-            style: TextStyle(
+          Text(
+            AppStrings.of(context)?.noPlaylists ?? 'No Playlists',
+            style: const TextStyle(
               color: AppTheme.textPrimary,
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -286,8 +302,9 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Add your first M3U playlist above',
-            style: TextStyle(
+            AppStrings.of(context)?.addFirstPlaylist ??
+                'Add your first M3U playlist above',
+            style: const TextStyle(
               color: AppTheme.textSecondary,
               fontSize: 14,
             ),
@@ -400,9 +417,9 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
                           color: AppTheme.primaryColor,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Text(
-                          'ACTIVE',
-                          style: TextStyle(
+                        child: Text(
+                          AppStrings.of(context)?.active ?? 'ACTIVE',
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -413,7 +430,7 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${playlist.channelCount} channels • ${playlist.groupCount} groups',
+                  '${playlist.channelCount} ${AppStrings.of(context)?.channels ?? 'channels'} • ${playlist.groupCount} ${AppStrings.of(context)?.categories ?? 'groups'}',
                   style: const TextStyle(
                     color: AppTheme.textSecondary,
                     fontSize: 13,
@@ -422,8 +439,8 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
                 if (playlist.lastUpdated != null) ...[
                   const SizedBox(height: 2),
                   Text(
-                    'Updated: ${_formatDate(playlist.lastUpdated!)}',
-                    style: TextStyle(
+                    '${AppStrings.of(context)?.updated ?? 'Updated'}: ${_formatDate(playlist.lastUpdated!)}',
+                    style: const TextStyle(
                       color: AppTheme.textMuted,
                       fontSize: 11,
                     ),
@@ -442,14 +459,14 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
                 icon: const Icon(Icons.refresh_rounded),
                 color: AppTheme.textSecondary,
                 onPressed: () => _refreshPlaylist(provider, playlist),
-                tooltip: 'Refresh',
+                tooltip: AppStrings.of(context)?.refresh ?? 'Refresh',
               ),
               // Delete Button
               IconButton(
                 icon: const Icon(Icons.delete_outline_rounded),
                 color: AppTheme.errorColor,
                 onPressed: () => _confirmDelete(provider, playlist),
-                tooltip: 'Delete',
+                tooltip: AppStrings.of(context)?.delete ?? 'Delete',
               ),
             ],
           ),
@@ -463,11 +480,11 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
     final diff = now.difference(date);
 
     if (diff.inMinutes < 60) {
-      return '${diff.inMinutes}m ago';
+      return '${diff.inMinutes}${AppStrings.of(context)?.minutesAgo ?? 'm ago'}';
     } else if (diff.inHours < 24) {
-      return '${diff.inHours}h ago';
+      return '${diff.inHours}${AppStrings.of(context)?.hoursAgo ?? 'h ago'}';
     } else if (diff.inDays < 7) {
-      return '${diff.inDays}d ago';
+      return '${diff.inDays}${AppStrings.of(context)?.daysAgo ?? 'd ago'}';
     } else {
       return '${date.day}/${date.month}/${date.year}';
     }
@@ -479,8 +496,9 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
 
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a playlist name'),
+        SnackBar(
+          content: Text(AppStrings.of(context)?.pleaseEnterPlaylistName ??
+              'Please enter a playlist name'),
           backgroundColor: AppTheme.errorColor,
         ),
       );
@@ -489,8 +507,9 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
 
     if (url.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a playlist URL'),
+        SnackBar(
+          content: Text(AppStrings.of(context)?.pleaseEnterPlaylistUrl ??
+              'Please enter a playlist URL'),
           backgroundColor: AppTheme.errorColor,
         ),
       );
@@ -509,7 +528,9 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-              'Added "${playlist.name}" with ${playlist.channelCount} channels'),
+              (AppStrings.of(context)?.playlistAdded ?? 'Added "{name}"')
+                  .replaceAll('{name}', playlist.name)
+                  .replaceAll('{count}', '${playlist.channelCount}')),
           backgroundColor: AppTheme.successColor,
         ),
       );
@@ -529,8 +550,10 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
         SnackBar(
           content: Text(
             success
-                ? 'Playlist refreshed successfully'
-                : 'Failed to refresh playlist',
+                ? (AppStrings.of(context)?.playlistRefreshed ??
+                    'Playlist refreshed successfully')
+                : (AppStrings.of(context)?.playlistRefreshFailed ??
+                    'Failed to refresh playlist'),
           ),
           backgroundColor:
               success ? AppTheme.successColor : AppTheme.errorColor,
@@ -548,18 +571,20 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: const Text(
-            'Delete Playlist',
-            style: TextStyle(color: AppTheme.textPrimary),
+          title: Text(
+            AppStrings.of(context)?.deletePlaylist ?? 'Delete Playlist',
+            style: const TextStyle(color: AppTheme.textPrimary),
           ),
           content: Text(
-            'Are you sure you want to delete "${playlist.name}"? This will also remove all channels from this playlist.',
+            (AppStrings.of(context)?.deleteConfirmation ??
+                    'Are you sure you want to delete "{name}"? This will also remove all channels from this playlist.')
+                .replaceAll('{name}', playlist.name),
             style: const TextStyle(color: AppTheme.textSecondary),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Text(AppStrings.of(context)?.cancel ?? 'Cancel'),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -571,8 +596,9 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
                   context.read<ChannelProvider>().loadAllChannels();
 
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Playlist deleted'),
+                    SnackBar(
+                      content: Text(AppStrings.of(context)?.playlistDeleted ??
+                          'Playlist deleted'),
                       backgroundColor: AppTheme.successColor,
                     ),
                   );
@@ -581,7 +607,7 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.errorColor,
               ),
-              child: const Text('Delete'),
+              child: Text(AppStrings.of(context)?.delete ?? 'Delete'),
             ),
           ],
         );
@@ -611,7 +637,9 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
             context.read<ChannelProvider>().loadAllChannels();
 
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Playlist imported successfully')),
+              SnackBar(
+                  content: Text(AppStrings.of(context)?.playlistImported ??
+                      'Playlist imported successfully')),
             );
             _nameController.clear();
             _urlController.clear();
@@ -627,7 +655,10 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error picking file: $e')),
+          SnackBar(
+              content: Text((AppStrings.of(context)?.errorPickingFile ??
+                      'Error picking file: {error}')
+                  .replaceAll('{error}', '$e'))),
         );
       }
     }

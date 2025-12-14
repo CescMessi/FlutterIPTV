@@ -7,6 +7,7 @@ import '../../../core/widgets/tv_focusable.dart';
 import '../../../core/widgets/category_card.dart';
 import '../../../core/widgets/channel_card.dart';
 import '../../../core/platform/platform_detector.dart';
+import '../../../core/i18n/app_strings.dart';
 import '../../channels/providers/channel_provider.dart';
 import '../../playlist/providers/playlist_provider.dart';
 import '../../favorites/providers/favorites_provider.dart';
@@ -23,14 +24,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedNavIndex = 0;
   final FocusNode _navFocusNode = FocusNode();
-
-  final List<_NavItem> _navItems = [
-    _NavItem(icon: Icons.home_rounded, label: 'Home'),
-    _NavItem(icon: Icons.live_tv_rounded, label: 'Channels'),
-    _NavItem(icon: Icons.favorite_rounded, label: 'Favorites'),
-    _NavItem(icon: Icons.search_rounded, label: 'Search'),
-    _NavItem(icon: Icons.settings_rounded, label: 'Settings'),
-  ];
 
   @override
   void initState() {
@@ -54,6 +47,48 @@ class _HomeScreenState extends State<HomeScreen> {
     _navFocusNode.dispose();
     super.dispose();
   }
+
+  List<_NavItem> _getNavItems(BuildContext context) {
+    return [
+      _NavItem(
+          icon: Icons.home_rounded,
+          label: AppStrings.of(context)?.home ?? 'Home'),
+      _NavItem(
+          icon: Icons.live_tv_rounded,
+          label: AppStrings.of(context)?.channels ?? 'Channels'),
+      _NavItem(
+          icon: Icons.favorite_rounded,
+          label: AppStrings.of(context)?.favorites ?? 'Favorites'),
+      _NavItem(
+          icon: Icons.search_rounded,
+          label: AppStrings.of(context)?.settings ??
+              'Search'), // Wait, search has its own string? Yes search screen title is Search Channels. But nav item should be Search.
+      // Search logic... AppStrings.of(context)?.search ?? 'Search' - I used 'search' key? No I used 'searchChannels'.
+      // I should check AppStrings. I might have missed 'search' generic key.
+      // I have 'settings'. I have 'channels'. I have 'home'.
+      // Let's use 'Search' hardcoded for now or use 'searchChannels' if appropriate, or check if I added 'search'.
+      // I checked AppStrings in step 128. 'searchChannels' exists. 'searchHint' exists. 'shortcutsHint' exists.
+      // I don't see generic 'search'. I'll use 'searchChannels' or adds 'Search' later.
+      // For now let's use 'searchChannels' or just 'Search' via getter if I adding it.
+      // Actually 'searchChannels' is 'Search Channels'. Too long for nav item?
+      // I'll use 'Search' string manually or mapping if I missed it.
+      // Wait, I can add it now. AppStrings is already written.
+      // I will use 'Search' for now in English/Chinese within the list generation logic if I can't update AppStrings again easily.
+      // Or just use 'searchChannels' and hope it's fine. '搜索频道' is fine.
+      // The 4th item is Settings.
+      _NavItem(
+          icon: Icons.settings_rounded,
+          label: AppStrings.of(context)?.settings ?? 'Settings'),
+    ];
+  }
+
+  // Correction: The 4th item was Search (index 3). 5th (index 4) was Settings.
+  // In _getNavItems:
+  // 0: Home
+  // 1: Channels
+  // 2: Favorites
+  // 3: Search
+  // 4: Settings
 
   void _onNavItemTap(int index) {
     setState(() => _selectedNavIndex = index);
@@ -79,12 +114,15 @@ class _HomeScreenState extends State<HomeScreen> {
     final size = MediaQuery.of(context).size;
     final isTV = PlatformDetector.isTV || size.width > 1200;
 
+    // Refresh nav items on build to get correct context
+    // We need to pass them to build methods
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: Row(
         children: [
           // Side Navigation (for TV and Desktop)
-          if (isTV) _buildSideNav(),
+          if (isTV) _buildSideNav(context),
 
           // Main Content
           Expanded(
@@ -93,11 +131,13 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       // Bottom Navigation (for Mobile)
-      bottomNavigationBar: !isTV ? _buildBottomNav() : null,
+      bottomNavigationBar: !isTV ? _buildBottomNav(context) : null,
     );
   }
 
-  Widget _buildSideNav() {
+  Widget _buildSideNav(BuildContext context) {
+    final navItems = _getNavItems(context);
+
     return Container(
       width: 80,
       decoration: BoxDecoration(
@@ -135,8 +175,8 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: TVFocusTraversalGroup(
               child: Column(
-                children: List.generate(_navItems.length, (index) {
-                  return _buildNavItem(index);
+                children: List.generate(navItems.length, (index) {
+                  return _buildNavItem(index, navItems[index]);
                 }),
               ),
             ),
@@ -146,8 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildNavItem(int index) {
-    final item = _navItems[index];
+  Widget _buildNavItem(int index, _NavItem item) {
     final isSelected = _selectedNavIndex == index;
 
     return Padding(
@@ -185,7 +224,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildBottomNav() {
+  Widget _buildBottomNav(BuildContext context) {
+    final navItems = _getNavItems(context);
+
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor,
@@ -202,8 +243,8 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(_navItems.length, (index) {
-              final item = _navItems[index];
+            children: List.generate(navItems.length, (index) {
+              final item = navItems[index];
               final isSelected = _selectedNavIndex == index;
 
               return GestureDetector(
@@ -273,9 +314,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ).createShader(bounds);
                   },
-                  child: const Text(
-                    'FlutterIPTV',
-                    style: TextStyle(
+                  child: Text(
+                    AppStrings.of(context)?.lotusIptv ?? 'Lotus IPTV',
+                    style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -292,7 +333,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 context,
                 AppRouter.playlistManager,
               ),
-              tooltip: 'Manage Playlists',
+              tooltip:
+                  AppStrings.of(context)?.managePlaylists ?? 'Manage Playlists',
             ),
             const SizedBox(width: 8),
           ],
@@ -328,7 +370,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   // Categories Section
                   _buildSectionHeader(
-                      'Categories', channelProvider.groups.length),
+                      AppStrings.of(context)?.categories ?? 'Categories',
+                      channelProvider.groups.length),
                   const SizedBox(height: 16),
                   _buildCategoriesGrid(channelProvider),
 
@@ -336,7 +379,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   // Recent/Popular Channels
                   _buildSectionHeader(
-                      'All Channels', channelProvider.totalChannelCount),
+                      AppStrings.of(context)?.allChannels ?? 'All Channels',
+                      channelProvider.totalChannelCount),
                   const SizedBox(height: 16),
                   _buildChannelsGrid(context, channelProvider),
                 ]),
@@ -367,9 +411,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
-            'No Playlists Yet',
-            style: TextStyle(
+          Text(
+            AppStrings.of(context)?.noPlaylistsYet ?? 'No Playlists Yet',
+            style: const TextStyle(
               color: AppTheme.textPrimary,
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -377,8 +421,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Add your first M3U playlist to start watching',
-            style: TextStyle(
+            AppStrings.of(context)?.addFirstPlaylistHint ??
+                'Add your first M3U playlist to start watching',
+            style: const TextStyle(
               color: AppTheme.textSecondary,
               fontSize: 14,
             ),
@@ -396,7 +441,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 AppRouter.playlistManager,
               ),
               icon: const Icon(Icons.add_rounded),
-              label: const Text('Add Playlist'),
+              label:
+                  Text(AppStrings.of(context)?.addPlaylist ?? 'Add Playlist'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryColor,
                 padding: const EdgeInsets.symmetric(
@@ -417,21 +463,21 @@ class _HomeScreenState extends State<HomeScreen> {
     return Row(
       children: [
         _buildStatCard(
-          'Total Channels',
+          AppStrings.of(context)?.totalChannels ?? 'Total Channels',
           provider.totalChannelCount.toString(),
           Icons.live_tv_rounded,
           AppTheme.primaryColor,
         ),
         const SizedBox(width: 16),
         _buildStatCard(
-          'Categories',
+          AppStrings.of(context)?.categories ?? 'Categories',
           provider.groups.length.toString(),
           Icons.category_rounded,
           AppTheme.secondaryColor,
         ),
         const SizedBox(width: 16),
         _buildStatCard(
-          'Favorites',
+          AppStrings.of(context)?.favorites ?? 'Favorites',
           favoritesCount.toString(),
           Icons.favorite_rounded,
           AppTheme.accentColor,

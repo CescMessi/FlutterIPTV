@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/tv_focusable.dart';
 import '../../../core/platform/platform_detector.dart';
+import '../../../core/i18n/app_strings.dart';
 import '../providers/settings_provider.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -15,9 +16,9 @@ class SettingsScreen extends StatelessWidget {
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         backgroundColor: AppTheme.backgroundColor,
-        title: const Text(
-          'Settings',
-          style: TextStyle(
+        title: Text(
+          AppStrings.of(context)?.settings ?? 'Settings',
+          style: const TextStyle(
             color: AppTheme.textPrimary,
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -33,13 +34,30 @@ class SettingsScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(20),
             children: [
+              // General Settings
+              _buildSectionHeader(
+                  AppStrings.of(context)?.categories ?? 'General'),
+              _buildSettingsCard([
+                _buildSelectTile(
+                  context,
+                  title: AppStrings.of(context)?.language ?? 'Language',
+                  subtitle:
+                      settings.locale?.languageCode == 'zh' ? '中文' : 'English',
+                  icon: Icons.language_rounded,
+                  onTap: () => _showLanguageDialog(context, settings),
+                ),
+              ]),
+
+              const SizedBox(height: 24),
+
               // Playback Settings
-              _buildSectionHeader('Playback'),
+              _buildSectionHeader(
+                  AppStrings.of(context)?.playback ?? 'Playback'),
               _buildSettingsCard([
                 _buildSwitchTile(
                   context,
-                  title: 'Auto-play',
-                  subtitle:
+                  title: AppStrings.of(context)?.autoPlay ?? 'Auto-play',
+                  subtitle: AppStrings.of(context)?.autoPlaySubtitle ??
                       'Automatically start playback when selecting a channel',
                   icon: Icons.play_circle_outline_rounded,
                   value: settings.autoPlay,
@@ -48,8 +66,10 @@ class SettingsScreen extends StatelessWidget {
                 _buildDivider(),
                 _buildSwitchTile(
                   context,
-                  title: 'Hardware Decoding',
-                  subtitle: 'Use hardware acceleration for video playback',
+                  title: AppStrings.of(context)?.hardwareDecoding ??
+                      'Hardware Decoding',
+                  subtitle: AppStrings.of(context)?.hardwareDecodingSubtitle ??
+                      'Use hardware acceleration for video playback',
                   icon: Icons.memory_rounded,
                   value: settings.hardwareDecoding,
                   onChanged: (value) => settings.setHardwareDecoding(value),
@@ -57,8 +77,9 @@ class SettingsScreen extends StatelessWidget {
                 _buildDivider(),
                 _buildSelectTile(
                   context,
-                  title: 'Buffer Size',
-                  subtitle: '${settings.bufferSize} seconds',
+                  title: AppStrings.of(context)?.bufferSize ?? 'Buffer Size',
+                  subtitle:
+                      '${settings.bufferSize} ${AppStrings.of(context)?.seconds ?? 'seconds'}',
                   icon: Icons.storage_rounded,
                   onTap: () => _showBufferSizeDialog(context, settings),
                 ),
@@ -67,12 +88,14 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Playlist Settings
-              _buildSectionHeader('Playlists'),
+              _buildSectionHeader(
+                  AppStrings.of(context)?.playlists ?? 'Playlists'),
               _buildSettingsCard([
                 _buildSwitchTile(
                   context,
-                  title: 'Auto-refresh',
-                  subtitle: 'Automatically update playlists periodically',
+                  title: AppStrings.of(context)?.autoRefresh ?? 'Auto-refresh',
+                  subtitle: AppStrings.of(context)?.autoRefreshSubtitle ??
+                      'Automatically update playlists periodically',
                   icon: Icons.refresh_rounded,
                   value: settings.autoRefresh,
                   onChanged: (value) => settings.setAutoRefresh(value),
@@ -81,8 +104,10 @@ class SettingsScreen extends StatelessWidget {
                   _buildDivider(),
                   _buildSelectTile(
                     context,
-                    title: 'Refresh Interval',
-                    subtitle: 'Every ${settings.refreshInterval} hours',
+                    title: AppStrings.of(context)?.refreshInterval ??
+                        'Refresh Interval',
+                    subtitle:
+                        'Every ${settings.refreshInterval} ${AppStrings.of(context)?.hours ?? 'hours'}',
                     icon: Icons.schedule_rounded,
                     onTap: () => _showRefreshIntervalDialog(context, settings),
                   ),
@@ -90,8 +115,11 @@ class SettingsScreen extends StatelessWidget {
                 _buildDivider(),
                 _buildSwitchTile(
                   context,
-                  title: 'Remember Last Channel',
-                  subtitle: 'Resume playback from last watched channel',
+                  title: AppStrings.of(context)?.rememberLastChannel ??
+                      'Remember Last Channel',
+                  subtitle:
+                      AppStrings.of(context)?.rememberLastChannelSubtitle ??
+                          'Resume playback from last watched channel',
                   icon: Icons.history_rounded,
                   value: settings.rememberLastChannel,
                   onChanged: (value) => settings.setRememberLastChannel(value),
@@ -101,12 +129,14 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: 24),
 
               // EPG Settings
-              _buildSectionHeader('EPG (Electronic Program Guide)'),
+              _buildSectionHeader(AppStrings.of(context)?.epg ??
+                  'EPG (Electronic Program Guide)'),
               _buildSettingsCard([
                 _buildSwitchTile(
                   context,
-                  title: 'Enable EPG',
-                  subtitle: 'Show program information for channels',
+                  title: AppStrings.of(context)?.enableEpg ?? 'Enable EPG',
+                  subtitle: AppStrings.of(context)?.enableEpgSubtitle ??
+                      'Show program information for channels',
                   icon: Icons.event_note_rounded,
                   value: settings.enableEpg,
                   onChanged: (value) => settings.setEnableEpg(value),
@@ -115,8 +145,10 @@ class SettingsScreen extends StatelessWidget {
                   _buildDivider(),
                   _buildInputTile(
                     context,
-                    title: 'EPG URL',
-                    subtitle: settings.epgUrl ?? 'Not configured',
+                    title: AppStrings.of(context)?.epgUrl ?? 'EPG URL',
+                    subtitle: settings.epgUrl ??
+                        (AppStrings.of(context)?.notConfigured ??
+                            'Not configured'),
                     icon: Icons.link_rounded,
                     onTap: () => _showEpgUrlDialog(context, settings),
                   ),
@@ -126,12 +158,16 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Parental Control
-              _buildSectionHeader('Parental Control'),
+              _buildSectionHeader(AppStrings.of(context)?.parentalControl ??
+                  'Parental Control'),
               _buildSettingsCard([
                 _buildSwitchTile(
                   context,
-                  title: 'Enable Parental Control',
-                  subtitle: 'Require PIN to access certain content',
+                  title: AppStrings.of(context)?.enableParentalControl ??
+                      'Enable Parental Control',
+                  subtitle:
+                      AppStrings.of(context)?.enableParentalControlSubtitle ??
+                          'Require PIN to access certain content',
                   icon: Icons.lock_outline_rounded,
                   value: settings.parentalControl,
                   onChanged: (value) => settings.setParentalControl(value),
@@ -140,8 +176,9 @@ class SettingsScreen extends StatelessWidget {
                   _buildDivider(),
                   _buildActionTile(
                     context,
-                    title: 'Change PIN',
-                    subtitle: 'Update your parental control PIN',
+                    title: AppStrings.of(context)?.changePin ?? 'Change PIN',
+                    subtitle: AppStrings.of(context)?.changePinSubtitle ??
+                        'Update your parental control PIN',
                     icon: Icons.pin_rounded,
                     onTap: () => _showChangePinDialog(context, settings),
                   ),
@@ -151,18 +188,18 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: 24),
 
               // About Section
-              _buildSectionHeader('About'),
+              _buildSectionHeader(AppStrings.of(context)?.about ?? 'About'),
               _buildSettingsCard([
                 _buildInfoTile(
                   context,
-                  title: 'Version',
+                  title: AppStrings.of(context)?.version ?? 'Version',
                   value: '1.0.0',
                   icon: Icons.info_outline_rounded,
                 ),
                 _buildDivider(),
                 _buildInfoTile(
                   context,
-                  title: 'Platform',
+                  title: AppStrings.of(context)?.platform ?? 'Platform',
                   value: _getPlatformName(),
                   icon: Icons.devices_rounded,
                 ),
@@ -174,8 +211,10 @@ class SettingsScreen extends StatelessWidget {
               _buildSettingsCard([
                 _buildActionTile(
                   context,
-                  title: 'Reset All Settings',
-                  subtitle: 'Restore all settings to default values',
+                  title: AppStrings.of(context)?.resetAllSettings ??
+                      'Reset All Settings',
+                  subtitle: AppStrings.of(context)?.resetSettingsSubtitle ??
+                      'Restore all settings to default values',
                   icon: Icons.restore_rounded,
                   isDestructive: true,
                   onTap: () => _confirmResetSettings(context, settings),
@@ -514,16 +553,16 @@ class SettingsScreen extends StatelessWidget {
       builder: (context) {
         return AlertDialog(
           backgroundColor: AppTheme.surfaceColor,
-          title: const Text(
-            'Buffer Size',
-            style: TextStyle(color: AppTheme.textPrimary),
+          title: Text(
+            AppStrings.of(context)?.bufferSize ?? 'Buffer Size',
+            style: const TextStyle(color: AppTheme.textPrimary),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: options.map((seconds) {
               return RadioListTile<int>(
                 title: Text(
-                  '$seconds seconds',
+                  '$seconds ${AppStrings.of(context)?.seconds ?? 'seconds'}',
                   style: const TextStyle(color: AppTheme.textPrimary),
                 ),
                 value: seconds,
@@ -552,9 +591,9 @@ class SettingsScreen extends StatelessWidget {
       builder: (context) {
         return AlertDialog(
           backgroundColor: AppTheme.surfaceColor,
-          title: const Text(
-            'Refresh Interval',
-            style: TextStyle(color: AppTheme.textPrimary),
+          title: Text(
+            AppStrings.of(context)?.refreshInterval ?? 'Refresh Interval',
+            style: const TextStyle(color: AppTheme.textPrimary),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -562,8 +601,8 @@ class SettingsScreen extends StatelessWidget {
               return RadioListTile<int>(
                 title: Text(
                   hours < 24
-                      ? '$hours hours'
-                      : '${hours ~/ 24} day${hours > 24 ? 's' : ''}',
+                      ? '$hours ${AppStrings.of(context)?.hours ?? 'hours'}'
+                      : '${hours ~/ 24} ${hours ~/ 24 > 1 ? (AppStrings.of(context)?.days ?? 'days') : (AppStrings.of(context)?.day ?? 'day')}',
                   style: const TextStyle(color: AppTheme.textPrimary),
                 ),
                 value: hours,
@@ -591,22 +630,23 @@ class SettingsScreen extends StatelessWidget {
       builder: (context) {
         return AlertDialog(
           backgroundColor: AppTheme.surfaceColor,
-          title: const Text(
-            'EPG URL',
-            style: TextStyle(color: AppTheme.textPrimary),
+          title: Text(
+            AppStrings.of(context)?.epgUrl ?? 'EPG URL',
+            style: const TextStyle(color: AppTheme.textPrimary),
           ),
           content: TextField(
             controller: controller,
             style: const TextStyle(color: AppTheme.textPrimary),
-            decoration: const InputDecoration(
-              hintText: 'Enter EPG XMLTV URL',
-              hintStyle: TextStyle(color: AppTheme.textMuted),
+            decoration: InputDecoration(
+              hintText:
+                  AppStrings.of(context)?.enterEpgUrl ?? 'Enter EPG XMLTV URL',
+              hintStyle: const TextStyle(color: AppTheme.textMuted),
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Text(AppStrings.of(context)?.cancel ?? 'Cancel'),
             ),
             ElevatedButton(
               onPressed: () {
@@ -615,7 +655,7 @@ class SettingsScreen extends StatelessWidget {
                     : controller.text.trim());
                 Navigator.pop(context);
               },
-              child: const Text('Save'),
+              child: Text(AppStrings.of(context)?.save ?? 'Save'),
             ),
           ],
         );
@@ -631,9 +671,9 @@ class SettingsScreen extends StatelessWidget {
       builder: (context) {
         return AlertDialog(
           backgroundColor: AppTheme.surfaceColor,
-          title: const Text(
-            'Set PIN',
-            style: TextStyle(color: AppTheme.textPrimary),
+          title: Text(
+            AppStrings.of(context)?.setPin ?? 'Set PIN',
+            style: const TextStyle(color: AppTheme.textPrimary),
           ),
           content: TextField(
             controller: controller,
@@ -641,15 +681,15 @@ class SettingsScreen extends StatelessWidget {
             maxLength: 4,
             obscureText: true,
             style: const TextStyle(color: AppTheme.textPrimary),
-            decoration: const InputDecoration(
-              hintText: 'Enter 4-digit PIN',
-              hintStyle: TextStyle(color: AppTheme.textMuted),
+            decoration: InputDecoration(
+              hintText: AppStrings.of(context)?.enterPin ?? 'Enter 4-digit PIN',
+              hintStyle: const TextStyle(color: AppTheme.textMuted),
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Text(AppStrings.of(context)?.cancel ?? 'Cancel'),
             ),
             ElevatedButton(
               onPressed: () {
@@ -658,7 +698,7 @@ class SettingsScreen extends StatelessWidget {
                   Navigator.pop(context);
                 }
               },
-              child: const Text('Save'),
+              child: Text(AppStrings.of(context)?.save ?? 'Save'),
             ),
           ],
         );
@@ -672,18 +712,19 @@ class SettingsScreen extends StatelessWidget {
       builder: (context) {
         return AlertDialog(
           backgroundColor: AppTheme.surfaceColor,
-          title: const Text(
-            'Reset Settings',
-            style: TextStyle(color: AppTheme.textPrimary),
+          title: Text(
+            AppStrings.of(context)?.resetSettings ?? 'Reset Settings',
+            style: const TextStyle(color: AppTheme.textPrimary),
           ),
-          content: const Text(
-            'Are you sure you want to reset all settings to their default values?',
-            style: TextStyle(color: AppTheme.textSecondary),
+          content: Text(
+            AppStrings.of(context)?.resetConfirm ??
+                'Are you sure you want to reset all settings to their default values?',
+            style: const TextStyle(color: AppTheme.textSecondary),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Text(AppStrings.of(context)?.cancel ?? 'Cancel'),
             ),
             ElevatedButton(
               onPressed: () {
@@ -693,9 +734,55 @@ class SettingsScreen extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.errorColor,
               ),
-              child: const Text('Reset'),
+              child: Text(AppStrings.of(context)?.reset ?? 'Reset'),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  void _showLanguageDialog(BuildContext context, SettingsProvider settings) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppTheme.surfaceColor,
+          title: Text(
+            AppStrings.of(context)?.language ?? 'Language',
+            style: const TextStyle(color: AppTheme.textPrimary),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioListTile<String>(
+                title: const Text(
+                  'English',
+                  style: TextStyle(color: AppTheme.textPrimary),
+                ),
+                value: 'en',
+                groupValue: settings.locale?.languageCode ?? 'en',
+                onChanged: (value) {
+                  settings.setLocale(const Locale('en'));
+                  Navigator.pop(context);
+                },
+                activeColor: AppTheme.primaryColor,
+              ),
+              RadioListTile<String>(
+                title: const Text(
+                  '中文',
+                  style: TextStyle(color: AppTheme.textPrimary),
+                ),
+                value: 'zh',
+                groupValue: settings.locale?.languageCode ?? 'en',
+                onChanged: (value) {
+                  settings.setLocale(const Locale('zh'));
+                  Navigator.pop(context);
+                },
+                activeColor: AppTheme.primaryColor,
+              ),
+            ],
+          ),
         );
       },
     );

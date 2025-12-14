@@ -6,6 +6,7 @@ import '../../../core/navigation/app_router.dart';
 import '../../../core/widgets/tv_focusable.dart';
 import '../../../core/widgets/channel_card.dart';
 import '../../../core/platform/platform_detector.dart';
+import '../../../core/i18n/app_strings.dart';
 import '../../channels/providers/channel_provider.dart';
 import '../../favorites/providers/favorites_provider.dart';
 
@@ -112,8 +113,9 @@ class _SearchScreenState extends State<SearchScreen> {
                   fontSize: 16,
                 ),
                 decoration: InputDecoration(
-                  hintText: 'Search channels...',
-                  hintStyle: TextStyle(color: AppTheme.textMuted),
+                  hintText: AppStrings.of(context)?.searchHint ??
+                      'Search channels...',
+                  hintStyle: const TextStyle(color: AppTheme.textMuted),
                   prefixIcon: const Icon(
                     Icons.search_rounded,
                     color: AppTheme.textMuted,
@@ -185,9 +187,9 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
-            'Search Channels',
-            style: TextStyle(
+          Text(
+            AppStrings.of(context)?.searchChannels ?? 'Search Channels',
+            style: const TextStyle(
               color: AppTheme.textPrimary,
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -195,8 +197,9 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Type to search by channel name or category',
-            style: TextStyle(
+            AppStrings.of(context)?.typeToSearch ??
+                'Type to search by channel name or category',
+            style: const TextStyle(
               color: AppTheme.textSecondary,
               fontSize: 14,
             ),
@@ -205,9 +208,9 @@ class _SearchScreenState extends State<SearchScreen> {
           // Recent Searches (placeholder)
           const SizedBox(height: 40),
           if (PlatformDetector.useDPadNavigation) ...[
-            const Text(
-              'Popular Categories',
-              style: TextStyle(
+            Text(
+              AppStrings.of(context)?.popularCategories ?? 'Popular Categories',
+              style: const TextStyle(
                 color: AppTheme.textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -217,8 +220,13 @@ class _SearchScreenState extends State<SearchScreen> {
             Wrap(
               spacing: 12,
               runSpacing: 12,
-              children:
-                  ['Sports', 'Movies', 'News', 'Music', 'Kids'].map((category) {
+              children: [
+                AppStrings.of(context)?.sports ?? 'Sports',
+                AppStrings.of(context)?.movies ?? 'Movies',
+                AppStrings.of(context)?.news ?? 'News',
+                AppStrings.of(context)?.music ?? 'Music',
+                AppStrings.of(context)?.kids ?? 'Kids'
+              ].map((category) {
                 return TVFocusable(
                   onSelect: () {
                     _searchController.text = category;
@@ -252,9 +260,9 @@ class _SearchScreenState extends State<SearchScreen> {
             color: AppTheme.textMuted.withOpacity(0.5),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'No Results Found',
-            style: TextStyle(
+          Text(
+            AppStrings.of(context)?.noResultsFound ?? 'No Results Found',
+            style: const TextStyle(
               color: AppTheme.textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -262,7 +270,9 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'No channels match "$_searchQuery"',
+            (AppStrings.of(context)?.noChannelsMatch ??
+                    'No channels match "{query}"')
+                .replaceAll('{query}', _searchQuery),
             style: const TextStyle(
               color: AppTheme.textSecondary,
               fontSize: 14,
@@ -284,7 +294,10 @@ class _SearchScreenState extends State<SearchScreen> {
         Padding(
           padding: const EdgeInsets.all(20),
           child: Text(
-            '${results.length} result${results.length == 1 ? '' : 's'} for "$_searchQuery"',
+            (AppStrings.of(context)?.resultsFor ??
+                    '{count} result(s) for "{query}"')
+                .replaceAll('{count}', '${results.length}')
+                .replaceAll('{query}', _searchQuery),
             style: const TextStyle(
               color: AppTheme.textSecondary,
               fontSize: 14,

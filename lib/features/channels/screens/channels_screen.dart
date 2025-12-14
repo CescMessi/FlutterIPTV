@@ -6,6 +6,7 @@ import '../../../core/navigation/app_router.dart';
 import '../../../core/widgets/tv_focusable.dart';
 import '../../../core/widgets/channel_card.dart';
 import '../../../core/platform/platform_detector.dart';
+import '../../../core/i18n/app_strings.dart';
 import '../providers/channel_provider.dart';
 import '../../favorites/providers/favorites_provider.dart';
 
@@ -83,7 +84,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
               // Header
               Container(
                 padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   border: Border(
                     bottom: BorderSide(
                       color: AppTheme.cardColor,
@@ -110,9 +111,9 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    const Text(
-                      'Categories',
-                      style: TextStyle(
+                    Text(
+                      AppStrings.of(context)?.categories ?? 'Categories',
+                      style: const TextStyle(
                         color: AppTheme.textPrimary,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -127,7 +128,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 child: _buildGroupItem(
-                  name: 'All Channels',
+                  name: AppStrings.of(context)?.allChannels ?? 'All Channels',
                   count: provider.totalChannelCount,
                   isSelected: _selectedGroup == null,
                   onTap: () {
@@ -276,7 +277,8 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
               floating: true,
               backgroundColor: AppTheme.backgroundColor.withOpacity(0.95),
               title: Text(
-                _selectedGroup ?? 'All Channels',
+                _selectedGroup ??
+                    (AppStrings.of(context)?.allChannels ?? 'All Channels'),
                 style: const TextStyle(
                   color: AppTheme.textPrimary,
                   fontSize: 20,
@@ -295,7 +297,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      '${channels.length} channels',
+                      '${channels.length} ${AppStrings.of(context)?.channels ?? 'channels'}',
                       style: const TextStyle(
                         color: AppTheme.textSecondary,
                         fontSize: 12,
@@ -320,9 +322,10 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                         color: AppTheme.textMuted.withOpacity(0.5),
                       ),
                       const SizedBox(height: 16),
-                      const Text(
-                        'No channels found',
-                        style: TextStyle(
+                      Text(
+                        AppStrings.of(context)?.noChannelsFound ??
+                            'No channels found',
+                        style: const TextStyle(
                           color: AppTheme.textSecondary,
                           fontSize: 16,
                         ),
@@ -415,7 +418,11 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                       : AppTheme.textSecondary,
                 ),
                 title: Text(
-                  isFavorite ? 'Remove from Favorites' : 'Add to Favorites',
+                  isFavorite
+                      ? (AppStrings.of(context)?.removeFavorites ??
+                          'Remove from Favorites')
+                      : (AppStrings.of(context)?.addFavorites ??
+                          'Add to Favorites'),
                   style: const TextStyle(color: AppTheme.textPrimary),
                 ),
                 onTap: () async {
@@ -429,9 +436,9 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                   Icons.info_outline_rounded,
                   color: AppTheme.textSecondary,
                 ),
-                title: const Text(
-                  'Channel Info',
-                  style: TextStyle(color: AppTheme.textPrimary),
+                title: Text(
+                  AppStrings.of(context)?.channelInfo ?? 'Channel Info',
+                  style: const TextStyle(color: AppTheme.textPrimary),
                 ),
                 onTap: () {
                   Navigator.pop(context);

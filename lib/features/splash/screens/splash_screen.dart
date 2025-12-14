@@ -5,6 +5,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/navigation/app_router.dart';
 import '../../../core/services/service_locator.dart';
 import '../../../core/platform/tv_detection_channel.dart';
+import '../../../core/i18n/app_strings.dart';
 import '../../playlist/providers/playlist_provider.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -16,7 +17,6 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
-  // ... animation controllers ...
   late AnimationController _logoController;
   late AnimationController _textController;
   late Animation<double> _logoScale;
@@ -30,13 +30,11 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
-    // ... animation init logic ...
     _logoController = AnimationController(
         duration: const Duration(milliseconds: 1200), vsync: this);
     _textController = AnimationController(
         duration: const Duration(milliseconds: 800), vsync: this);
 
-    // Setup animations but skip for brevity in replace...
     _logoScale = Tween<double>(begin: 0.5, end: 1.0).animate(
         CurvedAnimation(parent: _logoController, curve: Curves.elasticOut));
     _logoOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(
@@ -51,7 +49,6 @@ class _SplashScreenState extends State<SplashScreen>
     _startAnimations();
   }
 
-  // ... _startAnimations ...
   Future<void> _startAnimations() async {
     _logoController.forward();
     await Future.delayed(const Duration(milliseconds: 600));
@@ -170,9 +167,9 @@ class _SplashScreenState extends State<SplashScreen>
                             ],
                           ).createShader(bounds);
                         },
-                        child: const Text(
-                          'FlutterIPTV',
-                          style: TextStyle(
+                        child: Text(
+                          AppStrings.of(context)?.lotusIptv ?? 'Lotus IPTV',
+                          style: const TextStyle(
                             fontSize: 36,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -182,7 +179,8 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Professional IPTV Player',
+                        AppStrings.of(context)?.professionalIptvPlayer ??
+                            'Professional IPTV Player',
                         style: TextStyle(
                           fontSize: 14,
                           color: AppTheme.textSecondary.withOpacity(0.8),
@@ -219,8 +217,8 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Loading...',
-                        style: TextStyle(
+                        AppStrings.of(context)?.loading ?? 'Loading...',
+                        style: const TextStyle(
                           fontSize: 12,
                           color: AppTheme.textMuted,
                         ),

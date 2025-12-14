@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'dart:async';
 
+import '../../../core/i18n/app_strings.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/tv_focusable.dart';
 import '../../../core/platform/platform_detector.dart';
@@ -301,19 +302,20 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
                     switch (provider.state) {
                       case PlayerState.playing:
-                        statusText = 'LIVE';
+                        statusText = AppStrings.of(context)?.live ?? 'LIVE';
                         statusColor = AppTheme.successColor;
                         break;
                       case PlayerState.buffering:
-                        statusText = 'Buffering...';
+                        statusText =
+                            AppStrings.of(context)?.buffering ?? 'Buffering...';
                         statusColor = AppTheme.warningColor;
                         break;
                       case PlayerState.paused:
-                        statusText = 'Paused';
+                        statusText = AppStrings.of(context)?.paused ?? 'Paused';
                         statusColor = AppTheme.textMuted;
                         break;
                       case PlayerState.error:
-                        statusText = 'Error';
+                        statusText = AppStrings.of(context)?.error ?? 'Error';
                         statusColor = AppTheme.errorColor;
                         break;
                       default:
@@ -493,7 +495,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
               // Keyboard Shortcuts Hint (for TV/Desktop)
               if (PlatformDetector.useDPadNavigation)
                 Text(
-                  'Left/Right: Seek • Up/Down: Volume • Enter: Play/Pause • M: Mute',
+                  AppStrings.of(context)?.shortcutsHint ??
+                      'Left/Right: Seek • Up/Down: Volume • Enter: Play/Pause • M: Mute',
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.5),
                     fontSize: 12,
@@ -569,9 +572,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
               size: 48,
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Playback Error',
-              style: TextStyle(
+            Text(
+              AppStrings.of(context)?.playbackError ?? 'Playback Error',
+              style: const TextStyle(
                 color: AppTheme.textPrimary,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -595,7 +598,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   child: ElevatedButton.icon(
                     onPressed: _startPlayback,
                     icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('Retry'),
+                    label: Text(AppStrings.of(context)?.retry ?? 'Retry'),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -603,7 +606,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   onSelect: () => Navigator.of(context).pop(),
                   child: OutlinedButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Go Back'),
+                    child: Text(AppStrings.of(context)?.goBack ?? 'Go Back'),
                   ),
                 ),
               ],
@@ -630,9 +633,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Playback Settings',
-                    style: TextStyle(
+                  Text(
+                    AppStrings.of(context)?.playbackSettings ??
+                        'Playback Settings',
+                    style: const TextStyle(
                       color: AppTheme.textPrimary,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -641,9 +645,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   const SizedBox(height: 24),
 
                   // Playback Speed
-                  const Text(
-                    'Playback Speed',
-                    style: TextStyle(
+                  Text(
+                    AppStrings.of(context)?.playbackSpeed ?? 'Playback Speed',
+                    style: const TextStyle(
                       color: AppTheme.textSecondary,
                       fontSize: 14,
                     ),

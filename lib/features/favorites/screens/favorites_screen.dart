@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/navigation/app_router.dart';
 import '../../../core/widgets/tv_focusable.dart';
+import '../../../core/i18n/app_strings.dart';
 import '../providers/favorites_provider.dart';
 
 class FavoritesScreen extends StatefulWidget {
@@ -26,9 +27,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         backgroundColor: AppTheme.backgroundColor,
-        title: const Text(
-          'Favorites',
-          style: TextStyle(
+        title: Text(
+          AppStrings.of(context)?.favorites ?? 'Favorites',
+          style: const TextStyle(
             color: AppTheme.textPrimary,
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -46,7 +47,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               return IconButton(
                 icon: const Icon(Icons.delete_sweep_rounded),
                 onPressed: () => _confirmClearAll(context, provider),
-                tooltip: 'Clear All',
+                tooltip: AppStrings.of(context)?.clearAll ?? 'Clear All',
               );
             },
           ),
@@ -91,9 +92,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
-            'No Favorites Yet',
-            style: TextStyle(
+          Text(
+            AppStrings.of(context)?.noFavoritesYet ?? 'No Favorites Yet',
+            style: const TextStyle(
               color: AppTheme.textPrimary,
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -101,8 +102,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Long press on a channel to add it to favorites',
-            style: TextStyle(
+            AppStrings.of(context)?.favoritesHint ??
+                'Long press on a channel to add it to favorites',
+            style: const TextStyle(
               color: AppTheme.textSecondary,
               fontSize: 14,
             ),
@@ -114,7 +116,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             child: ElevatedButton.icon(
               onPressed: () => Navigator.pushNamed(context, AppRouter.channels),
               icon: const Icon(Icons.live_tv_rounded),
-              label: const Text('Browse Channels'),
+              label: Text(
+                  AppStrings.of(context)?.browseChannels ?? 'Browse Channels'),
             ),
           ),
         ],
@@ -208,7 +211,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               index: index,
               child: Container(
                 padding: const EdgeInsets.all(8),
-                child: Icon(
+                child: const Icon(
                   Icons.drag_indicator_rounded,
                   color: AppTheme.textMuted,
                   size: 20,
@@ -312,10 +315,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content:
-                              Text('Removed "${channel.name}" from favorites'),
+                          content: Text(
+                              (AppStrings.of(context)?.removedFromFavorites ??
+                                      'Removed "{name}" from favorites')
+                                  .replaceAll('{name}', channel.name)),
                           action: SnackBarAction(
-                            label: 'Undo',
+                            label: AppStrings.of(context)?.undo ?? 'Undo',
                             onPressed: () => provider.addFavorite(channel),
                           ),
                         ),
@@ -352,18 +357,19 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: const Text(
-            'Clear All Favorites',
-            style: TextStyle(color: AppTheme.textPrimary),
+          title: Text(
+            AppStrings.of(context)?.clearAllFavorites ?? 'Clear All Favorites',
+            style: const TextStyle(color: AppTheme.textPrimary),
           ),
-          content: const Text(
-            'Are you sure you want to remove all channels from your favorites?',
-            style: TextStyle(color: AppTheme.textSecondary),
+          content: Text(
+            AppStrings.of(context)?.clearFavoritesConfirm ??
+                'Are you sure you want to remove all channels from your favorites?',
+            style: const TextStyle(color: AppTheme.textSecondary),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Text(AppStrings.of(context)?.cancel ?? 'Cancel'),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -372,8 +378,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('All favorites cleared'),
+                    SnackBar(
+                      content: Text(
+                          AppStrings.of(context)?.allFavoritesCleared ??
+                              'All favorites cleared'),
                     ),
                   );
                 }
@@ -381,7 +389,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.errorColor,
               ),
-              child: const Text('Clear All'),
+              child: Text(AppStrings.of(context)?.clearAll ?? 'Clear All'),
             ),
           ],
         );

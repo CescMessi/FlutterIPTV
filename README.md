@@ -1,7 +1,7 @@
-# FlutterIPTV
+# Lotus IPTV
 
 <p align="center">
-  <img src="assets/icons/app_icon.png" width="120" alt="FlutterIPTV Logo">
+  <img src="assets/icons/app_icon.png" width="120" alt="Lotus IPTV Logo">
 </p>
 
 <p align="center">
@@ -23,7 +23,7 @@
 
 <a id="english"></a>
 
-FlutterIPTV is a modern, high-performance IPTV player application developed with Flutter. It offers a seamless viewing experience across multiple platforms, with a special focus on usability and aesthetics.
+Lotus IPTV is a modern, high-performance IPTV player application developed with Flutter. It offers a seamless viewing experience across multiple platforms, with a special focus on usability and aesthetics.
 
 ## ✨ Features
 
@@ -123,9 +123,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <a id="chinese"></a>
 
-# FlutterIPTV (中文说明)
+# Lotus IPTV (中文说明)
 
-FlutterIPTV 是一款基于 Flutter 开发的现代化高性能 IPTV 播放器。它支持多平台无缝观看，专注于易用性和美观的界面设计。
+Lotus IPTV 是一款基于 Flutter 开发的现代化高性能 IPTV 播放器。它支持多平台无缝观看，专注于易用性和美观的界面设计。
 
 ## ✨ 功能特性
 

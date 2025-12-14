@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../../../core/services/service_locator.dart';
 
 class SettingsProvider extends ChangeNotifier {
@@ -17,6 +18,7 @@ class SettingsProvider extends ChangeNotifier {
   static const String _keyAutoPlay = 'auto_play';
   static const String _keyRememberLastChannel = 'remember_last_channel';
   static const String _keyLastChannelId = 'last_channel_id';
+  static const String _keyLocale = 'locale';
 
   // Settings values
   String _themeMode = 'dark';
@@ -33,6 +35,7 @@ class SettingsProvider extends ChangeNotifier {
   bool _autoPlay = true;
   bool _rememberLastChannel = true;
   int? _lastChannelId;
+  Locale? _locale;
 
   // Getters
   String get themeMode => _themeMode;
@@ -48,6 +51,7 @@ class SettingsProvider extends ChangeNotifier {
   bool get autoPlay => _autoPlay;
   bool get rememberLastChannel => _rememberLastChannel;
   int? get lastChannelId => _lastChannelId;
+  Locale? get locale => _locale;
 
   SettingsProvider() {
     _loadSettings();
@@ -70,6 +74,12 @@ class SettingsProvider extends ChangeNotifier {
     _autoPlay = prefs.getBool(_keyAutoPlay) ?? true;
     _rememberLastChannel = prefs.getBool(_keyRememberLastChannel) ?? true;
     _lastChannelId = prefs.getInt(_keyLastChannelId);
+
+    final localeCode = prefs.getString(_keyLocale);
+    if (localeCode != null) {
+      final parts = localeCode.split('_');
+      _locale = Locale(parts[0], parts.length > 1 ? parts[1] : null);
+    }
 
     notifyListeners();
   }
@@ -98,6 +108,9 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.setBool(_keyRememberLastChannel, _rememberLastChannel);
     if (_lastChannelId != null) {
       await prefs.setInt(_keyLastChannelId, _lastChannelId!);
+    }
+    if (_locale != null) {
+      await prefs.setString(_keyLocale, _locale!.languageCode);
     }
   }
 
@@ -186,6 +199,12 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> setLastChannelId(int? id) async {
     _lastChannelId = id;
+    await _saveSettings();
+    notifyListeners();
+  }
+
+  Future<void> setLocale(Locale? locale) async {
+    _locale = locale;
     await _saveSettings();
     notifyListeners();
   }
