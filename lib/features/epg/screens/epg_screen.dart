@@ -5,7 +5,7 @@ import '../../../core/widgets/tv_focusable.dart';
 
 class EpgScreen extends StatelessWidget {
   final String? channelId;
-  
+
   const EpgScreen({
     super.key,
     this.channelId,

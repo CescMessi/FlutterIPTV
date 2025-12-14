@@ -7,11 +7,11 @@ class Playlist {
   final bool isActive;
   final DateTime? lastUpdated;
   final DateTime createdAt;
-  
+
   // Runtime properties
   int channelCount;
   int groupCount;
-  
+
   Playlist({
     this.id,
     required this.name,
@@ -23,7 +23,7 @@ class Playlist {
     this.channelCount = 0,
     this.groupCount = 0,
   }) : createdAt = createdAt ?? DateTime.now();
-  
+
   factory Playlist.fromMap(Map<String, dynamic> map) {
     return Playlist(
       id: map['id'] as int?,
@@ -39,7 +39,7 @@ class Playlist {
           : DateTime.now(),
     );
   }
-  
+
   Map<String, dynamic> toMap() {
     return {
       if (id != null) 'id': id,
@@ -51,7 +51,7 @@ class Playlist {
       'created_at': createdAt.millisecondsSinceEpoch,
     };
   }
-  
+
   Playlist copyWith({
     int? id,
     String? name,
@@ -75,25 +75,26 @@ class Playlist {
       groupCount: groupCount ?? this.groupCount,
     );
   }
-  
+
   /// Check if this is a remote playlist (URL-based)
   bool get isRemote => url != null && url!.isNotEmpty;
-  
+
   /// Check if this is a local playlist (file-based)
   bool get isLocal => filePath != null && filePath!.isNotEmpty;
-  
+
   /// Get the source path (URL or file path)
   String get sourcePath => url ?? filePath ?? '';
-  
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is Playlist && other.id == id;
   }
-  
+
   @override
   int get hashCode => id.hashCode;
-  
+
   @override
-  String toString() => 'Playlist(id: $id, name: $name, channels: $channelCount)';
+  String toString() =>
+      'Playlist(id: $id, name: $name, channels: $channelCount)';
 }

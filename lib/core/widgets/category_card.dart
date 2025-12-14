@@ -11,7 +11,7 @@ class CategoryCard extends StatelessWidget {
   final VoidCallback? onTap;
   final bool autofocus;
   final FocusNode? focusNode;
-  
+
   const CategoryCard({
     super.key,
     required this.name,
@@ -26,7 +26,7 @@ class CategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cardColor = color ?? AppTheme.primaryColor;
-    
+
     return TVFocusable(
       autofocus: autofocus,
       focusNode: focusNode,
@@ -52,7 +52,9 @@ class CategoryCard extends StatelessWidget {
             ),
             borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
             border: Border.all(
-              color: isFocused ? Colors.white.withOpacity(0.5) : Colors.transparent,
+              color: isFocused
+                  ? Colors.white.withOpacity(0.5)
+                  : Colors.transparent,
               width: isFocused ? 2 : 0,
             ),
             boxShadow: isFocused
@@ -93,9 +95,9 @@ class CategoryCard extends StatelessWidget {
                 size: 28,
               ),
             ),
-            
+
             const Spacer(),
-            
+
             // Name and count
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,15 +127,17 @@ class CategoryCard extends StatelessWidget {
       ),
     );
   }
-  
+
   /// Get an icon for a category name
   static IconData getIconForCategory(String name) {
     final lowerName = name.toLowerCase();
-    
+
     if (lowerName.contains('sport') || lowerName.contains('football')) {
       return Icons.sports_soccer_rounded;
     }
-    if (lowerName.contains('movie') || lowerName.contains('cinema') || lowerName.contains('film')) {
+    if (lowerName.contains('movie') ||
+        lowerName.contains('cinema') ||
+        lowerName.contains('film')) {
       return Icons.movie_rounded;
     }
     if (lowerName.contains('news')) {
@@ -142,10 +146,14 @@ class CategoryCard extends StatelessWidget {
     if (lowerName.contains('music') || lowerName.contains('mtv')) {
       return Icons.music_note_rounded;
     }
-    if (lowerName.contains('kid') || lowerName.contains('cartoon') || lowerName.contains('child')) {
+    if (lowerName.contains('kid') ||
+        lowerName.contains('cartoon') ||
+        lowerName.contains('child')) {
       return Icons.child_care_rounded;
     }
-    if (lowerName.contains('document') || lowerName.contains('discovery') || lowerName.contains('nature')) {
+    if (lowerName.contains('document') ||
+        lowerName.contains('discovery') ||
+        lowerName.contains('nature')) {
       return Icons.explore_rounded;
     }
     if (lowerName.contains('entertainment') || lowerName.contains('general')) {
@@ -166,10 +174,10 @@ class CategoryCard extends StatelessWidget {
     if (lowerName.contains('adult') || lowerName.contains('xxx')) {
       return Icons.no_adult_content_rounded;
     }
-    
+
     return Icons.live_tv_rounded;
   }
-  
+
   /// Get a color for a category index
   static Color getColorForIndex(int index) {
     final colors = [

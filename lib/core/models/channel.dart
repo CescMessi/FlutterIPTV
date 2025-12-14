@@ -9,11 +9,11 @@ class Channel {
   final String? epgId;
   final bool isActive;
   final DateTime createdAt;
-  
+
   // Runtime properties (not stored in database)
   bool isFavorite;
   bool isCurrentlyPlaying;
-  
+
   Channel({
     this.id,
     required this.playlistId,
@@ -27,7 +27,7 @@ class Channel {
     this.isFavorite = false,
     this.isCurrentlyPlaying = false,
   }) : createdAt = createdAt ?? DateTime.now();
-  
+
   factory Channel.fromMap(Map<String, dynamic> map) {
     return Channel(
       id: map['id'] as int?,
@@ -43,7 +43,7 @@ class Channel {
           : DateTime.now(),
     );
   }
-  
+
   Map<String, dynamic> toMap() {
     return {
       if (id != null) 'id': id,
@@ -57,7 +57,7 @@ class Channel {
       'created_at': createdAt.millisecondsSinceEpoch,
     };
   }
-  
+
   Channel copyWith({
     int? id,
     int? playlistId,
@@ -85,16 +85,16 @@ class Channel {
       isCurrentlyPlaying: isCurrentlyPlaying ?? this.isCurrentlyPlaying,
     );
   }
-  
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is Channel && other.id == id && other.url == url;
   }
-  
+
   @override
   int get hashCode => id.hashCode ^ url.hashCode;
-  
+
   @override
   String toString() => 'Channel(id: $id, name: $name, group: $groupName)';
 }

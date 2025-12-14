@@ -21,7 +21,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedNavIndex = 0;
   final FocusNode _navFocusNode = FocusNode();
-  
+
   final List<_NavItem> _navItems = [
     _NavItem(icon: Icons.home_rounded, label: 'Home'),
     _NavItem(icon: Icons.live_tv_rounded, label: 'Channels'),
@@ -35,12 +35,12 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _loadData();
   }
-  
+
   Future<void> _loadData() async {
     final playlistProvider = context.read<PlaylistProvider>();
     final channelProvider = context.read<ChannelProvider>();
     final favoritesProvider = context.read<FavoritesProvider>();
-    
+
     if (playlistProvider.hasPlaylists) {
       await channelProvider.loadAllChannels();
       await favoritesProvider.loadFavorites();
@@ -55,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onNavItemTap(int index) {
     setState(() => _selectedNavIndex = index);
-    
+
     switch (index) {
       case 1:
         Navigator.pushNamed(context, AppRouter.channels);
@@ -76,14 +76,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isTV = PlatformDetector.isTV || size.width > 1200;
-    
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: Row(
         children: [
           // Side Navigation (for TV and Desktop)
           if (isTV) _buildSideNav(),
-          
+
           // Main Content
           Expanded(
             child: _buildMainContent(context),
@@ -94,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: !isTV ? _buildBottomNav() : null,
     );
   }
-  
+
   Widget _buildSideNav() {
     return Container(
       width: 80,
@@ -111,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         children: [
           const SizedBox(height: 24),
-          
+
           // Logo
           Container(
             width: 50,
@@ -126,9 +126,9 @@ class _HomeScreenState extends State<HomeScreen> {
               size: 28,
             ),
           ),
-          
+
           const SizedBox(height: 40),
-          
+
           // Navigation Items
           Expanded(
             child: TVFocusTraversalGroup(
@@ -143,11 +143,11 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-  
+
   Widget _buildNavItem(int index) {
     final item = _navItems[index];
     final isSelected = _selectedNavIndex == index;
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: TVFocusable(
@@ -182,7 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-  
+
   Widget _buildBottomNav() {
     return Container(
       decoration: BoxDecoration(
@@ -203,7 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: List.generate(_navItems.length, (index) {
               final item = _navItems[index];
               final isSelected = _selectedNavIndex == index;
-              
+
               return GestureDetector(
                 onTap: () => _onNavItemTap(index),
                 child: AnimatedContainer(
@@ -249,7 +249,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-  
+
   Widget _buildMainContent(BuildContext context) {
     return CustomScrollView(
       slivers: [
@@ -287,7 +287,7 @@ class _HomeScreenState extends State<HomeScreen> {
             IconButton(
               icon: const Icon(Icons.playlist_add_rounded),
               onPressed: () => Navigator.pushNamed(
-                context, 
+                context,
                 AppRouter.playlistManager,
               ),
               tooltip: 'Manage Playlists',
@@ -295,7 +295,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(width: 8),
           ],
         ),
-        
+
         // Content
         SliverPadding(
           padding: const EdgeInsets.all(24),
@@ -306,7 +306,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: _buildEmptyState(),
                 );
               }
-              
+
               if (channelProvider.isLoading) {
                 return const SliverFillRemaining(
                   child: Center(
@@ -316,23 +316,25 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 );
               }
-              
+
               return SliverList(
                 delegate: SliverChildListDelegate([
                   // Quick Stats
                   _buildQuickStats(channelProvider),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // Categories Section
-                  _buildSectionHeader('Categories', channelProvider.groups.length),
+                  _buildSectionHeader(
+                      'Categories', channelProvider.groups.length),
                   const SizedBox(height: 16),
                   _buildCategoriesGrid(channelProvider),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // Recent/Popular Channels
-                  _buildSectionHeader('All Channels', channelProvider.totalChannelCount),
+                  _buildSectionHeader(
+                      'All Channels', channelProvider.totalChannelCount),
                   const SizedBox(height: 16),
                   _buildChannelsGrid(context, channelProvider),
                 ]),
@@ -343,7 +345,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
-  
+
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -406,10 +408,10 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-  
+
   Widget _buildQuickStats(ChannelProvider provider) {
     final favoritesCount = context.watch<FavoritesProvider>().count;
-    
+
     return Row(
       children: [
         _buildStatCard(
@@ -435,8 +437,9 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
-  
-  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
+
+  Widget _buildStatCard(
+      String label, String value, IconData icon, Color color) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(20),
@@ -493,7 +496,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-  
+
   Widget _buildSectionHeader(String title, int count) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -524,11 +527,11 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
-  
+
   Widget _buildCategoriesGrid(ChannelProvider provider) {
     final size = MediaQuery.of(context).size;
     final crossAxisCount = PlatformDetector.getGridCrossAxisCount(size.width);
-    
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -557,12 +560,12 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     );
   }
-  
+
   Widget _buildChannelsGrid(BuildContext context, ChannelProvider provider) {
     final size = MediaQuery.of(context).size;
     final crossAxisCount = PlatformDetector.getGridCrossAxisCount(size.width);
     final channels = provider.channels.take(12).toList();
-    
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -579,7 +582,8 @@ class _HomeScreenState extends State<HomeScreen> {
           name: channel.name,
           logoUrl: channel.logoUrl,
           groupName: channel.groupName,
-          isFavorite: context.read<FavoritesProvider>().isFavorite(channel.id ?? 0),
+          isFavorite:
+              context.read<FavoritesProvider>().isFavorite(channel.id ?? 0),
           onTap: () {
             Navigator.pushNamed(
               context,
@@ -600,6 +604,6 @@ class _HomeScreenState extends State<HomeScreen> {
 class _NavItem {
   final IconData icon;
   final String label;
-  
+
   const _NavItem({required this.icon, required this.label});
 }

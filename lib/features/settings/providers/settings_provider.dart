@@ -17,7 +17,7 @@ class SettingsProvider extends ChangeNotifier {
   static const String _keyAutoPlay = 'auto_play';
   static const String _keyRememberLastChannel = 'remember_last_channel';
   static const String _keyLastChannelId = 'last_channel_id';
-  
+
   // Settings values
   String _themeMode = 'dark';
   bool _autoRefresh = true;
@@ -33,7 +33,7 @@ class SettingsProvider extends ChangeNotifier {
   bool _autoPlay = true;
   bool _rememberLastChannel = true;
   int? _lastChannelId;
-  
+
   // Getters
   String get themeMode => _themeMode;
   bool get autoRefresh => _autoRefresh;
@@ -48,14 +48,14 @@ class SettingsProvider extends ChangeNotifier {
   bool get autoPlay => _autoPlay;
   bool get rememberLastChannel => _rememberLastChannel;
   int? get lastChannelId => _lastChannelId;
-  
+
   SettingsProvider() {
     _loadSettings();
   }
-  
+
   void _loadSettings() {
     final prefs = ServiceLocator.prefs;
-    
+
     _themeMode = prefs.getString(_keyThemeMode) ?? 'dark';
     _autoRefresh = prefs.getBool(_keyAutoRefresh) ?? true;
     _refreshInterval = prefs.getInt(_keyRefreshInterval) ?? 24;
@@ -70,13 +70,13 @@ class SettingsProvider extends ChangeNotifier {
     _autoPlay = prefs.getBool(_keyAutoPlay) ?? true;
     _rememberLastChannel = prefs.getBool(_keyRememberLastChannel) ?? true;
     _lastChannelId = prefs.getInt(_keyLastChannelId);
-    
+
     notifyListeners();
   }
-  
+
   Future<void> _saveSettings() async {
     final prefs = ServiceLocator.prefs;
-    
+
     await prefs.setString(_keyThemeMode, _themeMode);
     await prefs.setBool(_keyAutoRefresh, _autoRefresh);
     await prefs.setInt(_keyRefreshInterval, _refreshInterval);
@@ -100,96 +100,96 @@ class SettingsProvider extends ChangeNotifier {
       await prefs.setInt(_keyLastChannelId, _lastChannelId!);
     }
   }
-  
+
   // Setters with persistence
   Future<void> setThemeMode(String mode) async {
     _themeMode = mode;
     await _saveSettings();
     notifyListeners();
   }
-  
+
   Future<void> setAutoRefresh(bool value) async {
     _autoRefresh = value;
     await _saveSettings();
     notifyListeners();
   }
-  
+
   Future<void> setRefreshInterval(int hours) async {
     _refreshInterval = hours;
     await _saveSettings();
     notifyListeners();
   }
-  
+
   Future<void> setDefaultQuality(String quality) async {
     _defaultQuality = quality;
     await _saveSettings();
     notifyListeners();
   }
-  
+
   Future<void> setHardwareDecoding(bool enabled) async {
     _hardwareDecoding = enabled;
     await _saveSettings();
     notifyListeners();
   }
-  
+
   Future<void> setBufferSize(int seconds) async {
     _bufferSize = seconds;
     await _saveSettings();
     notifyListeners();
   }
-  
+
   Future<void> setLastPlaylistId(int? id) async {
     _lastPlaylistId = id;
     await _saveSettings();
     notifyListeners();
   }
-  
+
   Future<void> setEnableEpg(bool enabled) async {
     _enableEpg = enabled;
     await _saveSettings();
     notifyListeners();
   }
-  
+
   Future<void> setEpgUrl(String? url) async {
     _epgUrl = url;
     await _saveSettings();
     notifyListeners();
   }
-  
+
   Future<void> setParentalControl(bool enabled) async {
     _parentalControl = enabled;
     await _saveSettings();
     notifyListeners();
   }
-  
+
   Future<void> setParentalPin(String? pin) async {
     _parentalPin = pin;
     await _saveSettings();
     notifyListeners();
   }
-  
+
   bool validateParentalPin(String pin) {
     return _parentalPin == pin;
   }
-  
+
   Future<void> setAutoPlay(bool enabled) async {
     _autoPlay = enabled;
     await _saveSettings();
     notifyListeners();
   }
-  
+
   Future<void> setRememberLastChannel(bool enabled) async {
     _rememberLastChannel = enabled;
     await _saveSettings();
     notifyListeners();
   }
-  
+
   Future<void> setLastChannelId(int? id) async {
     _lastChannelId = id;
     await _saveSettings();
     notifyListeners();
   }
-  
+
   // Reset all settings to defaults
   Future<void> resetSettings() async {
     _themeMode = 'dark';
@@ -204,7 +204,7 @@ class SettingsProvider extends ChangeNotifier {
     _parentalPin = null;
     _autoPlay = true;
     _rememberLastChannel = true;
-    
+
     await _saveSettings();
     notifyListeners();
   }

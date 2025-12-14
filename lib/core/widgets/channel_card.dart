@@ -16,7 +16,7 @@ class ChannelCard extends StatelessWidget {
   final VoidCallback? onLongPress;
   final bool autofocus;
   final FocusNode? focusNode;
-  
+
   const ChannelCard({
     super.key,
     required this.name,
@@ -57,10 +57,14 @@ class ChannelCard extends StatelessWidget {
             border: Border.all(
               color: isFocused
                   ? AppTheme.focusBorderColor
-                  : isPlaying 
+                  : isPlaying
                       ? AppTheme.successColor
                       : Colors.transparent,
-              width: isFocused ? 3 : isPlaying ? 2 : 0,
+              width: isFocused
+                  ? 3
+                  : isPlaying
+                      ? 2
+                      : 0,
             ),
             boxShadow: isFocused
                 ? [
@@ -110,13 +114,15 @@ class ChannelCard extends StatelessWidget {
                             ? CachedNetworkImage(
                                 imageUrl: logoUrl!,
                                 fit: BoxFit.contain,
-                                placeholder: (context, url) => _buildPlaceholder(),
-                                errorWidget: (context, url, error) => _buildPlaceholder(),
+                                placeholder: (context, url) =>
+                                    _buildPlaceholder(),
+                                errorWidget: (context, url, error) =>
+                                    _buildPlaceholder(),
                               )
                             : _buildPlaceholder(),
                       ),
                     ),
-                    
+
                     // Playing indicator
                     if (isPlaying)
                       Positioned(
@@ -157,7 +163,7 @@ class ChannelCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                    
+
                     // Favorite indicator
                     if (isFavorite)
                       Positioned(
@@ -179,7 +185,7 @@ class ChannelCard extends StatelessWidget {
                   ],
                 ),
               ),
-              
+
               // Info area
               Expanded(
                 flex: 2,
@@ -233,7 +239,7 @@ class ChannelCard extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildPlaceholder() {
     return Container(
       padding: const EdgeInsets.all(16),

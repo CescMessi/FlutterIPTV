@@ -8,7 +8,7 @@ class EpgEntry {
   final DateTime endTime;
   final String? category;
   final DateTime createdAt;
-  
+
   EpgEntry({
     this.id,
     required this.channelEpgId,
@@ -19,7 +19,7 @@ class EpgEntry {
     this.category,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
-  
+
   factory EpgEntry.fromMap(Map<String, dynamic> map) {
     return EpgEntry(
       id: map['id'] as int?,
@@ -34,7 +34,7 @@ class EpgEntry {
           : DateTime.now(),
     );
   }
-  
+
   Map<String, dynamic> toMap() {
     return {
       if (id != null) 'id': id,
@@ -47,22 +47,22 @@ class EpgEntry {
       'created_at': createdAt.millisecondsSinceEpoch,
     };
   }
-  
+
   /// Check if this program is currently airing
   bool get isLive {
     final now = DateTime.now();
     return now.isAfter(startTime) && now.isBefore(endTime);
   }
-  
+
   /// Check if this program has ended
   bool get hasEnded => DateTime.now().isAfter(endTime);
-  
+
   /// Check if this program is upcoming
   bool get isUpcoming => DateTime.now().isBefore(startTime);
-  
+
   /// Get the duration of the program
   Duration get duration => endTime.difference(startTime);
-  
+
   /// Get the progress percentage (0.0 - 1.0) if currently live
   double get progress {
     if (!isLive) return hasEnded ? 1.0 : 0.0;
@@ -70,7 +70,8 @@ class EpgEntry {
     final elapsed = now.difference(startTime);
     return elapsed.inSeconds / duration.inSeconds;
   }
-  
+
   @override
-  String toString() => 'EpgEntry(title: $title, start: $startTime, end: $endTime)';
+  String toString() =>
+      'EpgEntry(title: $title, start: $startTime, end: $endTime)';
 }

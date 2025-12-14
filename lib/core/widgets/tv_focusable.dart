@@ -5,7 +5,8 @@ import '../theme/app_theme.dart';
 /// A widget that provides D-Pad focus support for TV and desktop navigation
 class TVFocusable extends StatefulWidget {
   final Widget child;
-  final Widget Function(BuildContext context, bool isFocused, Widget child)? builder;
+  final Widget Function(BuildContext context, bool isFocused, Widget child)?
+      builder;
   final VoidCallback? onSelect;
   final VoidCallback? onFocus;
   final VoidCallback? onBlur;
@@ -19,7 +20,7 @@ class TVFocusable extends StatefulWidget {
   final double focusScale;
   final bool showFocusBorder;
   final BorderRadius? borderRadius;
-  
+
   const TVFocusable({
     super.key,
     required this.child,
@@ -43,7 +44,7 @@ class TVFocusable extends StatefulWidget {
   State<TVFocusable> createState() => _TVFocusableState();
 }
 
-class _TVFocusableState extends State<TVFocusable> 
+class _TVFocusableState extends State<TVFocusable>
     with SingleTickerProviderStateMixin {
   late FocusNode _focusNode;
   late AnimationController _animationController;
@@ -78,7 +79,7 @@ class _TVFocusableState extends State<TVFocusable>
 
   void _handleFocusChange(bool hasFocus) {
     setState(() => _isFocused = hasFocus);
-    
+
     if (hasFocus) {
       _animationController.forward();
       widget.onFocus?.call();
@@ -90,9 +91,9 @@ class _TVFocusableState extends State<TVFocusable>
 
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
-    
+
     final key = event.logicalKey;
-    
+
     // Handle selection
     if (key == LogicalKeyboardKey.select ||
         key == LogicalKeyboardKey.enter ||
@@ -100,7 +101,7 @@ class _TVFocusableState extends State<TVFocusable>
       widget.onSelect?.call();
       return KeyEventResult.handled;
     }
-    
+
     // Handle directional navigation callbacks
     if (key == LogicalKeyboardKey.arrowLeft && widget.onLeft != null) {
       widget.onLeft!();
@@ -118,7 +119,7 @@ class _TVFocusableState extends State<TVFocusable>
       widget.onDown!();
       return KeyEventResult.handled;
     }
-    
+
     return KeyEventResult.ignored;
   }
 
@@ -133,8 +134,8 @@ class _TVFocusableState extends State<TVFocusable>
       child: GestureDetector(
         onTap: widget.onSelect,
         child: MouseRegion(
-          cursor: widget.enabled 
-              ? SystemMouseCursors.click 
+          cursor: widget.enabled
+              ? SystemMouseCursors.click
               : SystemMouseCursors.basic,
           onEnter: (_) {
             if (!_focusNode.hasFocus && widget.enabled) {
@@ -147,7 +148,7 @@ class _TVFocusableState extends State<TVFocusable>
               final focusedChild = widget.builder != null
                   ? widget.builder!(context, _isFocused, widget.child)
                   : widget.child;
-              
+
               return Transform.scale(
                 scale: _scaleAnimation.value,
                 child: Container(
@@ -184,7 +185,7 @@ class _TVFocusableState extends State<TVFocusable>
 class TVFocusTraversalGroup extends StatelessWidget {
   final Widget child;
   final FocusTraversalPolicy? policy;
-  
+
   const TVFocusTraversalGroup({
     super.key,
     required this.child,
@@ -203,7 +204,6 @@ class TVFocusTraversalGroup extends StatelessWidget {
 /// Custom traversal policy optimized for grid layouts
 class GridTraversalPolicy extends ReadingOrderTraversalPolicy {
   final int crossAxisCount;
-  
+
   GridTraversalPolicy({required this.crossAxisCount});
 }
-

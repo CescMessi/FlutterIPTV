@@ -42,7 +42,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           Consumer<FavoritesProvider>(
             builder: (context, provider, _) {
               if (provider.favorites.isEmpty) return const SizedBox.shrink();
-              
+
               return IconButton(
                 icon: const Icon(Icons.delete_sweep_rounded),
                 onPressed: () => _confirmClearAll(context, provider),
@@ -61,17 +61,17 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               ),
             );
           }
-          
+
           if (provider.favorites.isEmpty) {
             return _buildEmptyState();
           }
-          
+
           return _buildFavoritesList(provider);
         },
       ),
     );
   }
-  
+
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -121,7 +121,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       ),
     );
   }
-  
+
   Widget _buildFavoritesList(FavoritesProvider provider) {
     return ReorderableListView.builder(
       padding: const EdgeInsets.all(20),
@@ -147,7 +147,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       },
       itemBuilder: (context, index) {
         final channel = provider.favorites[index];
-        
+
         return ReorderableDragStartListener(
           key: ValueKey(channel.id),
           index: index,
@@ -159,8 +159,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       },
     );
   }
-  
-  Widget _buildFavoriteCard(FavoritesProvider provider, dynamic channel, int index) {
+
+  Widget _buildFavoriteCard(
+      FavoritesProvider provider, dynamic channel, int index) {
     return TVFocusable(
       autofocus: index == 0,
       onSelect: () {
@@ -214,9 +215,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 ),
               ),
             ),
-            
+
             const SizedBox(width: 8),
-            
+
             // Channel Logo
             Container(
               width: 60,
@@ -239,9 +240,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     )
                   : null,
             ),
-            
+
             const SizedBox(width: 16),
-            
+
             // Channel Info
             Expanded(
               child: Column(
@@ -270,7 +271,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 ],
               ),
             ),
-            
+
             // Actions
             Row(
               mainAxisSize: MainAxisSize.min,
@@ -302,16 +303,17 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                
+
                 // Remove Button
                 TVFocusable(
                   onSelect: () async {
                     await provider.removeFavorite(channel.id!);
-                    
+
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Removed "${channel.name}" from favorites'),
+                          content:
+                              Text('Removed "${channel.name}" from favorites'),
                           action: SnackBarAction(
                             label: 'Undo',
                             onPressed: () => provider.addFavorite(channel),
@@ -340,7 +342,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       ),
     );
   }
-  
+
   void _confirmClearAll(BuildContext context, FavoritesProvider provider) {
     showDialog(
       context: context,
@@ -367,7 +369,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               onPressed: () async {
                 Navigator.pop(context);
                 await provider.clearFavorites();
-                
+
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(

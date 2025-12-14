@@ -15,7 +15,7 @@ class PlaylistManagerScreen extends StatefulWidget {
 class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _urlController = TextEditingController();
-  
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -48,9 +48,9 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
             children: [
               // Add Playlist Section
               _buildAddPlaylistSection(provider),
-              
+
               const Divider(color: AppTheme.cardColor, height: 1),
-              
+
               // Playlists List
               Expanded(
                 child: provider.playlists.isEmpty
@@ -63,7 +63,7 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
       ),
     );
   }
-  
+
   Widget _buildAddPlaylistSection(PlaylistProvider provider) {
     return Container(
       padding: const EdgeInsets.all(24),
@@ -85,7 +85,7 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Name Input
           TextField(
             controller: _nameController,
@@ -93,7 +93,8 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
             decoration: InputDecoration(
               hintText: 'Playlist Name',
               hintStyle: TextStyle(color: AppTheme.textMuted),
-              prefixIcon: const Icon(Icons.label_outline, color: AppTheme.textMuted),
+              prefixIcon:
+                  const Icon(Icons.label_outline, color: AppTheme.textMuted),
               filled: true,
               fillColor: AppTheme.cardColor,
               border: OutlineInputBorder(
@@ -102,12 +103,13 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
+                borderSide:
+                    const BorderSide(color: AppTheme.primaryColor, width: 2),
               ),
             ),
           ),
           const SizedBox(height: 12),
-          
+
           // URL Input
           TextField(
             controller: _urlController,
@@ -124,12 +126,13 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
+                borderSide:
+                    const BorderSide(color: AppTheme.primaryColor, width: 2),
               ),
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Action Buttons
           Row(
             children: [
@@ -137,7 +140,9 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
                 child: TVFocusable(
                   onSelect: () => _addPlaylist(provider),
                   child: ElevatedButton.icon(
-                    onPressed: provider.isLoading ? null : () => _addPlaylist(provider),
+                    onPressed: provider.isLoading
+                        ? null
+                        : () => _addPlaylist(provider),
                     icon: provider.isLoading
                         ? const SizedBox(
                             width: 18,
@@ -148,7 +153,8 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
                             ),
                           )
                         : const Icon(Icons.add_rounded, size: 20),
-                    label: Text(provider.isLoading ? 'Importing...' : 'Add from URL'),
+                    label: Text(
+                        provider.isLoading ? 'Importing...' : 'Add from URL'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primaryColor,
                       foregroundColor: Colors.white,
@@ -191,7 +197,7 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
               ),
             ],
           ),
-          
+
           // Progress Indicator
           if (provider.isLoading) ...[
             const SizedBox(height: 16),
@@ -214,7 +220,7 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
               textAlign: TextAlign.center,
             ),
           ],
-          
+
           // Error Message
           if (provider.error != null) ...[
             const SizedBox(height: 16),
@@ -257,7 +263,7 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
       ),
     );
   }
-  
+
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -297,7 +303,7 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
       ),
     );
   }
-  
+
   Widget _buildPlaylistsList(PlaylistProvider provider) {
     return ListView.builder(
       padding: const EdgeInsets.all(20),
@@ -308,7 +314,7 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
       },
     );
   }
-  
+
   Widget _buildPlaylistCard(PlaylistProvider provider, dynamic playlist) {
     return TVFocusable(
       onSelect: () => provider.setActivePlaylist(playlist),
@@ -316,7 +322,7 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
       showFocusBorder: false,
       builder: (context, isFocused, child) {
         final isActive = provider.activePlaylist?.id == playlist.id;
-        
+
         return AnimatedContainer(
           duration: AppTheme.animationFast,
           margin: const EdgeInsets.only(bottom: 12),
@@ -371,7 +377,7 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
             ),
           ),
           const SizedBox(width: 16),
-          
+
           // Info
           Expanded(
             child: Column(
@@ -433,7 +439,7 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
               ],
             ),
           ),
-          
+
           // Actions
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -458,11 +464,11 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
       ),
     );
   }
-  
+
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final diff = now.difference(date);
-    
+
     if (diff.inMinutes < 60) {
       return '${diff.inMinutes}m ago';
     } else if (diff.inHours < 24) {
@@ -473,11 +479,11 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
       return '${date.day}/${date.month}/${date.year}';
     }
   }
-  
+
   Future<void> _addPlaylist(PlaylistProvider provider) async {
     final name = _nameController.text.trim();
     final url = _urlController.text.trim();
-    
+
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -487,7 +493,7 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
       );
       return;
     }
-    
+
     if (url.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -497,25 +503,27 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
       );
       return;
     }
-    
+
     final playlist = await provider.addPlaylistFromUrl(name, url);
-    
+
     if (playlist != null && mounted) {
       _nameController.clear();
       _urlController.clear();
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Added "${playlist.name}" with ${playlist.channelCount} channels'),
+          content: Text(
+              'Added "${playlist.name}" with ${playlist.channelCount} channels'),
           backgroundColor: AppTheme.successColor,
         ),
       );
     }
   }
-  
-  Future<void> _refreshPlaylist(PlaylistProvider provider, dynamic playlist) async {
+
+  Future<void> _refreshPlaylist(
+      PlaylistProvider provider, dynamic playlist) async {
     final success = await provider.refreshPlaylist(playlist);
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -524,12 +532,13 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
                 ? 'Playlist refreshed successfully'
                 : 'Failed to refresh playlist',
           ),
-          backgroundColor: success ? AppTheme.successColor : AppTheme.errorColor,
+          backgroundColor:
+              success ? AppTheme.successColor : AppTheme.errorColor,
         ),
       );
     }
   }
-  
+
   void _confirmDelete(PlaylistProvider provider, dynamic playlist) {
     showDialog(
       context: context,
@@ -556,7 +565,7 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
               onPressed: () async {
                 Navigator.pop(context);
                 await provider.deletePlaylist(playlist.id);
-                
+
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(

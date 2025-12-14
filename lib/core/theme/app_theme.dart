@@ -5,38 +5,38 @@ class AppTheme {
   static const Color primaryColor = Color(0xFF6366F1);
   static const Color primaryLight = Color(0xFF818CF8);
   static const Color primaryDark = Color(0xFF4F46E5);
-  
+
   static const Color secondaryColor = Color(0xFF10B981);
   static const Color accentColor = Color(0xFFF59E0B);
-  
+
   // Background Colors
   static const Color backgroundColor = Color(0xFF0F0F23);
   static const Color surfaceColor = Color(0xFF1A1A2E);
   static const Color cardColor = Color(0xFF16213E);
   static const Color cardHoverColor = Color(0xFF1E2A47);
-  
+
   // Text Colors
   static const Color textPrimary = Color(0xFFFFFFFF);
   static const Color textSecondary = Color(0xFFB4B4C7);
   static const Color textMuted = Color(0xFF6B6B80);
-  
+
   // Focus Colors (for TV navigation)
   static const Color focusColor = Color(0xFF6366F1);
   static const Color focusBorderColor = Color(0xFF818CF8);
-  
+
   // Status Colors
   static const Color successColor = Color(0xFF10B981);
   static const Color errorColor = Color(0xFFEF4444);
   static const Color warningColor = Color(0xFFF59E0B);
   static const Color infoColor = Color(0xFF3B82F6);
-  
+
   // Gradients
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [primaryColor, primaryDark],
   );
-  
+
   static const LinearGradient cardGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
@@ -45,7 +45,7 @@ class AppTheme {
       Color(0xFF16213E),
     ],
   );
-  
+
   static const LinearGradient overlayGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
@@ -54,25 +54,25 @@ class AppTheme {
       Color(0xCC000000),
     ],
   );
-  
+
   // Border Radius
   static const double radiusSmall = 8.0;
   static const double radiusMedium = 12.0;
   static const double radiusLarge = 16.0;
   static const double radiusXLarge = 24.0;
-  
+
   // Spacing
   static const double spacingXSmall = 4.0;
   static const double spacingSmall = 8.0;
   static const double spacingMedium = 16.0;
   static const double spacingLarge = 24.0;
   static const double spacingXLarge = 32.0;
-  
+
   // Animation Durations
   static const Duration animationFast = Duration(milliseconds: 150);
   static const Duration animationNormal = Duration(milliseconds: 300);
   static const Duration animationSlow = Duration(milliseconds: 500);
-  
+
   // Dark Theme
   static ThemeData get darkTheme {
     return ThemeData(
@@ -228,7 +228,8 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: surfaceColor,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMedium),
           borderSide: BorderSide.none,

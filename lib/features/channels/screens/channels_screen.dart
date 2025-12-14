@@ -11,7 +11,7 @@ import '../../favorites/providers/favorites_provider.dart';
 
 class ChannelsScreen extends StatefulWidget {
   final String? groupName;
-  
+
   const ChannelsScreen({
     super.key,
     this.groupName,
@@ -24,17 +24,17 @@ class ChannelsScreen extends StatefulWidget {
 class _ChannelsScreenState extends State<ChannelsScreen> {
   String? _selectedGroup;
   final ScrollController _scrollController = ScrollController();
-  
+
   @override
   void initState() {
     super.initState();
     _selectedGroup = widget.groupName;
-    
+
     if (_selectedGroup != null) {
       context.read<ChannelProvider>().selectGroup(_selectedGroup!);
     }
   }
-  
+
   @override
   void dispose() {
     _scrollController.dispose();
@@ -45,14 +45,14 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isTV = PlatformDetector.isTV || size.width > 1200;
-    
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: Row(
         children: [
           // Groups Sidebar (for TV and Desktop)
           if (isTV) _buildGroupsSidebar(),
-          
+
           // Channels Grid
           Expanded(
             child: _buildChannelsContent(),
@@ -61,7 +61,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
       ),
     );
   }
-  
+
   Widget _buildGroupsSidebar() {
     return Consumer<ChannelProvider>(
       builder: (context, provider, _) {
@@ -121,10 +121,11 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                   ],
                 ),
               ),
-              
+
               // All Channels Option
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 child: _buildGroupItem(
                   name: 'All Channels',
                   count: provider.totalChannelCount,
@@ -135,13 +136,14 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                   },
                 ),
               ),
-              
+
               const Divider(color: AppTheme.cardColor, height: 1),
-              
+
               // Groups List
               Expanded(
                 child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   itemCount: provider.groups.length,
                   itemBuilder: (context, index) {
                     final group = provider.groups[index];
@@ -163,7 +165,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
       },
     );
   }
-  
+
   Widget _buildGroupItem({
     required String name,
     required int count,
@@ -204,12 +206,13 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                   width: 4,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: isSelected ? AppTheme.primaryColor : Colors.transparent,
+                    color:
+                        isSelected ? AppTheme.primaryColor : Colors.transparent,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
                 const SizedBox(width: 12),
-                
+
                 // Name
                 Expanded(
                   child: Text(
@@ -219,16 +222,18 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                           ? AppTheme.primaryColor
                           : AppTheme.textPrimary,
                       fontSize: 14,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.normal,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                
+
                 // Count badge
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: isSelected
                         ? AppTheme.primaryColor.withOpacity(0.2)
@@ -254,14 +259,15 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
       ),
     );
   }
-  
+
   Widget _buildChannelsContent() {
     return Consumer<ChannelProvider>(
       builder: (context, provider, _) {
         final channels = provider.filteredChannels;
         final size = MediaQuery.of(context).size;
-        final crossAxisCount = PlatformDetector.getGridCrossAxisCount(size.width);
-        
+        final crossAxisCount =
+            PlatformDetector.getGridCrossAxisCount(size.width);
+
         return CustomScrollView(
           controller: _scrollController,
           slivers: [
@@ -281,7 +287,8 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                 // Channel count
                 Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     margin: const EdgeInsets.only(right: 16),
                     decoration: BoxDecoration(
                       color: AppTheme.surfaceColor,
@@ -299,7 +306,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                 ),
               ],
             ),
-            
+
             // Channels Grid
             if (channels.isEmpty)
               SliverFillRemaining(
@@ -337,9 +344,10 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
                       final channel = channels[index];
-                      final isFavorite = context.read<FavoritesProvider>()
+                      final isFavorite = context
+                          .read<FavoritesProvider>()
                           .isFavorite(channel.id ?? 0);
-                      
+
                       return ChannelCard(
                         name: channel.name,
                         logoUrl: channel.logoUrl,
@@ -357,7 +365,8 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                             },
                           );
                         },
-                        onLongPress: () => _showChannelOptions(context, channel),
+                        onLongPress: () =>
+                            _showChannelOptions(context, channel),
                       );
                     },
                     childCount: channels.length,
@@ -369,11 +378,11 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
       },
     );
   }
-  
+
   void _showChannelOptions(BuildContext context, dynamic channel) {
     final favoritesProvider = context.read<FavoritesProvider>();
     final isFavorite = favoritesProvider.isFavorite(channel.id ?? 0);
-    
+
     showModalBottomSheet(
       context: context,
       backgroundColor: AppTheme.surfaceColor,
@@ -396,12 +405,14 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Options
               ListTile(
                 leading: Icon(
                   isFavorite ? Icons.favorite : Icons.favorite_border,
-                  color: isFavorite ? AppTheme.accentColor : AppTheme.textSecondary,
+                  color: isFavorite
+                      ? AppTheme.accentColor
+                      : AppTheme.textSecondary,
                 ),
                 title: Text(
                   isFavorite ? 'Remove from Favorites' : 'Add to Favorites',
@@ -412,7 +423,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                   Navigator.pop(context);
                 },
               ),
-              
+
               ListTile(
                 leading: const Icon(
                   Icons.info_outline_rounded,
@@ -427,7 +438,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                   // Show channel info dialog
                 },
               ),
-              
+
               const SizedBox(height: 16),
             ],
           ),

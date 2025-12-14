@@ -20,7 +20,7 @@ class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
-  
+
   @override
   void initState() {
     super.initState();
@@ -31,7 +31,7 @@ class _SearchScreenState extends State<SearchScreen> {
       });
     }
   }
-  
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -47,7 +47,7 @@ class _SearchScreenState extends State<SearchScreen> {
         children: [
           // Search Header
           _buildSearchHeader(),
-          
+
           // Results
           Expanded(
             child: _buildSearchResults(),
@@ -56,7 +56,7 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
     );
   }
-  
+
   Widget _buildSearchHeader() {
     return Container(
       padding: EdgeInsets.only(
@@ -94,9 +94,9 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
             ),
           ),
-          
+
           const SizedBox(width: 16),
-          
+
           // Search Field
           Expanded(
             child: Container(
@@ -147,25 +147,25 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
     );
   }
-  
+
   Widget _buildSearchResults() {
     return Consumer<ChannelProvider>(
       builder: (context, provider, _) {
         if (_searchQuery.isEmpty) {
           return _buildEmptySearch();
         }
-        
+
         final results = provider.searchChannels(_searchQuery);
-        
+
         if (results.isEmpty) {
           return _buildNoResults();
         }
-        
+
         return _buildResultsGrid(results);
       },
     );
   }
-  
+
   Widget _buildEmptySearch() {
     return Center(
       child: Column(
@@ -201,7 +201,7 @@ class _SearchScreenState extends State<SearchScreen> {
               fontSize: 14,
             ),
           ),
-          
+
           // Recent Searches (placeholder)
           const SizedBox(height: 40),
           if (PlatformDetector.useDPadNavigation) ...[
@@ -217,7 +217,8 @@ class _SearchScreenState extends State<SearchScreen> {
             Wrap(
               spacing: 12,
               runSpacing: 12,
-              children: ['Sports', 'Movies', 'News', 'Music', 'Kids'].map((category) {
+              children:
+                  ['Sports', 'Movies', 'News', 'Music', 'Kids'].map((category) {
                 return TVFocusable(
                   onSelect: () {
                     _searchController.text = category;
@@ -239,7 +240,7 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
     );
   }
-  
+
   Widget _buildNoResults() {
     return Center(
       child: Column(
@@ -271,11 +272,11 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
     );
   }
-  
+
   Widget _buildResultsGrid(List<dynamic> results) {
     final size = MediaQuery.of(context).size;
     final crossAxisCount = PlatformDetector.getGridCrossAxisCount(size.width);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -290,7 +291,7 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
         ),
-        
+
         // Results Grid
         Expanded(
           child: GridView.builder(
@@ -304,9 +305,9 @@ class _SearchScreenState extends State<SearchScreen> {
             itemCount: results.length,
             itemBuilder: (context, index) {
               final channel = results[index];
-              final isFavorite = context.read<FavoritesProvider>()
-                  .isFavorite(channel.id ?? 0);
-              
+              final isFavorite =
+                  context.read<FavoritesProvider>().isFavorite(channel.id ?? 0);
+
               return ChannelCard(
                 name: channel.name,
                 logoUrl: channel.logoUrl,

@@ -21,15 +21,15 @@ class AppRouter {
   static const String search = '/search';
   static const String settings = '/settings';
   static const String epg = '/epg';
-  
+
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case splash:
         return _buildRoute(const SplashScreen(), settings);
-      
+
       case home:
         return _buildRoute(const HomeScreen(), settings);
-      
+
       case player:
         final args = settings.arguments as Map<String, dynamic>?;
         return _buildRoute(
@@ -40,7 +40,7 @@ class AppRouter {
           ),
           settings,
         );
-      
+
       case channels:
         final args = settings.arguments as Map<String, dynamic>?;
         return _buildRoute(
@@ -49,19 +49,19 @@ class AppRouter {
           ),
           settings,
         );
-      
+
       case playlistManager:
         return _buildRoute(const PlaylistManagerScreen(), settings);
-      
+
       case favorites:
         return _buildRoute(const FavoritesScreen(), settings);
-      
+
       case search:
         return _buildRoute(const SearchScreen(), settings);
-      
+
       case AppRouter.settings:
         return _buildRoute(const SettingsScreen(), settings);
-      
+
       case epg:
         final args = settings.arguments as Map<String, dynamic>?;
         return _buildRoute(
@@ -70,7 +70,7 @@ class AppRouter {
           ),
           settings,
         );
-      
+
       default:
         return _buildRoute(
           Scaffold(
@@ -82,7 +82,7 @@ class AppRouter {
         );
     }
   }
-  
+
   static PageRouteBuilder _buildRoute(Widget page, RouteSettings settings) {
     return PageRouteBuilder(
       settings: settings,
@@ -91,11 +91,11 @@ class AppRouter {
         const begin = Offset(1.0, 0.0);
         const end = Offset.zero;
         const curve = Curves.easeInOutCubic;
-        
+
         var tween = Tween(begin: begin, end: end).chain(
           CurveTween(curve: curve),
         );
-        
+
         return SlideTransition(
           position: animation.drive(tween),
           child: FadeTransition(

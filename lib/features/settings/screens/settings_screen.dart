@@ -39,7 +39,8 @@ class SettingsScreen extends StatelessWidget {
                 _buildSwitchTile(
                   context,
                   title: 'Auto-play',
-                  subtitle: 'Automatically start playback when selecting a channel',
+                  subtitle:
+                      'Automatically start playback when selecting a channel',
                   icon: Icons.play_circle_outline_rounded,
                   value: settings.autoPlay,
                   onChanged: (value) => settings.setAutoPlay(value),
@@ -62,9 +63,9 @@ class SettingsScreen extends StatelessWidget {
                   onTap: () => _showBufferSizeDialog(context, settings),
                 ),
               ]),
-              
+
               const SizedBox(height: 24),
-              
+
               // Playlist Settings
               _buildSectionHeader('Playlists'),
               _buildSettingsCard([
@@ -96,9 +97,9 @@ class SettingsScreen extends StatelessWidget {
                   onChanged: (value) => settings.setRememberLastChannel(value),
                 ),
               ]),
-              
+
               const SizedBox(height: 24),
-              
+
               // EPG Settings
               _buildSectionHeader('EPG (Electronic Program Guide)'),
               _buildSettingsCard([
@@ -121,9 +122,9 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ],
               ]),
-              
+
               const SizedBox(height: 24),
-              
+
               // Parental Control
               _buildSectionHeader('Parental Control'),
               _buildSettingsCard([
@@ -146,9 +147,9 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ],
               ]),
-              
+
               const SizedBox(height: 24),
-              
+
               // About Section
               _buildSectionHeader('About'),
               _buildSettingsCard([
@@ -166,9 +167,9 @@ class SettingsScreen extends StatelessWidget {
                   icon: Icons.devices_rounded,
                 ),
               ]),
-              
+
               const SizedBox(height: 24),
-              
+
               // Reset Section
               _buildSettingsCard([
                 _buildActionTile(
@@ -180,7 +181,7 @@ class SettingsScreen extends StatelessWidget {
                   onTap: () => _confirmResetSettings(context, settings),
                 ),
               ]),
-              
+
               const SizedBox(height: 40),
             ],
           );
@@ -188,14 +189,14 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
-  
+
   String _getPlatformName() {
     if (PlatformDetector.isTV) return 'Android TV';
     if (PlatformDetector.isAndroid) return 'Android';
     if (PlatformDetector.isWindows) return 'Windows';
     return 'Unknown';
   }
-  
+
   Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 12),
@@ -210,7 +211,7 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildSettingsCard(List<Widget> children) {
     return Container(
       decoration: BoxDecoration(
@@ -222,7 +223,7 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildDivider() {
     return const Divider(
       color: AppTheme.cardColor,
@@ -230,7 +231,7 @@ class SettingsScreen extends StatelessWidget {
       indent: 56,
     );
   }
-  
+
   Widget _buildSwitchTile(
     BuildContext context, {
     required String title,
@@ -298,7 +299,7 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildSelectTile(
     BuildContext context, {
     required String title,
@@ -367,7 +368,7 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildInputTile(
     BuildContext context, {
     required String title,
@@ -383,7 +384,7 @@ class SettingsScreen extends StatelessWidget {
       onTap: onTap,
     );
   }
-  
+
   Widget _buildActionTile(
     BuildContext context, {
     required String title,
@@ -418,13 +419,17 @@ class SettingsScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: (isDestructive ? AppTheme.errorColor : AppTheme.primaryColor)
+                  color: (isDestructive
+                          ? AppTheme.errorColor
+                          : AppTheme.primaryColor)
                       .withOpacity(0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   icon,
-                  color: isDestructive ? AppTheme.errorColor : AppTheme.primaryColor,
+                  color: isDestructive
+                      ? AppTheme.errorColor
+                      : AppTheme.primaryColor,
                   size: 20,
                 ),
               ),
@@ -460,7 +465,7 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildInfoTile(
     BuildContext context, {
     required String title,
@@ -500,10 +505,10 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
-  
+
   void _showBufferSizeDialog(BuildContext context, SettingsProvider settings) {
     final options = [10, 20, 30, 45, 60];
-    
+
     showDialog(
       context: context,
       builder: (context) {
@@ -537,10 +542,11 @@ class SettingsScreen extends StatelessWidget {
       },
     );
   }
-  
-  void _showRefreshIntervalDialog(BuildContext context, SettingsProvider settings) {
+
+  void _showRefreshIntervalDialog(
+      BuildContext context, SettingsProvider settings) {
     final options = [6, 12, 24, 48, 72];
-    
+
     showDialog(
       context: context,
       builder: (context) {
@@ -555,7 +561,9 @@ class SettingsScreen extends StatelessWidget {
             children: options.map((hours) {
               return RadioListTile<int>(
                 title: Text(
-                  hours < 24 ? '$hours hours' : '${hours ~/ 24} day${hours > 24 ? 's' : ''}',
+                  hours < 24
+                      ? '$hours hours'
+                      : '${hours ~/ 24} day${hours > 24 ? 's' : ''}',
                   style: const TextStyle(color: AppTheme.textPrimary),
                 ),
                 value: hours,
@@ -574,10 +582,10 @@ class SettingsScreen extends StatelessWidget {
       },
     );
   }
-  
+
   void _showEpgUrlDialog(BuildContext context, SettingsProvider settings) {
     final controller = TextEditingController(text: settings.epgUrl);
-    
+
     showDialog(
       context: context,
       builder: (context) {
@@ -614,10 +622,10 @@ class SettingsScreen extends StatelessWidget {
       },
     );
   }
-  
+
   void _showChangePinDialog(BuildContext context, SettingsProvider settings) {
     final controller = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) {
@@ -657,7 +665,7 @@ class SettingsScreen extends StatelessWidget {
       },
     );
   }
-  
+
   void _confirmResetSettings(BuildContext context, SettingsProvider settings) {
     showDialog(
       context: context,
