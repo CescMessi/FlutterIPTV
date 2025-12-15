@@ -134,6 +134,7 @@ class LocalServerService {
   }
 
   /// Get the local IP address
+  /// Tries to find the most likely usable LAN IP using a scoring mechanism
   Future<String?> _getLocalIpAddress() async {
     try {
       final interfaces = await NetworkInterface.list(
@@ -141,16 +142,77 @@ class LocalServerService {
         includeLinkLocal: false,
       );
 
+      NetworkInterface? bestInterface;
+      int bestScore = -1000;
+
       for (var interface in interfaces) {
+        int score = 0;
+        final name = interface.name.toLowerCase();
+
+        // Penalize virtual interfaces
+        if (name.contains('vethernet') ||
+            name.contains('virtual') ||
+            name.contains('wsl') ||
+            name.contains('docker') ||
+            name.contains('bridge') ||
+            name.contains('vmware') ||
+            name.contains('box') ||
+            name.contains('pseudo') ||
+            name.contains('host-only') ||
+            name.contains('tap') ||
+            name.contains('tun')) {
+          score -= 100;
+        }
+
+        // Bonus for known physical interface names
+        if (name.contains('wi-fi') || name.contains('wlan')) score += 50;
+        if (name.contains('ethernet') ||
+            name.contains('以太网') ||
+            name.contains('本地连接')) score += 40;
+
+        // Find the first IPv4 address
+        String? ip;
         for (var addr in interface.addresses) {
-          // Skip loopback
+          if (!addr.isLoopback) {
+            ip = addr.address;
+            break;
+          }
+        }
+
+        if (ip == null) continue;
+
+        // Bonus for standard LAN ranges
+        if (ip.startsWith('192.168.'))
+          score += 20;
+        else if (ip.startsWith('10.'))
+          score += 10;
+        else if (ip.startsWith('172.')) {
+          // Check Class B private range 172.16.0.0 - 172.31.255.255
+          try {
+            final secondPart = int.parse(ip.split('.')[1]);
+            if (secondPart >= 16 && secondPart <= 31) score += 15;
+          } catch (_) {}
+        }
+
+        print('Interface: ${interface.name}, IP: $ip, Score: $score');
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestInterface = interface;
+        }
+      }
+
+      if (bestInterface != null) {
+        for (var addr in bestInterface.addresses) {
           if (!addr.isLoopback) {
             return addr.address;
           }
         }
       }
+
       return null;
     } catch (e) {
+      print('Error getting local IP: $e');
       return null;
     }
   }
