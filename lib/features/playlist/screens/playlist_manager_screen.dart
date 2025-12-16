@@ -8,6 +8,7 @@ import 'package:flutter_iptv/features/playlist/widgets/qr_import_dialog.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/tv_focusable.dart';
 import '../../../core/i18n/app_strings.dart';
+import '../../../core/platform/platform_detector.dart';
 import '../providers/playlist_provider.dart';
 import '../../channels/providers/channel_provider.dart';
 import '../../favorites/providers/favorites_provider.dart';
@@ -131,67 +132,81 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
             ),
             const SizedBox(height: 12),
 
-            // URL Input - Order 2
-            FocusTraversalOrder(
-              order: const NumericFocusOrder(2),
-              child: _buildFocusableTextField(
-                controller: _urlController,
-                focusNode: _urlFocusNode,
-                hintText: AppStrings.of(context)?.playlistUrl ?? 'M3U/M3U8 URL',
-                prefixIcon: Icons.link,
+            // URL Input and Add from URL Button - Only show for PC and Android Mobile
+            if (!PlatformDetector.isTV) ...[
+              // URL Input - Order 2
+              FocusTraversalOrder(
+                order: const NumericFocusOrder(2),
+                child: _buildFocusableTextField(
+                  controller: _urlController,
+                  focusNode: _urlFocusNode,
+                  hintText: AppStrings.of(context)?.playlistUrl ?? 'M3U/M3U8 URL',
+                  prefixIcon: Icons.link,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // Action Buttons Row
-            // Action Buttons Row
-            Row(
-              children: [
-                // Add from URL Button - Order 3
-                Expanded(
-                  child: FocusTraversalOrder(
-                    order: const NumericFocusOrder(3),
-                    child: _buildActionButton(
-                      onPressed: provider.isLoading
-                          ? null
-                          : () => _addPlaylist(provider),
-                      icon: provider.isLoading
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(Icons.add_rounded, size: 20),
-                      label: provider.isLoading
-                          ? (AppStrings.of(context)?.importing ??
-                              'Importing...')
-                          : (AppStrings.of(context)?.addFromUrl ??
-                              'Add from URL'),
-                      isPrimary: true,
+              // Action Buttons Row
+              Row(
+                children: [
+                  // Add from URL Button - Order 3
+                  Expanded(
+                    child: FocusTraversalOrder(
+                      order: const NumericFocusOrder(3),
+                      child: _buildActionButton(
+                        onPressed: provider.isLoading
+                            ? null
+                            : () => _addPlaylist(provider),
+                        icon: provider.isLoading
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.add_rounded, size: 20),
+                        label: provider.isLoading
+                            ? (AppStrings.of(context)?.importing ??
+                                'Importing...')
+                            : (AppStrings.of(context)?.addFromUrl ??
+                                'Add from URL'),
+                        isPrimary: true,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                // From File Button - Order 4
-                FocusTraversalOrder(
-                  order: const NumericFocusOrder(4),
-                  child: _buildActionButton(
-                    onPressed: () => _pickFile(provider),
-                    icon: const Icon(Icons.folder_open_rounded, size: 20),
-                    label: AppStrings.of(context)?.fromFile ?? 'From File',
-                    isPrimary: false,
+                  const SizedBox(width: 12),
+                  // From File Button - Order 4
+                  FocusTraversalOrder(
+                    order: const NumericFocusOrder(4),
+                    child: _buildActionButton(
+                      onPressed: () => _pickFile(provider),
+                      icon: const Icon(Icons.folder_open_rounded, size: 20),
+                      label: AppStrings.of(context)?.fromFile ?? 'From File',
+                      isPrimary: false,
+                    ),
                   ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ] else ...[
+              // For Android TV, only show file import button as primary
+              FocusTraversalOrder(
+                order: const NumericFocusOrder(2),
+                child: _buildActionButton(
+                  onPressed: () => _pickFile(provider),
+                  icon: const Icon(Icons.folder_open_rounded, size: 20),
+                  label: AppStrings.of(context)?.fromFile ?? 'From File',
+                  isPrimary: true,
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
+              ),
+              const SizedBox(height: 12),
+            ],
 
-            // Scan QR Code Button - Order 5
+            // Scan QR Code Button - Available for all platforms
             FocusTraversalOrder(
-              order: const NumericFocusOrder(5),
+              order: PlatformDetector.isTV ? const NumericFocusOrder(3) : const NumericFocusOrder(5),
               child: _buildActionButton(
                 onPressed: () => _showQrImportDialog(context),
                 icon: const Icon(Icons.qr_code_scanner_rounded, size: 20),
@@ -416,6 +431,11 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
   }
 
   Widget _buildEmptyState() {
+    final platformText = PlatformDetector.isTV
+        ? '添加您的第一个M3U播放列表\n您可以通过USB设备导入或使用手机扫码导入'
+        : (AppStrings.of(context)?.addFirstPlaylist ??
+            'Add your first M3U playlist above');
+            
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -444,12 +464,12 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            AppStrings.of(context)?.addFirstPlaylist ??
-                'Add your first M3U playlist above',
+            platformText,
             style: const TextStyle(
               color: AppTheme.textSecondary,
               fontSize: 14,
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -786,6 +806,16 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
 
   Future<void> _pickFile(PlaylistProvider provider) async {
     try {
+      // For Android TV, show a more user-friendly message
+      if (PlatformDetector.isTV) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('请在文件管理器中选择M3U/M3U8文件'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['m3u', 'm3u8'],
@@ -824,6 +854,16 @@ class _PlaylistManagerScreenState extends State<PlaylistManagerScreen> {
               SnackBar(content: Text('Error: $e')),
             );
           }
+        }
+      } else if (PlatformDetector.isTV) {
+        // For Android TV, show additional help if no file was selected
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('未选择文件。请确保您的设备已连接USB存储设备或已配置网络存储。'),
+              duration: Duration(seconds: 4),
+            ),
+          );
         }
       }
     } catch (e) {
