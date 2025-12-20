@@ -25,17 +25,26 @@ class LocalServerService {
       // Get local IP address
       _localIp = await _getLocalIpAddress();
       if (_localIp == null) {
+        debugPrint('LocalServer: 无法获取本地IP地址');
         return false;
       }
 
-      // Start HTTP server
-      _server = await HttpServer.bind(InternetAddress.anyIPv4, _port);
+      debugPrint('LocalServer: 本地IP地址: $_localIp');
+      debugPrint('LocalServer: 尝试在端口 $_port 启动服务器...');
 
-      _server!.listen(_handleRequest);
+      // Start HTTP server - bind to all interfaces
+      _server = await HttpServer.bind(InternetAddress.anyIPv4, _port, shared: true);
+
+      debugPrint('LocalServer: 服务器已启动，监听地址: ${_server!.address.address}:${_server!.port}');
+      debugPrint('LocalServer: 访问地址: http://$_localIp:$_port');
+
+      _server!.listen(_handleRequest, onError: (e) {
+        debugPrint('LocalServer: 请求处理错误: $e');
+      });
 
       return true;
     } catch (e) {
-      debugPrint('Failed to start local server: $e');
+      debugPrint('LocalServer: 启动失败: $e');
       return false;
     }
   }

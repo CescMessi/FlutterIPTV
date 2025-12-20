@@ -90,7 +90,7 @@ class AppTheme {
         onSurface: textPrimary,
         onError: Colors.white,
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: cardColor,
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -248,7 +248,7 @@ class AppTheme {
         ),
         hintStyle: const TextStyle(color: textMuted),
       ),
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: surfaceColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radiusLarge),
@@ -274,7 +274,7 @@ class AppTheme {
         activeTrackColor: primaryColor,
         inactiveTrackColor: surfaceColor,
         thumbColor: primaryColor,
-        overlayColor: primaryColor.withOpacity(0.2),
+        overlayColor: primaryColor.withAlpha(51),
         trackHeight: 4,
       ),
     );
@@ -293,7 +293,7 @@ class TVFocusDecoration extends BoxDecoration {
           boxShadow: focused
               ? [
                   BoxShadow(
-                    color: AppTheme.focusColor.withOpacity(0.4),
+                    color: AppTheme.focusColor.withAlpha(102),
                     blurRadius: 12,
                     spreadRadius: 2,
                   ),

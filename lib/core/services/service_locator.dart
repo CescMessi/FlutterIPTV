@@ -26,7 +26,7 @@ class ServiceLocator {
     _prefs = await SharedPreferences.getInstance();
 
     // Detect platform
-    PlatformDetector.init();
+    await PlatformDetector.init();
   }
 
   static Future<void> initDatabase() async {

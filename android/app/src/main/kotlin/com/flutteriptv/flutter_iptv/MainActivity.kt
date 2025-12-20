@@ -1,7 +1,6 @@
 package com.flutteriptv.flutter_iptv
 
 import android.content.res.Configuration
-import android.os.Bundle
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel

@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 /// Detects the current platform and provides platform-specific helpers
 class PlatformDetector {
   static late PlatformType _currentPlatform;
   static bool _isTV = false;
+  static const _channel = MethodChannel('com.flutteriptv/platform');
 
   static PlatformType get currentPlatform => _currentPlatform;
   static bool get isTV => _isTV;
@@ -23,12 +25,12 @@ class PlatformDetector {
   /// Whether touch input is the primary input method
   static bool get useTouchInput => isMobile;
 
-  static void init() {
+  static Future<void> init() async {
     if (kIsWeb) {
       _currentPlatform = PlatformType.web;
     } else if (Platform.isAndroid) {
       _currentPlatform = PlatformType.android;
-      _detectAndroidTV();
+      await _detectAndroidTV();
     } else if (Platform.isWindows) {
       _currentPlatform = PlatformType.windows;
     } else if (Platform.isIOS) {
@@ -42,16 +44,30 @@ class PlatformDetector {
     }
   }
 
-  static void _detectAndroidTV() {
-    // Android TV detection will be done via platform channel
-    // For now, we'll check environment or use a flag
-    // This can be enhanced with actual Android TV detection
-    _isTV = const bool.fromEnvironment('IS_TV', defaultValue: false);
+  static Future<void> _detectAndroidTV() async {
+    // First check compile-time flag
+    const envIsTV = bool.fromEnvironment('IS_TV', defaultValue: false);
+    if (envIsTV) {
+      _isTV = true;
+      debugPrint('PlatformDetector: TV mode enabled via IS_TV flag');
+      return;
+    }
+
+    // Then try to detect via platform channel
+    try {
+      final result = await _channel.invokeMethod<bool>('isTV');
+      _isTV = result ?? false;
+      debugPrint('PlatformDetector: TV detection via channel: $_isTV');
+    } catch (e) {
+      debugPrint('PlatformDetector: Failed to detect TV via channel: $e');
+      _isTV = false;
+    }
   }
 
   /// Force TV mode (useful for testing)
   static void setTVMode(bool isTV) {
     _isTV = isTV;
+    debugPrint('PlatformDetector: TV mode manually set to: $isTV');
   }
 
   /// Get appropriate grid count based on platform

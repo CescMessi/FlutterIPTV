@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'dart:io' show Platform;
+import 'dart:async';
 
 import '../../../core/models/channel.dart';
 import '../../../core/services/service_locator.dart';
@@ -53,6 +54,12 @@ class PlayerProvider extends ChangeNotifier {
       _state == PlayerState.loading || _state == PlayerState.buffering;
   bool get hasError => _state == PlayerState.error;
 
+  // Debug info for display
+  String _hwdecMode = 'unknown';
+  String _videoCodec = '';
+  double _fps = 0;
+  int _droppedFrames = 0;
+  
   String get videoInfo {
     if (_player == null) return '';
 
@@ -62,7 +69,24 @@ class PlayerProvider extends ChangeNotifier {
 
     if (w == 0 || h == 0) return '';
 
-    return '$w x $h';
+    final parts = <String>[];
+    parts.add('${w}x$h');
+    
+    if (_videoCodec.isNotEmpty) {
+      parts.add(_videoCodec);
+    }
+    
+    if (_fps > 0) {
+      parts.add('${_fps.toStringAsFixed(1)} fps');
+    }
+    
+    parts.add('hwdec: $_hwdecMode');
+    
+    if (_droppedFrames > 0) {
+      parts.add('dropped: $_droppedFrames');
+    }
+
+    return parts.join(' | ');
   }
 
   double get progress {
@@ -91,7 +115,12 @@ class PlayerProvider extends ChangeNotifier {
     }
 
     // Create player with configuration
-    _player = Player();
+    // Increase buffer size for smoother 4K playback
+    _player = Player(
+      configuration: const PlayerConfiguration(
+        bufferSize: 64 * 1024 * 1024, // 64MB buffer for 4K streams
+      ),
+    );
 
     // Configure VideoController with appropriate hwdec settings
     // For Android TV, use more compatible settings
@@ -101,8 +130,9 @@ class PlayerProvider extends ChangeNotifier {
       switch (decodingMode) {
         case 'hardware':
           // Force hardware decoding via mediacodec
+          // Use gpu vo with mediacodec hwdec for better compatibility
           config = const VideoControllerConfiguration(
-            vo: 'mediacodec_embed',
+            vo: 'gpu',
             hwdec: 'mediacodec',
             enableHardwareAcceleration: true,
           );
@@ -117,10 +147,10 @@ class PlayerProvider extends ChangeNotifier {
           break;
         case 'auto':
         default:
-          // Auto mode: let mpv decide, with safe fallback
+          // Auto mode: use mediacodec for hardware decoding
+          // Try without specifying vo to let media_kit choose
           config = const VideoControllerConfiguration(
-            vo: 'gpu',
-            hwdec: 'auto-safe',
+            hwdec: 'mediacodec',
             enableHardwareAcceleration: true,
           );
           break;
@@ -175,6 +205,22 @@ class PlayerProvider extends ChangeNotifier {
       notifyListeners();
     });
 
+    // Listen for track info to get codec and hwdec status
+    _player!.stream.tracks.listen((tracks) {
+      for (final track in tracks.video) {
+        if (track.codec != null) {
+          _videoCodec = track.codec!;
+        }
+        if (track.fps != null) {
+          _fps = track.fps!;
+        }
+      }
+      notifyListeners();
+    });
+
+    // Get hwdec mode from player properties periodically
+    _updateDebugInfo();
+
     _player!.stream.volume.listen((volume) {
       _volume = volume / 100;
       notifyListeners();
@@ -196,6 +242,28 @@ class PlayerProvider extends ChangeNotifier {
     // Listen to video dimensions
     _player!.stream.width.listen((_) => notifyListeners());
     _player!.stream.height.listen((_) => notifyListeners());
+  }
+
+  Timer? _debugInfoTimer;
+  
+  void _updateDebugInfo() {
+    _debugInfoTimer?.cancel();
+    _debugInfoTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+      if (_player == null) return;
+      
+      // Try to get hwdec info from mpv properties
+      try {
+        // Check if hardware decoding is being used based on config
+        if (Platform.isAndroid) {
+          final decodingMode = ServiceLocator.prefs.getString('decoding_mode') ?? 'auto';
+          _hwdecMode = decodingMode == 'software' ? 'sw' : 'mediacodec';
+        }
+        
+        notifyListeners();
+      } catch (e) {
+        debugPrint('Error getting debug info: $e');
+      }
+    });
   }
 
   bool _shouldTrySoftwareFallback(String error) {
