@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>A Professional IPTV Player for Windows, Android, and Android TV</strong>
+  <strong>A Modern IPTV Player for Windows, Android, and Android TV</strong>
 </p>
 
 <p align="center">
@@ -18,10 +18,42 @@
 </p>
 
 <p align="center">
-  **English** | <a href="README_ZH.md">中文</a>
+  <strong>English</strong> | <a href="README_ZH.md">中文</a>
 </p>
 
-Lotus IPTV is a modern, high-performance IPTV player application developed with Flutter. It offers a seamless viewing experience across multiple platforms, with a special focus on usability and aesthetics.
+Lotus IPTV is a modern, high-performance IPTV player built with Flutter. Features a beautiful Lotus-themed UI with pink/purple gradient accents, optimized for seamless viewing across desktop, mobile, and TV platforms.
+
+## ✨ Features
+
+### 🎨 Lotus Theme UI
+- Pure black background with lotus pink/purple gradient accents
+- Glassmorphism style cards (desktop/mobile)
+- TV-optimized interface with no animations for smooth performance
+- Auto-collapsing sidebar navigation (expands on focus)
+
+### 📺 Multi-Platform Support
+- **Windows**: Desktop-optimized UI with keyboard shortcuts
+- **Android Mobile**: Touch-friendly interface
+- **Android TV**: Full D-Pad navigation with remote control support
+
+### ⚡ High-Performance Playback
+- **Desktop/Mobile**: Powered by `media_kit` with hardware acceleration
+- **Android TV**: Native ExoPlayer (Media3) for 4K video playback
+- Real-time video stats (resolution, FPS, codec info)
+- Supports HLS (m3u8), MP4, MKV, and more
+
+### 📂 Smart Playlist Management
+- Import M3U playlists from local files or URLs
+- QR code import for easy mobile-to-TV transfer
+- Auto-grouping by `group-title`
+- Channel availability testing with batch operations
+- Move unavailable channels to separate category
+
+### ❤️ User Features
+- Favorites management (long-press on TV, button on mobile)
+- Channel search
+- Recommended channels with refresh
+- Default channel logo for missing thumbnails
 
 ## 📸 Screenshots
 
@@ -31,95 +63,59 @@ Lotus IPTV is a modern, high-performance IPTV player application developed with 
   <img src="assets/screenshots/player_screen.jpg" width="30%" alt="Player Screen">
 </p>
 
-## ✨ Features
-
-- **📺 Cross-Platform Excellence**:
-  - **Windows**: Desktop-optimized UI with keyboard support.
-  - **Android Mobile**: Touch-friendly interface for phones and tablets.
-  - **Android TV**: Fully optimized D-Pad navigation for remote controls.
-
-- **⚡ High-Performance Player**:
-  - Powered by `media_kit` for hardware-accelerated playback.
-  - **Real-time Stats**: Displays video resolution (e.g., 1920x1080) and technical info.
-  - **Fullscreen Mode**: Toggle immersive viewing with a single click.
-  - **Format Support**: Handles HLS (m3u8), MP4, MKV, and more.
-
-- **📂 Smart Playlist Management**:
-  - **M3U Support**: Import playlists from local files or URLs.
-  - **Auto-Grouping**: Automatically categorizes channels based on `group-title`.
-  - **Robust Parsing**: Intellegently handles messy URLs and complex M3U tags.
-  - **Local Logos**: Supports displaying channel icons from local storage.
-
-- **❤️ User-Friendly Tools**:
-  - **Favorites**: Quickly mark channels as favorites for easy access (toggle directly in player).
-  - **Discovery**: "All Channels" section randomly features 10 channels to help you discover new content.
-  - **Search**: Fast channel searching.
-
 ## 🚀 Installation
 
-Download the latest version from the [Releases Page](https://github.com/shnulaa/FlutterIPTV/releases).
+Download from [Releases Page](https://github.com/shnulaa/FlutterIPTV/releases).
 
 ### Android / Android TV
-1. Download the `flutter_iptv-android-arm64-vX.X.X.apk` (or universal apk).
-2. Install via ADB or your device's file manager.
+```bash
+# Install via ADB
+adb install flutter_iptv-android-arm64-vX.X.X.apk
+```
 
 ### Windows
-1. Download `flutter_iptv-windows-vX.X.X.zip`.
-2. Extract the archive.
-3. Run `flutter_iptv.exe`.
+1. Download and extract `flutter_iptv-windows-vX.X.X.zip`
+2. Run `flutter_iptv.exe`
 
-## 🎮 Controls & Shortcuts
+## 🎮 Controls
 
-| Action | Keyboard | TV Remote / D-Pad |
-|--------|----------|-------------------|
-| **Play / Pause** | Space / Enter | Center Button (OK) |
-| **Volume Up** | Arrow Up | D-Pad Up |
-| **Volume Down** | Arrow Down | D-Pad Down |
-| **Seek Forward** | Arrow Right | D-Pad Right |
-| **Seek Backward** | Arrow Left | D-Pad Left |
-| **Mute** | M | - |
-| **Back** | Esc | Back Button |
-| **Fullscreen**| Button in UI | - |
+| Action | Keyboard | TV Remote |
+|--------|----------|-----------|
+| Play/Pause | Space/Enter | OK |
+| Channel Up | ↑ | D-Pad Up |
+| Channel Down | ↓ | D-Pad Down |
+| Seek Forward | → | D-Pad Right |
+| Seek Backward | ← | D-Pad Left |
+| Favorite (TV) | - | Long Press OK |
+| Mute | M | - |
+| Back | Esc | Back |
 
 ## 🛠️ Development
 
 ### Prerequisites
 - Flutter SDK (>=3.0.0)
-- Dart SDK
-- Visual Studio (for Windows build)
-- Android Studio / SDK (for Android build)
+- Android Studio (for Android/TV builds)
+- Visual Studio (for Windows builds)
 
-### Build Steps
+### Build
+```bash
+git clone https://github.com/shnulaa/FlutterIPTV.git
+cd FlutterIPTV
+flutter pub get
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/shnulaa/FlutterIPTV.git
-   cd FlutterIPTV
-   ```
+# Run
+flutter run -d windows
+flutter run -d <android_device>
 
-2. **Install dependencies**
-   ```bash
-   flutter pub get
-   ```
-
-3. **Run locally**
-   ```bash
-   flutter run -d windows
-   # or
-   flutter run -d android
-   ```
-
-4. **Build Release**
-   ```bash
-   flutter build windows
-   flutter build apk --split-per-abi
-   ```
+# Build Release
+flutter build windows
+flutter build apk --release
+```
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
-
+Pull requests are welcome!
 
 ## ⚠️ Disclaimer
 
-This application is **only a player** and does not provide any default playlists or content. Users must provide their own content. The developers are not responsible for how the application is used or the content played through it.
+This application is a player only and does not provide any content. Users must provide their own M3U playlists. Developers are not responsible for the content played through this application.
