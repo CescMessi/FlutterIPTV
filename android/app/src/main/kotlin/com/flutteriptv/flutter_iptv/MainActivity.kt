@@ -52,11 +52,12 @@ class MainActivity: FlutterFragmentActivity() {
                     val index = call.argument<Int>("index") ?: 0
                     val urls = call.argument<List<String>>("urls")
                     val names = call.argument<List<String>>("names")
+                    val groups = call.argument<List<String>>("groups")
                     
                     if (url != null) {
                         Log.d(TAG, "Launching native player fragment: $name (index $index of ${urls?.size ?: 0})")
                         try {
-                            showPlayerFragment(url, name, index, urls, names)
+                            showPlayerFragment(url, name, index, urls, names, groups)
                             result.success(true)
                         } catch (e: Exception) {
                             Log.e(TAG, "Failed to launch player", e)
@@ -115,7 +116,8 @@ class MainActivity: FlutterFragmentActivity() {
         name: String,
         index: Int,
         urls: List<String>?,
-        names: List<String>?
+        names: List<String>?,
+        groups: List<String>?
     ) {
         Log.d(TAG, "showPlayerFragment")
         
@@ -143,7 +145,8 @@ class MainActivity: FlutterFragmentActivity() {
             name,
             index,
             urls?.let { ArrayList(it) },
-            names?.let { ArrayList(it) }
+            names?.let { ArrayList(it) },
+            groups?.let { ArrayList(it) }
         ).apply {
             onCloseListener = {
                 runOnUiThread {

@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.fragment.app.Fragment
@@ -22,6 +23,8 @@ import androidx.media3.exoplayer.DecoderReuseEvaluation
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.ui.PlayerView
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 
 class NativePlayerFragment : Fragment() {
     private val TAG = "NativePlayerFragment"
@@ -31,11 +34,20 @@ class NativePlayerFragment : Fragment() {
     private lateinit var loadingIndicator: ProgressBar
     private lateinit var channelNameText: TextView
     private lateinit var statusText: TextView
+    private lateinit var statusIndicator: View
     private lateinit var videoInfoText: TextView
     private lateinit var errorText: TextView
     private lateinit var backButton: ImageButton
     private lateinit var topBar: View
     private lateinit var bottomBar: View
+    
+    // Category panel views
+    private lateinit var categoryPanel: View
+    private lateinit var categoryListContainer: View
+    private lateinit var channelListContainer: View
+    private lateinit var categoryList: RecyclerView
+    private lateinit var channelList: RecyclerView
+    private lateinit var channelListTitle: TextView
 
     private var currentUrl: String = ""
     private var currentName: String = ""
@@ -43,6 +55,13 @@ class NativePlayerFragment : Fragment() {
     
     private var channelUrls: ArrayList<String> = arrayListOf()
     private var channelNames: ArrayList<String> = arrayListOf()
+    private var channelGroups: ArrayList<String> = arrayListOf()
+    
+    // Category data
+    private var categories: MutableList<CategoryItem> = mutableListOf()
+    private var selectedCategoryIndex: Int = -1
+    private var categoryPanelVisible = false
+    private var showingChannelList = false
     
     private val handler = Handler(Looper.getMainLooper())
     private var hideControlsRunnable: Runnable? = null
@@ -63,13 +82,15 @@ class NativePlayerFragment : Fragment() {
         private const val ARG_CHANNEL_INDEX = "channel_index"
         private const val ARG_CHANNEL_URLS = "channel_urls"
         private const val ARG_CHANNEL_NAMES = "channel_names"
+        private const val ARG_CHANNEL_GROUPS = "channel_groups"
 
         fun newInstance(
             videoUrl: String,
             channelName: String,
             channelIndex: Int = 0,
             channelUrls: ArrayList<String>? = null,
-            channelNames: ArrayList<String>? = null
+            channelNames: ArrayList<String>? = null,
+            channelGroups: ArrayList<String>? = null
         ): NativePlayerFragment {
             return NativePlayerFragment().apply {
                 arguments = Bundle().apply {
@@ -78,6 +99,7 @@ class NativePlayerFragment : Fragment() {
                     putInt(ARG_CHANNEL_INDEX, channelIndex)
                     channelUrls?.let { putStringArrayList(ARG_CHANNEL_URLS, it) }
                     channelNames?.let { putStringArrayList(ARG_CHANNEL_NAMES, it) }
+                    channelGroups?.let { putStringArrayList(ARG_CHANNEL_GROUPS, it) }
                 }
             }
         }
@@ -99,6 +121,7 @@ class NativePlayerFragment : Fragment() {
             currentIndex = it.getInt(ARG_CHANNEL_INDEX, 0)
             channelUrls = it.getStringArrayList(ARG_CHANNEL_URLS) ?: arrayListOf()
             channelNames = it.getStringArrayList(ARG_CHANNEL_NAMES) ?: arrayListOf()
+            channelGroups = it.getStringArrayList(ARG_CHANNEL_GROUPS) ?: arrayListOf()
         }
         
         Log.d(TAG, "Playing: $currentName (index $currentIndex of ${channelUrls.size})")
@@ -107,11 +130,20 @@ class NativePlayerFragment : Fragment() {
         loadingIndicator = view.findViewById(R.id.loading_indicator)
         channelNameText = view.findViewById(R.id.channel_name)
         statusText = view.findViewById(R.id.status_text)
+        statusIndicator = view.findViewById(R.id.status_indicator)
         videoInfoText = view.findViewById(R.id.video_info)
         errorText = view.findViewById(R.id.error_text)
         backButton = view.findViewById(R.id.back_button)
         topBar = view.findViewById(R.id.top_bar)
         bottomBar = view.findViewById(R.id.bottom_bar)
+        
+        // Category panel views
+        categoryPanel = view.findViewById(R.id.category_panel)
+        categoryListContainer = view.findViewById(R.id.category_list_container)
+        channelListContainer = view.findViewById(R.id.channel_list_container)
+        categoryList = view.findViewById(R.id.category_list)
+        channelList = view.findViewById(R.id.channel_list)
+        channelListTitle = view.findViewById(R.id.channel_list_title)
 
         channelNameText.text = currentName
         updateStatus("Loading")
@@ -122,6 +154,9 @@ class NativePlayerFragment : Fragment() {
         }
         
         playerView.useController = false
+        
+        // Setup category panel
+        setupCategoryPanel()
         
         // Handle key events
         view.isFocusableInTouchMode = true
@@ -144,41 +179,216 @@ class NativePlayerFragment : Fragment() {
         
         showControls()
     }
+    
+    private fun setupCategoryPanel() {
+        // Build category list from channel groups
+        buildCategories()
+        
+        categoryList.layoutManager = LinearLayoutManager(requireContext())
+        channelList.layoutManager = LinearLayoutManager(requireContext())
+        
+        // Category adapter
+        categoryList.adapter = object : RecyclerView.Adapter<CategoryViewHolder>() {
+            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CategoryViewHolder {
+                val view = LayoutInflater.from(parent.context).inflate(R.layout.item_category, parent, false)
+                return CategoryViewHolder(view)
+            }
+            
+            override fun onBindViewHolder(holder: CategoryViewHolder, position: Int) {
+                val item = categories[position]
+                holder.nameText.text = item.name
+                holder.countText.text = item.count.toString()
+                // 只有当前选中且显示频道列表时才保持选中状态
+                holder.itemView.isSelected = showingChannelList && position == selectedCategoryIndex
+                
+                holder.itemView.setOnClickListener {
+                    selectCategory(holder.adapterPosition)
+                }
+                
+                holder.itemView.setOnFocusChangeListener { _, hasFocus ->
+                    if (hasFocus && !showingChannelList) {
+                        // 获得焦点时临时显示选中效果
+                        holder.itemView.isSelected = true
+                    } else if (!hasFocus && !(showingChannelList && holder.adapterPosition == selectedCategoryIndex)) {
+                        // 失去焦点且不是当前选中的分类时清除选中效果
+                        holder.itemView.isSelected = false
+                    }
+                }
+            }
+            
+            override fun getItemCount() = categories.size
+        }
+    }
+    
+    private fun buildCategories() {
+        categories.clear()
+        val groupOrder = mutableListOf<String>() // 保持原始顺序
+        val groupMap = mutableMapOf<String, Int>()
+        
+        for (group in channelGroups) {
+            val name = group.ifEmpty { "未分类" }
+            if (!groupMap.containsKey(name)) {
+                groupOrder.add(name) // 记录首次出现的顺序
+            }
+            groupMap[name] = (groupMap[name] ?: 0) + 1
+        }
+        
+        // 按原始顺序创建分类列表
+        for (name in groupOrder) {
+            categories.add(CategoryItem(name, groupMap[name] ?: 0))
+        }
+    }
+    
+    private fun selectCategory(position: Int) {
+        selectedCategoryIndex = position
+        val category = categories[position]
+        channelListTitle.text = category.name
+        
+        // 刷新分类列表以更新选中状态
+        categoryList.adapter?.notifyDataSetChanged()
+        
+        // Get channels for this category
+        val channelsInCategory = mutableListOf<ChannelItem>()
+        for (i in channelGroups.indices) {
+            val groupName = channelGroups[i].ifEmpty { "未分类" }
+            if (groupName == category.name) {
+                val isPlaying = i == currentIndex
+                channelsInCategory.add(ChannelItem(i, channelNames.getOrElse(i) { "Channel $i" }, isPlaying))
+            }
+        }
+        
+        // Setup channel adapter
+        channelList.adapter = object : RecyclerView.Adapter<ChannelViewHolder>() {
+            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ChannelViewHolder {
+                val view = LayoutInflater.from(parent.context).inflate(R.layout.item_channel, parent, false)
+                return ChannelViewHolder(view)
+            }
+            
+            override fun onBindViewHolder(holder: ChannelViewHolder, position: Int) {
+                val item = channelsInCategory[position]
+                holder.nameText.text = item.name
+                holder.playingIcon.visibility = if (item.isPlaying) View.VISIBLE else View.GONE
+                holder.nameText.setTextColor(if (item.isPlaying) 0xFFE91E63.toInt() else 0xFFFFFFFF.toInt())
+                
+                holder.itemView.setOnClickListener {
+                    switchChannel(item.index)
+                    hideCategoryPanel()
+                }
+                
+                holder.itemView.setOnFocusChangeListener { v, hasFocus ->
+                    v.isSelected = hasFocus
+                }
+            }
+            
+            override fun getItemCount() = channelsInCategory.size
+        }
+        
+        // Show channel list
+        channelListContainer.visibility = View.VISIBLE
+        showingChannelList = true
+        
+        // Focus first channel
+        channelList.post {
+            channelList.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus()
+        }
+    }
+    
+    private fun showCategoryPanel() {
+        categoryPanelVisible = true
+        showingChannelList = false
+        selectedCategoryIndex = -1
+        categoryPanel.visibility = View.VISIBLE
+        channelListContainer.visibility = View.GONE
+        
+        // Refresh category list
+        categoryList.adapter?.notifyDataSetChanged()
+        
+        // Focus first category
+        categoryList.post {
+            categoryList.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus()
+        }
+        
+        // Cancel auto-hide
+        hideControlsRunnable?.let { handler.removeCallbacks(it) }
+    }
+    
+    private fun hideCategoryPanel() {
+        categoryPanelVisible = false
+        showingChannelList = false
+        selectedCategoryIndex = -1
+        categoryPanel.visibility = View.GONE
+        channelListContainer.visibility = View.GONE
+        
+        // Return focus to main view
+        view?.requestFocus()
+        scheduleHideControls()
+    }
 
     private fun handleKeyDown(keyCode: Int): Boolean {
-        Log.d(TAG, "handleKeyDown: keyCode=$keyCode")
+        Log.d(TAG, "handleKeyDown: keyCode=$keyCode, categoryPanelVisible=$categoryPanelVisible")
         
         when (keyCode) {
             KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_ESCAPE -> {
+                if (categoryPanelVisible) {
+                    if (showingChannelList) {
+                        // Go back to category list
+                        channelListContainer.visibility = View.GONE
+                        showingChannelList = false
+                        categoryList.findViewHolderForAdapterPosition(selectedCategoryIndex.coerceAtLeast(0))?.itemView?.requestFocus()
+                        return true
+                    }
+                    hideCategoryPanel()
+                    return true
+                }
                 closePlayer()
                 return true
             }
             KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
-                showControls()
-                player?.let {
-                    if (it.isPlaying) it.pause() else it.play()
+                if (!categoryPanelVisible) {
+                    showControls()
+                    player?.let {
+                        if (it.isPlaying) it.pause() else it.play()
+                    }
                 }
                 return true
             }
             KeyEvent.KEYCODE_DPAD_LEFT -> {
-                showControls()
-                player?.seekBack()
+                if (categoryPanelVisible) {
+                    if (showingChannelList) {
+                        // Go back to category list
+                        channelListContainer.visibility = View.GONE
+                        showingChannelList = false
+                        categoryList.findViewHolderForAdapterPosition(selectedCategoryIndex.coerceAtLeast(0))?.itemView?.requestFocus()
+                        return true
+                    }
+                    // Close panel
+                    hideCategoryPanel()
+                    return true
+                }
+                // Show category panel
+                showCategoryPanel()
                 return true
             }
             KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                showControls()
-                player?.seekForward()
+                // Disabled for live streams
+                if (!categoryPanelVisible) {
+                    showControls()
+                }
                 return true
             }
             KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_CHANNEL_UP -> {
-                Log.d(TAG, "Channel UP pressed")
-                previousChannel()
-                return true
+                if (!categoryPanelVisible) {
+                    Log.d(TAG, "Channel UP pressed")
+                    previousChannel()
+                }
+                return false // Let RecyclerView handle if panel is visible
             }
             KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_CHANNEL_DOWN -> {
-                Log.d(TAG, "Channel DOWN pressed")
-                nextChannel()
-                return true
+                if (!categoryPanelVisible) {
+                    Log.d(TAG, "Channel DOWN pressed")
+                    nextChannel()
+                }
+                return false // Let RecyclerView handle if panel is visible
             }
             KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
                 showControls()
@@ -189,7 +399,9 @@ class NativePlayerFragment : Fragment() {
             }
         }
         
-        showControls()
+        if (!categoryPanelVisible) {
+            showControls()
+        }
         return false
     }
 
@@ -314,13 +526,19 @@ class NativePlayerFragment : Fragment() {
         activity?.runOnUiThread {
             statusText.text = status
             val color = when (status) {
-                "LIVE" -> 0xFF4CAF50.toInt()
-                "Buffering", "Loading" -> 0xFFFF9800.toInt()
-                "Paused" -> 0xFF2196F3.toInt()
-                "Offline", "Error" -> 0xFFF44336.toInt()
-                else -> 0xFF9E9E9E.toInt()
+                "LIVE" -> 0xFF4CAF50.toInt()  // Green
+                "Buffering", "Loading" -> 0xFFFF9800.toInt()  // Orange
+                "Paused" -> 0xFF2196F3.toInt()  // Blue
+                "Offline", "Error" -> 0xFFF44336.toInt()  // Red
+                else -> 0xFF9E9E9E.toInt()  // Gray
             }
             statusText.setTextColor(color)
+            
+            // Update indicator dot color
+            val drawable = android.graphics.drawable.GradientDrawable()
+            drawable.shape = android.graphics.drawable.GradientDrawable.OVAL
+            drawable.setColor(color)
+            statusIndicator.background = drawable
         }
     }
 
@@ -385,7 +603,7 @@ class NativePlayerFragment : Fragment() {
     private fun scheduleHideControls() {
         hideControlsRunnable?.let { handler.removeCallbacks(it) }
         hideControlsRunnable = Runnable { 
-            if (player?.isPlaying == true) {
+            if (player?.isPlaying == true && !categoryPanelVisible) {
                 hideControls() 
             }
         }
@@ -423,5 +641,20 @@ class NativePlayerFragment : Fragment() {
         player?.release()
         player = null
         activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+    
+    // Data classes
+    data class CategoryItem(val name: String, val count: Int)
+    data class ChannelItem(val index: Int, val name: String, val isPlaying: Boolean)
+    
+    // ViewHolders
+    class CategoryViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val nameText: TextView = view.findViewById(R.id.category_name)
+        val countText: TextView = view.findViewById(R.id.category_count)
+    }
+    
+    class ChannelViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val nameText: TextView = view.findViewById(R.id.channel_name)
+        val playingIcon: ImageView = view.findViewById(R.id.playing_icon)
     }
 }

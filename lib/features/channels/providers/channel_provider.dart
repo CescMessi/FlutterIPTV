@@ -102,6 +102,7 @@ class ChannelProvider extends ChangeNotifier {
 
   void _updateGroups() {
     final Map<String, int> groupCounts = {};
+    final List<String> groupOrder = []; // 保持原始顺序
     int unavailableCount = 0;
 
     for (final channel in _channels) {
@@ -110,14 +111,17 @@ class ChannelProvider extends ChangeNotifier {
       if (isUnavailableChannel(group)) {
         unavailableCount++;
       } else {
+        if (!groupCounts.containsKey(group)) {
+          groupOrder.add(group); // 记录首次出现的顺序
+        }
         groupCounts[group] = (groupCounts[group] ?? 0) + 1;
       }
     }
 
-    _groups = groupCounts.entries
-        .map((e) => ChannelGroup(name: e.key, channelCount: e.value))
-        .toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
+    // 按原始顺序创建分组列表
+    _groups = groupOrder
+        .map((name) => ChannelGroup(name: name, channelCount: groupCounts[name] ?? 0))
+        .toList();
     
     // 如果有失效频道，添加到列表末尾
     if (unavailableCount > 0) {

@@ -35,6 +35,10 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   bool _showControls = true;
   final FocusNode _playerFocusNode = FocusNode();
   bool _usingNativePlayer = false;
+  bool _showCategoryPanel = false;
+  String? _selectedCategory;
+  final ScrollController _categoryScrollController = ScrollController();
+  final ScrollController _channelScrollController = ScrollController();
 
   @override
   void initState() {
@@ -57,9 +61,9 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       if (nativeAvailable && mounted) {
         _usingNativePlayer = true;
         
-        // Get channel list for native player
+        // Get channel list for native player (use all channels, not filtered)
         final channelProvider = context.read<ChannelProvider>();
-        final channels = channelProvider.filteredChannels;
+        final channels = channelProvider.channels;
         
         // Find current channel index
         int currentIndex = 0;
@@ -70,9 +74,10 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
           }
         }
         
-        // Prepare channel lists
+        // Prepare channel lists with groups
         final urls = channels.map((c) => c.url).toList();
         final names = channels.map((c) => c.name).toList();
+        final groups = channels.map((c) => c.groupName ?? '').toList();
         
         debugPrint('PlayerScreen: Launching native player for ${widget.channelName} (index $currentIndex of ${channels.length})');
         
@@ -83,6 +88,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
           index: currentIndex,
           urls: urls,
           names: names,
+          groups: groups,
           onClosed: () {
             debugPrint('PlayerScreen: Native player closed callback');
             if (mounted) {
@@ -178,6 +184,8 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     WidgetsBinding.instance.removeObserver(this);
     _hideControlsTimer?.cancel();
     _playerFocusNode.dispose();
+    _categoryScrollController.dispose();
+    _channelScrollController.dispose();
 
     // Only stop playback if we're using Flutter player (not native)
     if (!_usingNativePlayer) {
@@ -259,23 +267,37 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
 
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
 
-    // Seek backward (Left)
+    // Seek backward (Left) - 打开分类面板
     if (key == LogicalKeyboardKey.arrowLeft) {
-      if (_showControls) {
-        // If controls are visible, let the focus system handle navigation
-        return KeyEventResult.ignored;
+      if (_showCategoryPanel) {
+        // 如果分类面板已显示且在频道列表，返回分类列表
+        if (_selectedCategory != null) {
+          setState(() => _selectedCategory = null);
+          return KeyEventResult.handled;
+        }
+        // 如果在分类列表，关闭面板
+        setState(() {
+          _showCategoryPanel = false;
+          _selectedCategory = null;
+        });
+        return KeyEventResult.handled;
       }
-      playerProvider.seekBackward(10);
+      // 打开分类面板
+      setState(() {
+        _showCategoryPanel = true;
+        _selectedCategory = null;
+      });
+      _showControlsTemporarily();
       return KeyEventResult.handled;
     }
 
-    // Seek forward (Right)
+    // Right key - 直播流不需要快进，禁用
     if (key == LogicalKeyboardKey.arrowRight) {
-      if (_showControls) {
-        // If controls are visible, let the focus system handle navigation
-        return KeyEventResult.ignored;
+      if (_showCategoryPanel) {
+        // 如果在分类面板，右键不做任何事
+        return KeyEventResult.handled;
       }
-      playerProvider.seekForward(10);
+      // 直播流禁用快进
       return KeyEventResult.handled;
     }
 
@@ -380,7 +402,16 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
             }
           },
           child: GestureDetector(
-            onTap: _showControlsTemporarily,
+            onTap: () {
+              if (_showCategoryPanel) {
+                setState(() {
+                  _showCategoryPanel = false;
+                  _selectedCategory = null;
+                });
+              } else {
+                _showControlsTemporarily();
+              }
+            },
             onDoubleTap: () {
               context.read<PlayerProvider>().togglePlayPause();
             },
@@ -398,6 +429,9 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                     child: _buildControlsOverlay(),
                   ),
                 ),
+
+                // Category Panel (Left side)
+                if (_showCategoryPanel) _buildCategoryPanel(),
 
                 // Loading Indicator
                 Consumer<PlayerProvider>(
@@ -743,7 +777,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                 const Padding(
                   padding: EdgeInsets.only(top: 16),
                   child: Text(
-                    '↑↓ 切换频道 · ←→ 快进快退 · OK 播放/暂停',
+                    '↑↓ 切换频道 · ← 分类列表 · OK 播放/暂停',
                     style: TextStyle(color: Color(0x66FFFFFF), fontSize: 11),
                   ),
                 ),
@@ -868,6 +902,218 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
           },
         );
       },
+    );
+  }
+
+  Widget _buildCategoryPanel() {
+    final channelProvider = context.read<ChannelProvider>();
+    final groups = channelProvider.groups;
+    
+    return Positioned(
+      left: 0,
+      top: 0,
+      bottom: 0,
+      child: Row(
+        children: [
+          // 分类列表
+          Container(
+            width: 180,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [
+                  Color(0xE6000000),
+                  Color(0x99000000),
+                  Colors.transparent,
+                ],
+                stops: [0.0, 0.7, 1.0],
+              ),
+            ),
+            child: SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: Text(
+                      '分类',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: _categoryScrollController,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: groups.length,
+                      itemBuilder: (context, index) {
+                        final group = groups[index];
+                        final isSelected = _selectedCategory == group.name;
+                        return TVFocusable(
+                          autofocus: index == 0 && _selectedCategory == null,
+                          onSelect: () {
+                            setState(() {
+                              _selectedCategory = group.name;
+                            });
+                          },
+                          focusScale: 1.0,
+                          builder: (context, isFocused, child) {
+                            return Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              decoration: BoxDecoration(
+                                gradient: (isFocused || isSelected) ? AppTheme.lotusGradient : null,
+                                color: (isFocused || isSelected) ? null : Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                                border: isFocused ? Border.all(color: Colors.white, width: 1) : null,
+                              ),
+                              child: child,
+                            );
+                          },
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  group.name,
+                                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Text(
+                                '${group.channelCount}',
+                                style: const TextStyle(color: Color(0x99FFFFFF), fontSize: 11),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // 频道列表（当选中分类时显示）
+          if (_selectedCategory != null) _buildChannelList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChannelList() {
+    final channelProvider = context.read<ChannelProvider>();
+    final playerProvider = context.read<PlayerProvider>();
+    final channels = channelProvider.getChannelsByGroup(_selectedCategory!);
+    final currentChannel = playerProvider.currentChannel;
+    
+    return Container(
+      width: 220,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [
+            Color(0xCC000000),
+            Color(0x66000000),
+            Colors.transparent,
+          ],
+          stops: [0.0, 0.7, 1.0],
+        ),
+      ),
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => setState(() => _selectedCategory = null),
+                    child: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 14),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _selectedCategory!,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                controller: _channelScrollController,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: channels.length,
+                itemBuilder: (context, index) {
+                  final channel = channels[index];
+                  final isPlaying = currentChannel?.id == channel.id;
+                  return TVFocusable(
+                    autofocus: index == 0,
+                    onSelect: () {
+                      // 切换到该频道
+                      playerProvider.playChannel(channel);
+                      // 关闭面板
+                      setState(() {
+                        _showCategoryPanel = false;
+                        _selectedCategory = null;
+                      });
+                    },
+                    focusScale: 1.0,
+                    builder: (context, isFocused, child) {
+                      return Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          gradient: isFocused ? AppTheme.lotusGradient : null,
+                          color: isPlaying ? const Color(0x33E91E63) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                          border: isFocused ? Border.all(color: Colors.white, width: 1) : null,
+                        ),
+                        child: child,
+                      );
+                    },
+                    child: Row(
+                      children: [
+                        if (isPlaying)
+                          const Padding(
+                            padding: EdgeInsets.only(right: 8),
+                            child: Icon(Icons.play_arrow, color: AppTheme.primaryColor, size: 16),
+                          ),
+                        Expanded(
+                          child: Text(
+                            channel.name,
+                            style: TextStyle(
+                              color: isPlaying ? AppTheme.primaryColor : Colors.white,
+                              fontSize: 13,
+                              fontWeight: isPlaying ? FontWeight.bold : FontWeight.normal,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

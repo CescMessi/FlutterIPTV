@@ -44,6 +44,7 @@ class NativePlayerChannel {
     int index = 0,
     List<String>? urls,
     List<String>? names,
+    List<String>? groups,
     Function? onClosed,
   }) async {
     try {
@@ -57,6 +58,7 @@ class NativePlayerChannel {
         'index': index,
         'urls': urls,
         'names': names,
+        'groups': groups,
       });
       debugPrint('NativePlayerChannel: launch result=$result');
       return result ?? false;
