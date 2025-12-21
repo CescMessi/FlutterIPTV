@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../navigation/app_router.dart';
 import '../i18n/app_strings.dart';
+import '../platform/platform_detector.dart';
 import 'tv_focusable.dart';
 
 /// TV端共享侧边栏组件

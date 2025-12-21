@@ -347,7 +347,6 @@ class NativePlayerFragment : Fragment() {
             channelList.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus()
         }
     }
-    
     private fun showCategoryPanel() {
         categoryPanelVisible = true
         showingChannelList = false

@@ -192,6 +192,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: TVFocusable(
         onSelect: onTap,
+        onFocus: PlatformDetector.isTV ? onTap : null, // TV端焦点移动自动选中分类
         focusScale: 1.02,
         showFocusBorder: false,
         builder: (context, isFocused, child) {
