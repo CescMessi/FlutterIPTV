@@ -70,3 +70,7 @@ coverage/
 # Distribution builds
 /dist/
 /release/
+
+# Temporary database files
+temp_db.bin
+*.db.bin
