@@ -13,6 +13,28 @@ import '../../epg/providers/epg_provider.dart';
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
+  // 显示设置成功消息
+  void _showSuccess(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppTheme.successColor,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  // 显示设置失败消息
+  void _showError(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppTheme.errorColor,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -50,7 +72,10 @@ class SettingsScreen extends StatelessWidget {
                       'Automatically start playback when selecting a channel',
                   icon: Icons.play_circle_outline_rounded,
                   value: settings.autoPlay,
-                  onChanged: (value) => settings.setAutoPlay(value),
+                  onChanged: (value) {
+                    settings.setAutoPlay(value);
+                    _showSuccess(context, value ? '已启用自动播放' : '已关闭自动播放');
+                  },
                 ),
                 _buildDivider(),
                 _buildSelectTile(
@@ -65,7 +90,7 @@ class SettingsScreen extends StatelessWidget {
                   context,
                   title: AppStrings.of(context)?.bufferSize ?? 'Buffer Size',
                   subtitle:
-                      '${settings.bufferSize} ${AppStrings.of(context)?.seconds ?? 'seconds'}',
+                      '${settings.bufferSize} ${AppStrings.of(context)?.seconds ?? 'seconds'} (未实现)',
                   icon: Icons.storage_rounded,
                   onTap: () => _showBufferSizeDialog(context, settings),
                 ),
@@ -73,10 +98,13 @@ class SettingsScreen extends StatelessWidget {
                 _buildSwitchTile(
                   context,
                   title: AppStrings.of(context)?.volumeNormalization ?? 'Volume Normalization',
-                  subtitle: AppStrings.of(context)?.volumeNormalizationSubtitle ?? 'Auto-adjust volume differences between channels',
+                  subtitle: '${AppStrings.of(context)?.volumeNormalizationSubtitle ?? 'Auto-adjust volume differences between channels'} (未实现)',
                   icon: Icons.volume_up_rounded,
                   value: settings.volumeNormalization,
-                  onChanged: (value) => settings.setVolumeNormalization(value),
+                  onChanged: (value) {
+                    settings.setVolumeNormalization(value);
+                    _showError(context, '音量标准化尚未实现，设置不会生效');
+                  },
                 ),
                 if (settings.volumeNormalization) ...[
                   _buildDivider(),
@@ -101,11 +129,13 @@ class SettingsScreen extends StatelessWidget {
                 _buildSwitchTile(
                   context,
                   title: AppStrings.of(context)?.autoRefresh ?? 'Auto-refresh',
-                  subtitle: AppStrings.of(context)?.autoRefreshSubtitle ??
-                      'Automatically update playlists periodically',
+                  subtitle: '${AppStrings.of(context)?.autoRefreshSubtitle ?? 'Automatically update playlists periodically'} (未实现)',
                   icon: Icons.refresh_rounded,
                   value: settings.autoRefresh,
-                  onChanged: (value) => settings.setAutoRefresh(value),
+                  onChanged: (value) {
+                    settings.setAutoRefresh(value);
+                    _showError(context, '自动刷新尚未实现，设置不会生效');
+                  },
                 ),
                 if (settings.autoRefresh) ...[
                   _buildDivider(),
@@ -114,7 +144,7 @@ class SettingsScreen extends StatelessWidget {
                     title: AppStrings.of(context)?.refreshInterval ??
                         'Refresh Interval',
                     subtitle:
-                        'Every ${settings.refreshInterval} ${AppStrings.of(context)?.hours ?? 'hours'}',
+                        'Every ${settings.refreshInterval} ${AppStrings.of(context)?.hours ?? 'hours'} (未实现)',
                     icon: Icons.schedule_rounded,
                     onTap: () => _showRefreshIntervalDialog(context, settings),
                   ),
@@ -129,7 +159,10 @@ class SettingsScreen extends StatelessWidget {
                           'Resume playback from last watched channel',
                   icon: Icons.history_rounded,
                   value: settings.rememberLastChannel,
-                  onChanged: (value) => settings.setRememberLastChannel(value),
+                  onChanged: (value) {
+                    settings.setRememberLastChannel(value);
+                    _showSuccess(context, value ? '已启用记住上次频道' : '已关闭记住上次频道');
+                  },
                 ),
               ]),
 
@@ -146,16 +179,24 @@ class SettingsScreen extends StatelessWidget {
                       'Show program information for channels',
                   icon: Icons.event_note_rounded,
                   value: settings.enableEpg,
-                  onChanged: (value) {
-                    settings.setEnableEpg(value);
+                  onChanged: (value) async {
+                    await settings.setEnableEpg(value);
                     if (value) {
                       // 启用 EPG 时，如果有配置 URL 则加载
                       if (settings.epgUrl != null && settings.epgUrl!.isNotEmpty) {
-                        context.read<EpgProvider>().loadEpg(settings.epgUrl!);
+                        final success = await context.read<EpgProvider>().loadEpg(settings.epgUrl!);
+                        if (success) {
+                          _showSuccess(context, 'EPG 已启用并加载成功');
+                        } else {
+                          _showError(context, 'EPG 已启用，但加载失败');
+                        }
+                      } else {
+                        _showSuccess(context, 'EPG 已启用，请配置 EPG 链接');
                       }
                     } else {
                       // 关闭 EPG 时清除已加载的数据
                       context.read<EpgProvider>().clear();
+                      _showSuccess(context, 'EPG 已关闭');
                     }
                   },
                 ),
@@ -184,19 +225,20 @@ class SettingsScreen extends StatelessWidget {
                   title: AppStrings.of(context)?.enableParentalControl ??
                       'Enable Parental Control',
                   subtitle:
-                      AppStrings.of(context)?.enableParentalControlSubtitle ??
-                          'Require PIN to access certain content',
+                      '${AppStrings.of(context)?.enableParentalControlSubtitle ?? 'Require PIN to access certain content'} (未实现)',
                   icon: Icons.lock_outline_rounded,
                   value: settings.parentalControl,
-                  onChanged: (value) => settings.setParentalControl(value),
+                  onChanged: (value) {
+                    settings.setParentalControl(value);
+                    _showError(context, '家长控制尚未实现，设置不会生效');
+                  },
                 ),
                 if (settings.parentalControl) ...[
                   _buildDivider(),
                   _buildActionTile(
                     context,
                     title: AppStrings.of(context)?.changePin ?? 'Change PIN',
-                    subtitle: AppStrings.of(context)?.changePinSubtitle ??
-                        'Update your parental control PIN',
+                    subtitle: '${AppStrings.of(context)?.changePinSubtitle ?? 'Update your parental control PIN'} (未实现)',
                     icon: Icons.pin_rounded,
                     onTap: () => _showChangePinDialog(context, settings),
                   ),
@@ -311,7 +353,7 @@ class SettingsScreen extends StatelessWidget {
 
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: AppTheme.surfaceColor,
           title: Text(
@@ -336,7 +378,8 @@ class SettingsScreen extends StatelessWidget {
                 onChanged: (value) {
                   if (value != null) {
                     settings.setDecodingMode(value);
-                    Navigator.pop(context);
+                    Navigator.pop(dialogContext);
+                    _showSuccess(context, '解码模式已设置为: ${_getDecodingModeLabel(context, value)}');
                   }
                 },
                 activeColor: AppTheme.primaryColor,
@@ -675,7 +718,7 @@ class SettingsScreen extends StatelessWidget {
 
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: AppTheme.surfaceColor,
           title: Text(
@@ -695,7 +738,8 @@ class SettingsScreen extends StatelessWidget {
                 onChanged: (value) {
                   if (value != null) {
                     settings.setBufferSize(value);
-                    Navigator.pop(context);
+                    Navigator.pop(dialogContext);
+                    _showError(context, '缓冲大小设置尚未实现，设置不会生效');
                   }
                 },
                 activeColor: AppTheme.primaryColor,
@@ -712,7 +756,7 @@ class SettingsScreen extends StatelessWidget {
 
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         final strings = AppStrings.of(context);
         return AlertDialog(
           backgroundColor: AppTheme.surfaceColor,
@@ -737,7 +781,8 @@ class SettingsScreen extends StatelessWidget {
                 onChanged: (value) {
                   if (value != null) {
                     settings.setVolumeBoost(value);
-                    Navigator.pop(context);
+                    Navigator.pop(dialogContext);
+                    _showSuccess(context, '音量增益已设置为 ${value == 0 ? "无增益" : "${value > 0 ? '+' : ''}$value dB"}');
                   }
                 },
                 activeColor: AppTheme.primaryColor,
@@ -764,7 +809,7 @@ class SettingsScreen extends StatelessWidget {
 
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: AppTheme.surfaceColor,
           title: Text(
@@ -786,7 +831,8 @@ class SettingsScreen extends StatelessWidget {
                 onChanged: (value) {
                   if (value != null) {
                     settings.setRefreshInterval(value);
-                    Navigator.pop(context);
+                    Navigator.pop(dialogContext);
+                    _showError(context, '自动刷新尚未实现，设置不会生效');
                   }
                 },
                 activeColor: AppTheme.primaryColor,
@@ -841,7 +887,16 @@ class SettingsScreen extends StatelessWidget {
                   epgProvider.clear();
                   
                   if (newUrl != null && newUrl.isNotEmpty && settings.enableEpg) {
-                    epgProvider.loadEpg(newUrl);
+                    final success = await epgProvider.loadEpg(newUrl);
+                    if (success) {
+                      _showSuccess(context, 'EPG 链接已保存并加载成功');
+                    } else {
+                      _showError(context, 'EPG 链接已保存，但加载失败');
+                    }
+                  } else if (newUrl == null) {
+                    _showSuccess(context, 'EPG 链接已清除');
+                  } else {
+                    _showSuccess(context, 'EPG 链接已保存');
                   }
                 }
               },
@@ -858,7 +913,7 @@ class SettingsScreen extends StatelessWidget {
 
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: AppTheme.surfaceColor,
           title: Text(
@@ -878,14 +933,17 @@ class SettingsScreen extends StatelessWidget {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(dialogContext),
               child: Text(AppStrings.of(context)?.cancel ?? 'Cancel'),
             ),
             ElevatedButton(
               onPressed: () {
                 if (controller.text.length == 4) {
                   settings.setParentalPin(controller.text);
-                  Navigator.pop(context);
+                  Navigator.pop(dialogContext);
+                  _showError(context, '家长控制尚未实现，PIN 设置不会生效');
+                } else {
+                  _showError(context, '请输入4位数字PIN');
                 }
               },
               child: Text(AppStrings.of(context)?.save ?? 'Save'),
@@ -899,7 +957,7 @@ class SettingsScreen extends StatelessWidget {
   void _confirmResetSettings(BuildContext context, SettingsProvider settings) {
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: AppTheme.surfaceColor,
           title: Text(
@@ -913,13 +971,15 @@ class SettingsScreen extends StatelessWidget {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(dialogContext),
               child: Text(AppStrings.of(context)?.cancel ?? 'Cancel'),
             ),
             ElevatedButton(
               onPressed: () {
                 settings.resetSettings();
-                Navigator.pop(context);
+                context.read<EpgProvider>().clear();
+                Navigator.pop(dialogContext);
+                _showSuccess(context, '所有设置已重置为默认值');
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.errorColor,
@@ -935,7 +995,7 @@ class SettingsScreen extends StatelessWidget {
   void _showLanguageDialog(BuildContext context, SettingsProvider settings) {
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: AppTheme.surfaceColor,
           title: Text(
@@ -954,7 +1014,8 @@ class SettingsScreen extends StatelessWidget {
                 groupValue: settings.locale?.languageCode ?? 'en',
                 onChanged: (value) {
                   settings.setLocale(const Locale('en'));
-                  Navigator.pop(context);
+                  Navigator.pop(dialogContext);
+                  _showSuccess(context, 'Language changed to English');
                 },
                 activeColor: AppTheme.primaryColor,
               ),
@@ -967,7 +1028,8 @@ class SettingsScreen extends StatelessWidget {
                 groupValue: settings.locale?.languageCode ?? 'en',
                 onChanged: (value) {
                   settings.setLocale(const Locale('zh'));
-                  Navigator.pop(context);
+                  Navigator.pop(dialogContext);
+                  _showSuccess(context, '语言已切换为中文');
                 },
                 activeColor: AppTheme.primaryColor,
               ),
