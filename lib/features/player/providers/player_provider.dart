@@ -286,9 +286,14 @@ class PlayerProvider extends ChangeNotifier {
   void pause() { _useExoPlayer ? _exoPlayer?.pause() : _mediaKitPlayer?.pause(); }
   void play() { _useExoPlayer ? _exoPlayer?.play() : _mediaKitPlayer?.play(); }
 
-  void stop() {
-    if (_useExoPlayer) { _exoPlayer?.pause(); _exoPlayer?.seekTo(Duration.zero); }
-    else { _mediaKitPlayer?.stop(); }
+  Future<void> stop() async {
+    debugPrint('PlayerProvider: stop() called, _useExoPlayer=$_useExoPlayer');
+    if (_useExoPlayer) {
+      // 完全释放 ExoPlayer 资源
+      await _disposeExoPlayer();
+    } else {
+      _mediaKitPlayer?.stop();
+    }
     _state = PlayerState.idle;
     _currentChannel = null;
     notifyListeners();
@@ -300,6 +305,7 @@ class PlayerProvider extends ChangeNotifier {
 
   void setVolume(double volume) {
     _volume = volume.clamp(0.0, 1.0);
+    debugPrint('PlayerProvider: setVolume($_volume), boost=$_volumeBoostDb dB');
     _applyVolume();
     if (_volume > 0) _isMuted = false;
     notifyListeners();
@@ -321,12 +327,8 @@ class PlayerProvider extends ChangeNotifier {
   /// Load volume settings from preferences
   void loadVolumeSettings() {
     final prefs = ServiceLocator.prefs;
-    final normEnabled = prefs.getBool('volume_normalization') ?? false;
-    if (normEnabled) {
-      _volumeBoostDb = prefs.getInt('volume_boost') ?? 0;
-    } else {
-      _volumeBoostDb = 0;
-    }
+    // 音量增强独立于音量标准化，始终加载
+    _volumeBoostDb = prefs.getInt('volume_boost') ?? 0;
     _applyVolume();
   }
 
@@ -340,8 +342,12 @@ class PlayerProvider extends ChangeNotifier {
     // Convert dB to linear multiplier: multiplier = 10^(dB/20)
     final multiplier = math.pow(10, _volumeBoostDb / 20.0);
     final effectiveVolume = (_volume * multiplier).clamp(0.0, 2.0); // Allow up to 2x volume
+    
+    debugPrint('PlayerProvider: _applyVolume - base=$_volume, boost=$_volumeBoostDb dB, multiplier=$multiplier, effective=$effectiveVolume');
 
     if (_useExoPlayer) {
+      // ExoPlayer 音量范围是 0.0-1.0，但我们允许超过1.0来增益
+      debugPrint('PlayerProvider: ExoPlayer setVolume($effectiveVolume)');
       _exoPlayer?.setVolume(effectiveVolume);
     } else {
       // media_kit uses 0-100 scale, but can go higher for boost

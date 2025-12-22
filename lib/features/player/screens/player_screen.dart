@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:video_player/video_player.dart';
+import 'package:screen_brightness/screen_brightness.dart';
 import 'dart:async';
 
 import '../../../core/i18n/app_strings.dart';
@@ -42,12 +43,29 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   String? _selectedCategory;
   final ScrollController _categoryScrollController = ScrollController();
   final ScrollController _channelScrollController = ScrollController();
+  
+  // 保存 provider 引用，用于 dispose 时释放资源
+  PlayerProvider? _playerProvider;
+  
+  // 手势控制相关变量
+  double _gestureStartY = 0;
+  double _initialVolume = 0;
+  double _initialBrightness = 0;
+  bool _showGestureIndicator = false;
+  double _gestureValue = 0;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _checkAndLaunchPlayer();
+  }
+  
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 保存 provider 引用
+    _playerProvider ??= context.read<PlayerProvider>();
   }
 
   @override
@@ -141,12 +159,14 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
           content: Text(
               '${AppStrings.of(context)?.playbackError ?? "Error"}: ${provider.error}'),
           backgroundColor: AppTheme.errorColor,
-          duration: const Duration(seconds: 3),
+          duration: const Duration(seconds: 5),
           action: SnackBarAction(
             label: AppStrings.of(context)?.retry ?? 'Retry',
             textColor: Colors.white,
             onPressed: _startPlayback,
           ),
+          showCloseIcon: true,
+          closeIconColor: Colors.white,
         ),
       );
     }
@@ -191,6 +211,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
 
   @override
   void dispose() {
+    debugPrint('PlayerScreen: dispose() called, _usingNativePlayer=$_usingNativePlayer');
     WidgetsBinding.instance.removeObserver(this);
     _hideControlsTimer?.cancel();
     _playerFocusNode.dispose();
@@ -198,15 +219,16 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     _channelScrollController.dispose();
 
     // Only stop playback if we're using Flutter player (not native)
-    if (!_usingNativePlayer) {
-      try {
-        context.read<PlayerProvider>().stop();
-      } catch (_) {}
-
-      try {
-        context.read<PlayerProvider>().removeListener(_onError);
-      } catch (_) {}
+    if (!_usingNativePlayer && _playerProvider != null) {
+      debugPrint('PlayerScreen: calling _playerProvider.stop()');
+      _playerProvider!.removeListener(_onError);
+      _playerProvider!.stop();
     }
+    
+    // 重置亮度到系统默认
+    try {
+      ScreenBrightness.instance.resetApplicationScreenBrightness();
+    } catch (_) {}
 
     // Restore system UI
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -220,6 +242,198 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     if (settingsProvider.rememberLastChannel) {
       settingsProvider.setLastChannelId(channel.id);
     }
+  }
+
+  // ============ 手机端手势控制 ============
+  
+  // 简化手势控制
+  Offset? _panStartPosition;
+  String? _currentGestureType; // 'volume', 'brightness', 'channel', 'horizontal'
+  
+  void _onPanStart(DragStartDetails details) {
+    _panStartPosition = details.globalPosition;
+    _currentGestureType = null;
+    
+    final playerProvider = _playerProvider ?? context.read<PlayerProvider>();
+    _initialVolume = playerProvider.volume;
+    _gestureStartY = details.globalPosition.dy;
+    
+    // 异步获取当前亮度
+    _loadCurrentBrightness();
+  }
+  
+  Future<void> _loadCurrentBrightness() async {
+    try {
+      _initialBrightness = await ScreenBrightness.instance.current;
+    } catch (_) {
+      _initialBrightness = 0.5;
+    }
+  }
+  
+  void _onPanUpdate(DragUpdateDetails details) {
+    if (_panStartPosition == null) return;
+    
+    final dx = details.globalPosition.dx - _panStartPosition!.dx;
+    final dy = details.globalPosition.dy - _panStartPosition!.dy;
+    
+    // 首次移动超过阈值时决定手势类型
+    if (_currentGestureType == null) {
+      const threshold = 10.0; // 降低阈值，更灵敏
+      if (dx.abs() > threshold || dy.abs() > threshold) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final x = _panStartPosition!.dx;
+        
+        if (dy.abs() > dx.abs()) {
+          // 垂直滑动
+          if (x < screenWidth * 0.35) {
+            _currentGestureType = 'volume';
+            _gestureValue = _initialVolume;
+          } else if (x > screenWidth * 0.65) {
+            _currentGestureType = 'brightness';
+            _gestureValue = _initialBrightness;
+          } else {
+            _currentGestureType = 'channel';
+          }
+        } else {
+          // 水平滑动
+          _currentGestureType = 'horizontal';
+        }
+      }
+      return;
+    }
+    
+    // 处理垂直滑动
+    final screenHeight = MediaQuery.of(context).size.height;
+    final deltaY = _gestureStartY - details.globalPosition.dy;
+    
+    if (_currentGestureType == 'volume') {
+      final volumeChange = (deltaY / (screenHeight * 0.5)) * 1.0; // 滑动半屏改变100%音量
+      final newVolume = (_initialVolume + volumeChange).clamp(0.0, 1.0);
+      (_playerProvider ?? context.read<PlayerProvider>()).setVolume(newVolume);
+      setState(() {
+        _showGestureIndicator = true;
+        _gestureValue = newVolume;
+      });
+    } else if (_currentGestureType == 'brightness') {
+      final brightnessChange = (deltaY / (screenHeight * 0.5)) * 1.0;
+      final newBrightness = (_initialBrightness + brightnessChange).clamp(0.0, 1.0);
+      try {
+        ScreenBrightness.instance.setApplicationScreenBrightness(newBrightness);
+      } catch (_) {}
+      setState(() {
+        _showGestureIndicator = true;
+        _gestureValue = newBrightness;
+      });
+    } else if (_currentGestureType == 'channel') {
+      // 中间区域显示滑动指示
+      setState(() {
+        _showGestureIndicator = true;
+        _gestureValue = dy.clamp(-100.0, 100.0) / 100.0; // 用于显示方向
+      });
+    }
+  }
+  
+  void _onPanEnd(DragEndDetails details) {
+    if (_panStartPosition == null) {
+      _resetGestureState();
+      return;
+    }
+    
+    final dx = details.globalPosition.dx - _panStartPosition!.dx;
+    final dy = details.globalPosition.dy - _panStartPosition!.dy;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    // 处理频道切换
+    if (_currentGestureType == 'channel') {
+      final threshold = screenHeight * 0.08; // 滑动超过屏幕8%即可切换
+      if (dy.abs() > threshold) {
+        final playerProvider = _playerProvider ?? context.read<PlayerProvider>();
+        final channelProvider = context.read<ChannelProvider>();
+        if (dy > 0) {
+          // 下滑 -> 上一个频道
+          playerProvider.playPrevious(channelProvider.filteredChannels);
+          _saveLastChannelId(playerProvider.currentChannel);
+        } else {
+          // 上滑 -> 下一个频道
+          playerProvider.playNext(channelProvider.filteredChannels);
+          _saveLastChannelId(playerProvider.currentChannel);
+        }
+      }
+    }
+    
+    // 处理水平滑动 - 显示/隐藏分类菜单
+    if (_currentGestureType == 'horizontal') {
+      final threshold = screenWidth * 0.15; // 滑动超过屏幕15%
+      if (dx < -threshold && !_showCategoryPanel) {
+        // 左滑显示分类菜单
+        setState(() {
+          _showCategoryPanel = true;
+          _showControls = false;
+        });
+      } else if (dx > threshold && _showCategoryPanel) {
+        // 右滑关闭分类菜单
+        setState(() {
+          _showCategoryPanel = false;
+          _selectedCategory = null;
+        });
+      }
+    }
+    
+    _resetGestureState();
+  }
+  
+  void _resetGestureState() {
+    setState(() {
+      _showGestureIndicator = false;
+    });
+    _panStartPosition = null;
+    _currentGestureType = null;
+  }
+  
+  Widget _buildGestureIndicator() {
+    IconData icon;
+    String label;
+    
+    if (_currentGestureType == 'volume') {
+      icon = _gestureValue > 0.5 ? Icons.volume_up : (_gestureValue > 0 ? Icons.volume_down : Icons.volume_off);
+      label = '${(_gestureValue * 100).toInt()}%';
+    } else if (_currentGestureType == 'brightness') {
+      icon = _gestureValue > 0.5 ? Icons.brightness_high : Icons.brightness_low;
+      label = '${(_gestureValue * 100).toInt()}%';
+    } else if (_currentGestureType == 'channel') {
+      // 频道切换指示
+      if (_gestureValue < 0) {
+        icon = Icons.keyboard_arrow_up;
+        label = '下一频道';
+      } else {
+        icon = Icons.keyboard_arrow_down;
+        label = '上一频道';
+      }
+    } else {
+      return const SizedBox.shrink();
+    }
+    
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.black.withAlpha(180),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: Colors.white, size: 36),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   DateTime? _lastSelectKeyDownTime;
@@ -368,22 +582,25 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       return KeyEventResult.handled;
     }
 
-    // Mute
+    // Mute - 只在TV端处理
     if (key == LogicalKeyboardKey.keyM ||
-        key == LogicalKeyboardKey.audioVolumeMute) {
+        (key == LogicalKeyboardKey.audioVolumeMute && !PlatformDetector.isMobile)) {
       playerProvider.toggleMute();
       return KeyEventResult.handled;
     }
 
-    // Explicit Volume Keys (for remotes with dedicated buttons)
-    if (key == LogicalKeyboardKey.audioVolumeUp) {
-      playerProvider.setVolume(playerProvider.volume + 0.1);
-      return KeyEventResult.handled;
-    }
+    // Explicit Volume Keys (for TV remotes with dedicated buttons)
+    // 手机端让系统处理音量键
+    if (!PlatformDetector.isMobile) {
+      if (key == LogicalKeyboardKey.audioVolumeUp) {
+        playerProvider.setVolume(playerProvider.volume + 0.1);
+        return KeyEventResult.handled;
+      }
 
-    if (key == LogicalKeyboardKey.audioVolumeDown) {
-      playerProvider.setVolume(playerProvider.volume - 0.1);
-      return KeyEventResult.handled;
+      if (key == LogicalKeyboardKey.audioVolumeDown) {
+        playerProvider.setVolume(playerProvider.volume - 0.1);
+        return KeyEventResult.handled;
+      }
     }
 
     // Settings / Menu
@@ -424,6 +641,8 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
             }
           },
           child: GestureDetector(
+            // 让手势覆盖整个屏幕，包括黑色区域
+            behavior: HitTestBehavior.opaque,
             onTap: () {
               if (_showCategoryPanel) {
                 setState(() {
@@ -437,8 +656,17 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
             onDoubleTap: () {
               context.read<PlayerProvider>().togglePlayPause();
             },
+            // 手机端手势控制 - 使用 Pan 手势统一处理
+            onPanStart: PlatformDetector.isMobile ? _onPanStart : null,
+            onPanUpdate: PlatformDetector.isMobile ? _onPanUpdate : null,
+            onPanEnd: PlatformDetector.isMobile ? _onPanEnd : null,
             child: Stack(
               children: [
+                // 全屏背景，确保手势可以在整个屏幕响应
+                const Positioned.fill(
+                  child: ColoredBox(color: Colors.transparent),
+                ),
+                
                 // Video Player
                 _buildVideoPlayer(),
 
@@ -454,6 +682,9 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
 
                 // Category Panel (Left side)
                 if (_showCategoryPanel) _buildCategoryPanel(),
+
+                // 手势指示器 (手机端)
+                if (_showGestureIndicator) _buildGestureIndicator(),
 
                 // Loading Indicator
                 Consumer<PlayerProvider>(
