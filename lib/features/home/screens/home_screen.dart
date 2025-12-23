@@ -163,10 +163,19 @@ class _HomeScreenState extends State<HomeScreen> {
           return const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor));
         }
         
-        // 频道加载完成后，如果推荐频道为空则初始化
-        if (_recommendedChannels.isEmpty && channelProvider.channels.isNotEmpty) {
+        // 检查播放列表是否变化，或者推荐频道为空
+        final currentPlaylistId = playlistProvider.activePlaylist?.id;
+        final needsRefresh = _lastPlaylistId != currentPlaylistId || 
+            _recommendedChannels.isEmpty ||
+            // 检查推荐频道是否来自当前播放列表（通过检查第一个频道是否在当前频道列表中）
+            (_recommendedChannels.isNotEmpty && 
+             channelProvider.channels.isNotEmpty &&
+             !channelProvider.channels.any((c) => c.id == _recommendedChannels.first.id));
+        
+        if (needsRefresh && channelProvider.channels.isNotEmpty) {
+          _lastPlaylistId = currentPlaylistId;
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            _refreshRecommendedChannels();
+            if (mounted) _refreshRecommendedChannels();
           });
         }
         
