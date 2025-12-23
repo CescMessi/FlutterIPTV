@@ -9,6 +9,7 @@ import 'tv_focusable.dart';
 class TVSidebar extends StatefulWidget {
   final int selectedIndex;
   final Widget child;
+  final VoidCallback? onRight;  // 按右键时的回调
   
   /// 用于外部获取菜单焦点节点列表
   static List<FocusNode>? menuFocusNodes;
@@ -17,6 +18,7 @@ class TVSidebar extends StatefulWidget {
     super.key,
     required this.selectedIndex,
     required this.child,
+    this.onRight,
   });
 
   @override
@@ -154,6 +156,7 @@ class _TVSidebarState extends State<TVSidebar> {
         focusNode: index < _menuFocusNodes.length ? _menuFocusNodes[index] : null,
         autofocus: index == widget.selectedIndex,
         onSelect: () => _onNavItemTap(index, item.route),
+        onRight: widget.onRight,  // 传递右键回调
         focusScale: 1.0,
         showFocusBorder: false,
         builder: (context, isFocused, child) {

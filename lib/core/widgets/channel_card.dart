@@ -22,6 +22,7 @@ class ChannelCard extends StatelessWidget {
   final VoidCallback? onTest;
   final VoidCallback? onLeft;
   final VoidCallback? onDown;
+  final VoidCallback? onFocused;  // 获得焦点时的回调
   final bool autofocus;
   final FocusNode? focusNode;
 
@@ -41,6 +42,7 @@ class ChannelCard extends StatelessWidget {
     this.onTest,
     this.onLeft,
     this.onDown,
+    this.onFocused,
     this.autofocus = false,
     this.focusNode,
   });
@@ -53,6 +55,7 @@ class ChannelCard extends StatelessWidget {
       autofocus: autofocus,
       focusNode: focusNode,
       onSelect: onTap,
+      onFocus: onFocused,
       onLeft: onLeft,
       onDown: onDown,
       focusScale: isTV ? 1.0 : 1.03, // TV端不缩放

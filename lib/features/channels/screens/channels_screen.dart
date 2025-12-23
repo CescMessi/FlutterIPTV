@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -39,6 +41,10 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
   final List<FocusNode> _groupFocusNodes = [];
   final List<FocusNode> _channelFocusNodes = [];
   int _currentGroupIndex = 0;
+  int _lastChannelIndex = 0;  // 记住上次聚焦的频道索引
+  
+  // 延迟选中分类的定时器
+  Timer? _groupSelectTimer;
 
   @override
   void initState() {
@@ -52,6 +58,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
 
   @override
   void dispose() {
+    _groupSelectTimer?.cancel();
     _scrollController.dispose();
     _groupScrollController.dispose();
     for (final node in _groupFocusNodes) {
@@ -82,6 +89,12 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
         backgroundColor: AppTheme.backgroundColor,
         body: TVSidebar(
           selectedIndex: 1, // 频道页
+          onRight: () {
+            // 主菜单按右键，跳转到当前分类
+            if (_groupFocusNodes.isNotEmpty && _currentGroupIndex < _groupFocusNodes.length) {
+              _groupFocusNodes[_currentGroupIndex].requestFocus();
+            }
+          },
           child: content,
         ),
       );
@@ -234,14 +247,23 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
         focusNode: focusNode,
         onSelect: onTap,
         onFocus: PlatformDetector.isTV ? () {
-          // TV端焦点移动自动选中分类
+          // TV端焦点移动延迟选中分类，避免快速滚动时频繁刷新
           _currentGroupIndex = groupIndex;
-          onTap();
+          _groupSelectTimer?.cancel();
+          _groupSelectTimer = Timer(const Duration(milliseconds: 300), () {
+            if (mounted) {
+              // 切换分类时重置频道索引并滚动到顶部
+              _lastChannelIndex = 0;
+              _scrollController.jumpTo(0);
+              onTap();
+            }
+          });
         } : null,
         onRight: PlatformDetector.isTV ? () {
-          // 按右键跳转到频道网格的第一个频道
+          // 按右键跳转到上次聚焦的频道（或第一个）
           if (_channelFocusNodes.isNotEmpty) {
-            _channelFocusNodes[0].requestFocus();
+            final targetIndex = _lastChannelIndex.clamp(0, _channelFocusNodes.length - 1);
+            _channelFocusNodes[targetIndex].requestFocus();
           }
         } : null,
         onLeft: PlatformDetector.isTV ? () {
@@ -481,6 +503,10 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                         focusNode: PlatformDetector.isTV && index < _channelFocusNodes.length 
                             ? _channelFocusNodes[index] 
                             : null,
+                        onFocused: PlatformDetector.isTV ? () {
+                          // 记住当前聚焦的频道索引
+                          _lastChannelIndex = index;
+                        } : null,
                         onLeft: (PlatformDetector.isTV && isFirstColumn) ? () {
                           // 第一列按左键，跳转到当前选中的分类
                           if (_currentGroupIndex < _groupFocusNodes.length) {
