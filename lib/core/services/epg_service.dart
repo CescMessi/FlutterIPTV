@@ -62,6 +62,12 @@ class EpgService {
   // 频道名称映射 (用于匹配)
   final Map<String, String> _channelNames = {};
   
+  // 频道名称索引 (normalizedName -> channelId) 用于快速查找
+  final Map<String, String> _nameIndex = {};
+  
+  // EPG 查询缓存 (channelKey -> channelId)
+  final Map<String, String?> _lookupCache = {};
+  
   DateTime? _lastUpdate;
   bool _isLoading = false;
 
@@ -111,24 +117,36 @@ class EpgService {
   }
 
   List<EpgProgram>? _findPrograms(String? channelId, String? channelName) {
+    // 生成缓存 key
+    final cacheKey = '${channelId ?? ''}_${channelName ?? ''}';
+    
+    // 检查缓存
+    if (_lookupCache.containsKey(cacheKey)) {
+      final cachedId = _lookupCache[cacheKey];
+      if (cachedId != null && _programs.containsKey(cachedId)) {
+        return _programs[cachedId];
+      }
+      return null;
+    }
+    
     // 先用 channelId 查找
     if (channelId != null && _programs.containsKey(channelId)) {
+      _lookupCache[cacheKey] = channelId;
       return _programs[channelId];
     }
     
-    // 用频道名称查找
+    // 用频道名称索引快速查找
     if (channelName != null) {
       final normalizedName = _normalizeName(channelName);
-      for (final entry in _channelNames.entries) {
-        if (_normalizeName(entry.value) == normalizedName ||
-            _normalizeName(entry.key) == normalizedName) {
-          if (_programs.containsKey(entry.key)) {
-            return _programs[entry.key];
-          }
-        }
+      if (_nameIndex.containsKey(normalizedName)) {
+        final foundId = _nameIndex[normalizedName]!;
+        _lookupCache[cacheKey] = foundId;
+        return _programs[foundId];
       }
     }
     
+    // 缓存未找到的结果
+    _lookupCache[cacheKey] = null;
     return null;
   }
 
@@ -168,12 +186,123 @@ class EpgService {
         content = _decodeContent(response.bodyBytes);
       }
 
-      return await _parseXmlTv(content);
+      // 在后台 isolate 中解析 XML，避免阻塞 UI
+      final result = await compute(_parseXmlTvInBackground, content);
+      if (result != null) {
+        _programs.clear();
+        _channelNames.clear();
+        _nameIndex.clear();
+        _lookupCache.clear();
+        
+        _programs.addAll(result['programs'] as Map<String, List<EpgProgram>>);
+        _channelNames.addAll(result['channelNames'] as Map<String, String>);
+        _nameIndex.addAll(result['nameIndex'] as Map<String, String>);
+        
+        _lastUpdate = DateTime.now();
+        debugPrint('EPG: Loaded ${_programs.length} channels, ${_programs.values.fold(0, (sum, list) => sum + list.length)} programs');
+        return true;
+      }
+      return false;
     } catch (e) {
       debugPrint('EPG: Error loading: $e');
       return false;
     } finally {
       _isLoading = false;
+    }
+  }
+
+  /// 在后台 isolate 中解析 XML
+  static Map<String, dynamic>? _parseXmlTvInBackground(String content) {
+    try {
+      final document = XmlDocument.parse(content);
+      final tv = document.findElements('tv').firstOrNull;
+      if (tv == null) return null;
+
+      final programs = <String, List<EpgProgram>>{};
+      final channelNames = <String, String>{};
+      final nameIndex = <String, String>{};
+
+      // 解析频道
+      for (final channel in tv.findElements('channel')) {
+        final id = channel.getAttribute('id');
+        if (id == null) continue;
+        
+        final displayName = channel.findElements('display-name').firstOrNull?.innerText;
+        if (displayName != null) {
+          channelNames[id] = displayName;
+          nameIndex[_normalizeNameStatic(displayName)] = id;
+          nameIndex[_normalizeNameStatic(id)] = id;
+        }
+      }
+
+      // 解析节目
+      for (final programme in tv.findElements('programme')) {
+        final channelId = programme.getAttribute('channel');
+        final startStr = programme.getAttribute('start');
+        final stopStr = programme.getAttribute('stop');
+        
+        if (channelId == null || startStr == null || stopStr == null) continue;
+
+        final start = _parseDateTimeStatic(startStr);
+        final end = _parseDateTimeStatic(stopStr);
+        if (start == null || end == null) continue;
+
+        final title = programme.findElements('title').firstOrNull?.innerText ?? '';
+        final desc = programme.findElements('desc').firstOrNull?.innerText;
+        final category = programme.findElements('category').firstOrNull?.innerText;
+
+        final program = EpgProgram(
+          channelId: channelId,
+          title: title,
+          description: desc,
+          start: start,
+          end: end,
+          category: category,
+        );
+
+        programs.putIfAbsent(channelId, () => []).add(program);
+      }
+
+      // 按开始时间排序
+      for (final programList in programs.values) {
+        programList.sort((a, b) => a.start.compareTo(b.start));
+      }
+
+      return {
+        'programs': programs,
+        'channelNames': channelNames,
+        'nameIndex': nameIndex,
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static String _normalizeNameStatic(String name) {
+    return name.toLowerCase()
+        .replaceAll(RegExp(r'[^\w\u4e00-\u9fa5]'), '')
+        .replaceAll('hd', '')
+        .replaceAll('高清', '')
+        .replaceAll('标清', '')
+        .replaceAll('超清', '');
+  }
+
+  static DateTime? _parseDateTimeStatic(String str) {
+    try {
+      final match = RegExp(r'(\d{14})').firstMatch(str);
+      if (match == null) return null;
+      
+      final dateStr = match.group(1)!;
+      return DateTime(
+        int.parse(dateStr.substring(0, 4)),
+        int.parse(dateStr.substring(4, 6)),
+        int.parse(dateStr.substring(6, 8)),
+        int.parse(dateStr.substring(8, 10)),
+        int.parse(dateStr.substring(10, 12)),
+        int.parse(dateStr.substring(12, 14)),
+      );
+    } catch (e) {
+      return null;
     }
   }
 
@@ -217,95 +346,11 @@ class EpgService {
     return count > 3;
   }
 
-  Future<bool> _parseXmlTv(String content) async {
-    try {
-      final document = XmlDocument.parse(content);
-      final tv = document.findElements('tv').firstOrNull;
-      if (tv == null) {
-        debugPrint('EPG: No <tv> element found');
-        return false;
-      }
-
-      _programs.clear();
-      _channelNames.clear();
-
-      // 解析频道
-      for (final channel in tv.findElements('channel')) {
-        final id = channel.getAttribute('id');
-        if (id == null) continue;
-        
-        final displayName = channel.findElements('display-name').firstOrNull?.innerText;
-        if (displayName != null) {
-          _channelNames[id] = displayName;
-        }
-      }
-
-      // 解析节目
-      for (final programme in tv.findElements('programme')) {
-        final channelId = programme.getAttribute('channel');
-        final startStr = programme.getAttribute('start');
-        final stopStr = programme.getAttribute('stop');
-        
-        if (channelId == null || startStr == null || stopStr == null) continue;
-
-        final start = _parseDateTime(startStr);
-        final end = _parseDateTime(stopStr);
-        if (start == null || end == null) continue;
-
-        final title = programme.findElements('title').firstOrNull?.innerText ?? '';
-        final desc = programme.findElements('desc').firstOrNull?.innerText;
-        final category = programme.findElements('category').firstOrNull?.innerText;
-
-        final program = EpgProgram(
-          channelId: channelId,
-          title: title,
-          description: desc,
-          start: start,
-          end: end,
-          category: category,
-        );
-
-        _programs.putIfAbsent(channelId, () => []).add(program);
-      }
-
-      // 按开始时间排序
-      for (final programs in _programs.values) {
-        programs.sort((a, b) => a.start.compareTo(b.start));
-      }
-
-      _lastUpdate = DateTime.now();
-      debugPrint('EPG: Loaded ${_programs.length} channels, ${_programs.values.fold(0, (sum, list) => sum + list.length)} programs');
-      
-      return true;
-    } catch (e) {
-      debugPrint('EPG: Parse error: $e');
-      return false;
-    }
-  }
-
-  DateTime? _parseDateTime(String str) {
-    // XMLTV 格式: 20231225120000 +0800
-    try {
-      final match = RegExp(r'(\d{14})').firstMatch(str);
-      if (match == null) return null;
-      
-      final dateStr = match.group(1)!;
-      return DateTime(
-        int.parse(dateStr.substring(0, 4)),
-        int.parse(dateStr.substring(4, 6)),
-        int.parse(dateStr.substring(6, 8)),
-        int.parse(dateStr.substring(8, 10)),
-        int.parse(dateStr.substring(10, 12)),
-        int.parse(dateStr.substring(12, 14)),
-      );
-    } catch (e) {
-      return null;
-    }
-  }
-
   void clear() {
     _programs.clear();
     _channelNames.clear();
+    _nameIndex.clear();
+    _lookupCache.clear();
     _lastUpdate = null;
   }
 }
