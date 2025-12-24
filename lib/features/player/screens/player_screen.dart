@@ -5,6 +5,7 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:video_player/video_player.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:window_manager/window_manager.dart';
 import 'dart:async';
 
 import '../../../core/i18n/app_strings.dart';
@@ -12,6 +13,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/tv_focusable.dart';
 import '../../../core/platform/platform_detector.dart';
 import '../../../core/platform/native_player_channel.dart';
+import '../../../core/platform/windows_pip_channel.dart';
 import '../../../core/models/channel.dart';
 import '../providers/player_provider.dart';
 import '../../favorites/providers/favorites_provider.dart';
@@ -623,6 +625,12 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
 
     // Back/Exit
     if (key == LogicalKeyboardKey.escape || key == LogicalKeyboardKey.goBack) {
+      // 迷你模式下先退出迷你模式
+      if (WindowsPipChannel.isInPipMode) {
+        WindowsPipChannel.exitPipMode();
+        setState(() {});
+        return KeyEventResult.handled;
+      }
       playerProvider.stop();
       if (Navigator.canPop(context)) {
         Navigator.of(context).pop();
@@ -716,27 +724,32 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                 // Video Player
                 _buildVideoPlayer(),
 
-                // Controls Overlay
+                // Controls Overlay - 迷你模式下使用简化版
                 AnimatedOpacity(
                   opacity: _showControls ? 1.0 : 0.0,
                   duration: const Duration(milliseconds: 300),
                   child: IgnorePointer(
                     ignoring: !_showControls,
-                    child: _buildControlsOverlay(),
+                    child: WindowsPipChannel.isInPipMode
+                        ? _buildMiniControlsOverlay()
+                        : _buildControlsOverlay(),
                   ),
                 ),
 
-                // Category Panel (Left side)
-                if (_showCategoryPanel) _buildCategoryPanel(),
+                // Category Panel (Left side) - 迷你模式下不显示
+                if (_showCategoryPanel && !WindowsPipChannel.isInPipMode) _buildCategoryPanel(),
 
                 // 手势指示器 (手机端)
                 if (_showGestureIndicator) _buildGestureIndicator(),
 
                 // Loading Indicator - 使用本地状态
                 if (_isLoading)
-                  const Center(
-                    child: CircularProgressIndicator(
-                      color: AppTheme.primaryColor,
+                  Center(
+                    child: Transform.scale(
+                      scale: WindowsPipChannel.isInPipMode ? 0.6 : 1.0,
+                      child: const CircularProgressIndicator(
+                        color: AppTheme.primaryColor,
+                      ),
                     ),
                   ),
 
@@ -793,6 +806,117 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
           ),
         );
       },
+    );
+  }
+
+  // 迷你模式下的简化控件
+  Widget _buildMiniControlsOverlay() {
+    return GestureDetector(
+      // 整个区域可拖动
+      onPanStart: (_) => windowManager.startDragging(),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.black.withOpacity(0.5),
+              Colors.transparent,
+              Colors.black.withOpacity(0.5),
+            ],
+            stops: const [0.0, 0.5, 1.0],
+          ),
+        ),
+        child: Column(
+          children: [
+            // 顶部：频道名 + 退出/恢复按钮
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Consumer<PlayerProvider>(
+                      builder: (context, provider, _) {
+                        return Text(
+                          provider.currentChannel?.name ?? widget.channelName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      },
+                    ),
+                  ),
+                  // 恢复大小按钮
+                  GestureDetector(
+                    onTap: () async {
+                      await WindowsPipChannel.exitPipMode();
+                      setState(() {});
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Icon(Icons.fullscreen, color: Colors.white, size: 16),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  // 关闭按钮
+                  GestureDetector(
+                    onTap: () {
+                      WindowsPipChannel.exitPipMode();
+                      context.read<PlayerProvider>().stop();
+                      Navigator.of(context).pop();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Icon(Icons.close, color: Colors.white, size: 16),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Spacer(),
+            // 底部：播放/暂停按钮
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Consumer<PlayerProvider>(
+                builder: (context, provider, _) {
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      GestureDetector(
+                        onTap: provider.togglePlayPause,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            gradient: AppTheme.lotusGradient,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            provider.isPlaying ? Icons.pause : Icons.play_arrow,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -979,8 +1103,91 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
             },
           ),
 
+          // PiP 迷你播放器按钮 - 仅 Windows
+          if (WindowsPipChannel.isSupported) ...[
+            const SizedBox(width: 8),
+            _buildPipButton(),
+          ],
+
         ],
       ),
+    );
+  }
+
+  // PiP 迷你播放器按钮
+  Widget _buildPipButton() {
+    return StatefulBuilder(
+      builder: (context, setState) {
+        final isInPip = WindowsPipChannel.isInPipMode;
+        final isPinned = WindowsPipChannel.isPinned;
+        
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // PiP 切换按钮
+            TVFocusable(
+              onSelect: () async {
+                await WindowsPipChannel.togglePipMode();
+                setState(() {});
+              },
+              focusScale: 1.0,
+              showFocusBorder: false,
+              builder: (context, isFocused, child) {
+                return Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: isInPip ? AppTheme.lotusGradient : null,
+                    color: isInPip ? null : (isFocused ? AppTheme.primaryColor : const Color(0x33FFFFFF)),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isFocused ? AppTheme.focusBorderColor : const Color(0x1AFFFFFF),
+                      width: isFocused ? 2 : 1,
+                    ),
+                  ),
+                  child: child,
+                );
+              },
+              child: Icon(
+                isInPip ? Icons.fullscreen : Icons.picture_in_picture_alt,
+                color: Colors.white,
+                size: 18,
+              ),
+            ),
+            // 置顶按钮 - 仅在迷你模式下显示
+            if (isInPip) ...[
+              const SizedBox(width: 8),
+              TVFocusable(
+                onSelect: () async {
+                  await WindowsPipChannel.togglePin();
+                  setState(() {});
+                },
+                focusScale: 1.0,
+                showFocusBorder: false,
+                builder: (context, isFocused, child) {
+                  return Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: isPinned ? AppTheme.lotusGradient : null,
+                      color: isPinned ? null : (isFocused ? AppTheme.primaryColor : const Color(0x33FFFFFF)),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isFocused ? AppTheme.focusBorderColor : const Color(0x1AFFFFFF),
+                        width: isFocused ? 2 : 1,
+                      ),
+                    ),
+                    child: child,
+                  );
+                },
+                child: Icon(
+                  isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 
