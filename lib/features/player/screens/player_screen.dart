@@ -978,6 +978,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
               );
             },
           ),
+
         ],
       ),
     );
@@ -1177,6 +1178,9 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   }
 
   Widget _buildVolumeControl(PlayerProvider provider) {
+    // 确保音量值在 0-1 范围内
+    final volume = provider.volume.clamp(0.0, 1.0);
+    
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1199,9 +1203,9 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
             );
           },
           child: Icon(
-            provider.isMuted || provider.volume == 0
+            provider.isMuted || volume == 0
                 ? Icons.volume_off_rounded
-                : provider.volume < 0.5
+                : volume < 0.5
                     ? Icons.volume_down_rounded
                     : Icons.volume_up_rounded,
             color: Colors.white,
@@ -1218,7 +1222,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
               overlayShape: const RoundSliderOverlayShape(overlayRadius: 8),
             ),
             child: Slider(
-              value: provider.isMuted ? 0 : provider.volume,
+              value: provider.isMuted ? 0 : volume,
               onChanged: (value) => provider.setVolume(value),
               activeColor: AppTheme.primaryColor,
               inactiveColor: const Color(0x33FFFFFF),

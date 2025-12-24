@@ -50,10 +50,14 @@ class _HomeScreenState extends State<HomeScreen> {
   void _onChannelProviderChanged() {
     if (!mounted) return;
     final channelProvider = context.read<ChannelProvider>();
-    // 只有当频道数量变化时才刷新
-    if (channelProvider.channels.length != _lastChannelCount && channelProvider.channels.isNotEmpty && !channelProvider.isLoading) {
-      _lastChannelCount = channelProvider.channels.length;
-      _refreshRecommendedChannels();
+    
+    // 当加载完成时刷新推荐频道
+    if (!channelProvider.isLoading && channelProvider.channels.isNotEmpty) {
+      // 频道数量变化或首次加载时刷新
+      if (channelProvider.channels.length != _lastChannelCount || _recommendedChannels.isEmpty) {
+        _lastChannelCount = channelProvider.channels.length;
+        _refreshRecommendedChannels();
+      }
     }
   }
 
@@ -61,9 +65,21 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     final playlistProvider = context.read<PlaylistProvider>();
     final currentPlaylistId = playlistProvider.activePlaylist?.id;
+    
+    // 播放列表ID变化时清空推荐频道
     if (_lastPlaylistId != currentPlaylistId) {
       _lastPlaylistId = currentPlaylistId;
-      _recommendedChannels = []; // 清空，等待新频道加载
+      _recommendedChannels = [];
+    }
+    
+    // 当播放列表刷新完成时（isLoading 从 true 变为 false），触发频道重新加载
+    // 这样可以确保刷新 M3U 后首页能正确更新
+    if (!playlistProvider.isLoading && playlistProvider.hasPlaylists) {
+      final channelProvider = context.read<ChannelProvider>();
+      // 如果频道 provider 不在加载中，且推荐频道为空，则重新加载
+      if (!channelProvider.isLoading && _recommendedChannels.isEmpty) {
+        _refreshRecommendedChannels();
+      }
     }
   }
 
@@ -189,7 +205,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return Consumer2<PlaylistProvider, ChannelProvider>(
       builder: (context, playlistProvider, channelProvider, _) {
         if (!playlistProvider.hasPlaylists) return _buildEmptyState();
-        if (channelProvider.isLoading) {
+        // 播放列表正在刷新或频道正在加载时显示加载状态
+        if (playlistProvider.isLoading || channelProvider.isLoading) {
           return const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor));
         }
 
