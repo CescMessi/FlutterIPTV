@@ -47,7 +47,8 @@ class PlayerProvider extends ChangeNotifier {
   int _volumeBoostDb = 0;
 
   int _retryCount = 0;
-  static const int _maxRetries = 2;
+  static const int _maxRetries = 3;
+  Timer? _retryTimer;
 
   // On Android TV, we use native player via Activity, so don't init any Flutter player
   // On Android phone/tablet, use ExoPlayer
@@ -105,8 +106,47 @@ class PlayerProvider extends ChangeNotifier {
     }
     _lastErrorMessage = error;
     _lastErrorTime = now;
+    
+    // 尝试自动重试
+    if (_retryCount < _maxRetries && _currentChannel != null) {
+      _retryCount++;
+      debugPrint('PlayerProvider: 播放错误，尝试重试 ($_retryCount/$_maxRetries): $error');
+      _retryTimer?.cancel();
+      _retryTimer = Timer(const Duration(seconds: 2), () {
+        if (_currentChannel != null) {
+          _retryPlayback();
+        }
+      });
+      return;
+    }
+    
+    // 超过重试次数，显示错误
     _state = PlayerState.error;
     _error = error;
+    notifyListeners();
+  }
+  
+  /// 重试播放当前频道
+  Future<void> _retryPlayback() async {
+    if (_currentChannel == null) return;
+    
+    debugPrint('PlayerProvider: 正在重试播放 ${_currentChannel!.name}');
+    _state = PlayerState.loading;
+    _error = null;
+    notifyListeners();
+    
+    try {
+      if (_useExoPlayer) {
+        await _initExoPlayer(_currentChannel!.url);
+      } else {
+        await _mediaKitPlayer?.open(Media(_currentChannel!.url));
+        _state = PlayerState.playing;
+      }
+    } catch (e) {
+      debugPrint('PlayerProvider: 重试失败: $e');
+      // 重试失败，继续尝试或显示错误
+      _setError('Failed to play channel: $e');
+    }
     notifyListeners();
   }
 
@@ -491,6 +531,7 @@ class PlayerProvider extends ChangeNotifier {
   @override
   void dispose() {
     _debugInfoTimer?.cancel();
+    _retryTimer?.cancel();
     _mediaKitPlayer?.dispose();
     _disposeExoPlayer();
     super.dispose();

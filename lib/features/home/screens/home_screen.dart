@@ -698,26 +698,54 @@ class _OptimizedChannelCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 使用 Selector 只在该频道的收藏状态变化时重建
-    return Selector<FavoritesProvider, bool>(
-      selector: (_, provider) => provider.isFavorite(channel.id ?? 0),
-      builder: (context, isFavorite, _) {
-        // EPG 数据使用 read 而不是 watch，因为 EPG 不会频繁变化
-        final epgProvider = context.read<EpgProvider>();
+    // 使用 Selector 监听收藏状态和 EPG 数据变化
+    return Selector2<FavoritesProvider, EpgProvider, _ChannelCardData>(
+      selector: (_, favProvider, epgProvider) {
         final currentProgram = epgProvider.getCurrentProgram(channel.epgId, channel.name);
         final nextProgram = epgProvider.getNextProgram(channel.epgId, channel.name);
-
+        return _ChannelCardData(
+          isFavorite: favProvider.isFavorite(channel.id ?? 0),
+          currentProgram: currentProgram?.title,
+          nextProgram: nextProgram?.title,
+        );
+      },
+      builder: (context, data, _) {
         return ChannelCard(
           name: channel.name,
           logoUrl: channel.logoUrl,
           groupName: channel.groupName,
-          currentProgram: currentProgram?.title,
-          nextProgram: nextProgram?.title,
-          isFavorite: isFavorite,
+          currentProgram: data.currentProgram,
+          nextProgram: data.nextProgram,
+          isFavorite: data.isFavorite,
           onFavoriteToggle: () => context.read<FavoritesProvider>().toggleFavorite(channel),
           onTap: onTap,
         );
       },
     );
   }
+}
+
+/// 频道卡片数据，用于 Selector 比较
+class _ChannelCardData {
+  final bool isFavorite;
+  final String? currentProgram;
+  final String? nextProgram;
+
+  _ChannelCardData({
+    required this.isFavorite,
+    this.currentProgram,
+    this.nextProgram,
+  });
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is _ChannelCardData &&
+        other.isFavorite == isFavorite &&
+        other.currentProgram == currentProgram &&
+        other.nextProgram == nextProgram;
+  }
+
+  @override
+  int get hashCode => Object.hash(isFavorite, currentProgram, nextProgram);
 }
