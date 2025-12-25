@@ -128,18 +128,28 @@ class EpgService {
     }
 
     // 先用 channelId 查找
-    if (channelId != null && _programs.containsKey(channelId)) {
+    if (channelId != null && channelId.isNotEmpty && _programs.containsKey(channelId)) {
       _lookupCache[cacheKey] = channelId;
       return _programs[channelId];
     }
 
     // 用频道名称索引快速查找
-    if (channelName != null) {
+    if (channelName != null && channelName.isNotEmpty) {
       final normalizedName = _normalizeName(channelName);
       if (_nameIndex.containsKey(normalizedName)) {
         final foundId = _nameIndex[normalizedName]!;
         _lookupCache[cacheKey] = foundId;
         return _programs[foundId];
+      }
+      
+      // 尝试用 channelId 作为名称查找
+      if (channelId != null && channelId.isNotEmpty) {
+        final normalizedId = _normalizeName(channelId);
+        if (_nameIndex.containsKey(normalizedId)) {
+          final foundId = _nameIndex[normalizedId]!;
+          _lookupCache[cacheKey] = foundId;
+          return _programs[foundId];
+        }
       }
     }
 

@@ -7,6 +7,8 @@ import '../../../core/services/local_server_service.dart';
 import '../../../core/widgets/tv_focusable.dart';
 import '../../../core/i18n/app_strings.dart';
 import '../../channels/providers/channel_provider.dart';
+import '../../settings/providers/settings_provider.dart';
+import '../../epg/providers/epg_provider.dart';
 import '../providers/playlist_provider.dart';
 import '../../favorites/providers/favorites_provider.dart';
 
@@ -95,6 +97,24 @@ class _QrImportDialogState extends State<QrImportDialog> {
           await channelProvider.loadChannels(playlist.id!);
         }
 
+        // 自动应用 EPG URL（如果 M3U 中包含）
+        if (provider.lastExtractedEpgUrl != null) {
+          debugPrint('DEBUG: 发现 EPG URL，自动应用: ${provider.lastExtractedEpgUrl}');
+          final settingsProvider = context.read<SettingsProvider>();
+          final epgApplied = await provider.applyExtractedEpgUrl(settingsProvider);
+          if (epgApplied && mounted) {
+            await context.read<EpgProvider>().loadEpg(provider.lastExtractedEpgUrl!);
+            debugPrint('DEBUG: EPG 数据加载完成');
+          }
+        } else {
+          // 如果没有提取到 EPG URL，尝试使用已配置的 EPG URL
+          final settingsProvider = context.read<SettingsProvider>();
+          if (settingsProvider.enableEpg && settingsProvider.epgUrl != null && settingsProvider.epgUrl!.isNotEmpty) {
+            debugPrint('DEBUG: 使用已配置的 EPG URL: ${settingsProvider.epgUrl}');
+            await context.read<EpgProvider>().loadEpg(settingsProvider.epgUrl!);
+          }
+        }
+
         setState(() {
           _receivedMessage = '✓ ${AppStrings.of(context)?.importSuccess ?? "Import successful"}: ${playlist.name}';
           _isImporting = false;
@@ -150,6 +170,24 @@ class _QrImportDialogState extends State<QrImportDialog> {
         if (playlist.id != null) {
           debugPrint('DEBUG: 加载新导入播放列表的频道...');
           await channelProvider.loadChannels(playlist.id!);
+        }
+
+        // 自动应用 EPG URL（如果 M3U 中包含）
+        if (provider.lastExtractedEpgUrl != null) {
+          debugPrint('DEBUG: 发现 EPG URL，自动应用: ${provider.lastExtractedEpgUrl}');
+          final settingsProvider = context.read<SettingsProvider>();
+          final epgApplied = await provider.applyExtractedEpgUrl(settingsProvider);
+          if (epgApplied && mounted) {
+            await context.read<EpgProvider>().loadEpg(provider.lastExtractedEpgUrl!);
+            debugPrint('DEBUG: EPG 数据加载完成');
+          }
+        } else {
+          // 如果没有提取到 EPG URL，尝试使用已配置的 EPG URL
+          final settingsProvider = context.read<SettingsProvider>();
+          if (settingsProvider.enableEpg && settingsProvider.epgUrl != null && settingsProvider.epgUrl!.isNotEmpty) {
+            debugPrint('DEBUG: 使用已配置的 EPG URL: ${settingsProvider.epgUrl}');
+            await context.read<EpgProvider>().loadEpg(settingsProvider.epgUrl!);
+          }
         }
 
         setState(() {
