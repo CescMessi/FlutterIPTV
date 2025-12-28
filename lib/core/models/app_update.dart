@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import '../platform/platform_detector.dart';
 
 class AppUpdate {
@@ -21,8 +22,12 @@ class AppUpdate {
     this.minVersion = '1.0.0',
   });
 
+  // 缓存 CPU 架构
+  static String? _cachedCpuAbi;
+  static const _platformChannel = MethodChannel('com.flutteriptv/platform');
+
   /// 从 GitHub Pages version.json 解析
-  factory AppUpdate.fromVersionJson(Map<String, dynamic> json) {
+  static Future<AppUpdate> fromVersionJsonAsync(Map<String, dynamic> json) async {
     final assets = json['assets'] as Map<String, dynamic>? ?? {};
     final changelog = json['changelog'] as Map<String, dynamic>? ?? {};
     
@@ -31,7 +36,7 @@ class AppUpdate {
     final releaseNotes = changelog[locale] ?? changelog['zh'] ?? changelog['en'] ?? '';
     
     // 根据平台和架构选择下载链接
-    final downloadUrl = _getDownloadUrl(assets);
+    final downloadUrl = await _getDownloadUrl(assets);
 
     return AppUpdate(
       version: json['version'] ?? '0.0.0',
@@ -44,15 +49,52 @@ class AppUpdate {
     );
   }
 
-  /// 根据平台和架构获取下载链接
-  static String _getDownloadUrl(Map<String, dynamic> assets) {
+  /// 从 GitHub Pages version.json 解析（同步版本，使用缓存的架构）
+  factory AppUpdate.fromVersionJson(Map<String, dynamic> json) {
+    final assets = json['assets'] as Map<String, dynamic>? ?? {};
+    final changelog = json['changelog'] as Map<String, dynamic>? ?? {};
+    
+    // 根据当前语言选择更新日志，默认中文
+    final locale = Platform.localeName.startsWith('zh') ? 'zh' : 'en';
+    final releaseNotes = changelog[locale] ?? changelog['zh'] ?? changelog['en'] ?? '';
+    
+    // 根据平台和架构选择下载链接（同步版本）
+    final downloadUrl = _getDownloadUrlSync(assets);
+
+    return AppUpdate(
+      version: json['version'] ?? '0.0.0',
+      build: json['build'] ?? 0,
+      releaseNotes: releaseNotes,
+      downloadUrl: downloadUrl,
+      assets: assets,
+      releaseDate: DateTime.tryParse(json['releaseDate'] ?? '') ?? DateTime.now(),
+      minVersion: json['minVersion'] ?? '1.0.0',
+    );
+  }
+
+  /// 获取 Android CPU 架构（异步）
+  static Future<String> _getAndroidArch() async {
+    if (_cachedCpuAbi != null) return _cachedCpuAbi!;
+    
+    try {
+      final abi = await _platformChannel.invokeMethod<String>('getCpuAbi');
+      _cachedCpuAbi = abi ?? 'armeabi-v7a';
+      debugPrint('UPDATE: 获取到 CPU 架构: $_cachedCpuAbi');
+    } catch (e) {
+      debugPrint('UPDATE: 获取 CPU 架构失败: $e，使用默认值');
+      _cachedCpuAbi = 'armeabi-v7a';
+    }
+    return _cachedCpuAbi!;
+  }
+
+  /// 根据平台和架构获取下载链接（异步）
+  static Future<String> _getDownloadUrl(Map<String, dynamic> assets) async {
     if (Platform.isWindows) {
       return assets['windows'] ?? '';
     }
     
     if (Platform.isAndroid) {
-      // 获取设备架构
-      final arch = _getAndroidArch();
+      final arch = await _getAndroidArch();
       debugPrint('UPDATE: Android 架构: $arch, isTV: ${PlatformDetector.isTV}');
       
       // 根据是否是 TV 选择对应的包
@@ -72,13 +114,39 @@ class AppUpdate {
     return '';
   }
 
-  /// 获取 Android 设备架构
-  static String _getAndroidArch() {
-    // 通过 Dart 的 Platform 无法直接获取 CPU 架构
-    // 这里使用一个简化的方法：优先返回 arm64-v8a（大多数现代设备）
-    // 实际项目中可以通过 MethodChannel 从原生获取
-    // 或者直接使用 universal 包
-    return 'arm64-v8a';
+  /// 根据平台和架构获取下载链接（同步，使用缓存）
+  static String _getDownloadUrlSync(Map<String, dynamic> assets) {
+    if (Platform.isWindows) {
+      return assets['windows'] ?? '';
+    }
+    
+    if (Platform.isAndroid) {
+      // 使用缓存的架构，如果没有则默认 armeabi-v7a（更安全的默认值）
+      final arch = _cachedCpuAbi ?? 'armeabi-v7a';
+      debugPrint('UPDATE: Android 架构(sync): $arch, isTV: ${PlatformDetector.isTV}');
+      
+      // 根据是否是 TV 选择对应的包
+      final androidAssets = PlatformDetector.isTV 
+          ? assets['android_tv'] as Map<String, dynamic>?
+          : assets['android_mobile'] as Map<String, dynamic>?;
+      
+      if (androidAssets != null) {
+        // 优先使用对应架构的包，否则使用 universal
+        return androidAssets[arch] ?? androidAssets['universal'] ?? '';
+      }
+      
+      // 兼容旧格式
+      return assets['android'] ?? '';
+    }
+    
+    return '';
+  }
+
+  /// 预加载 CPU 架构（应用启动时调用）
+  static Future<void> preloadCpuArch() async {
+    if (Platform.isAndroid) {
+      await _getAndroidArch();
+    }
   }
 
   /// 从 GitHub API 解析（保留兼容性）

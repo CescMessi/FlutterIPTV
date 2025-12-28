@@ -1,25 +1,25 @@
 {
-  "version": "1.1.73",
-  "build": 73,
-  "releaseDate": "2025-12-29",
+  "version": "1.1.74",
+  "build": 74,
+  "releaseDate": "2025-12-28",
   "assets": {
-    "windows": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.73/flutteriptv-Windows-x64-Setup.exe",
+    "windows": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.74/flutteriptv-Windows-x64-Setup.exe",
     "android_mobile": {
-      "arm64-v8a": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.73/flutteriptv-Android-Mobile-arm64-v8a.apk",
-      "armeabi-v7a": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.73/flutteriptv-Android-Mobile-armeabi-v7a.apk",
-      "x86_64": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.73/flutteriptv-Android-Mobile-x86_64.apk",
-      "universal": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.73/flutteriptv-Android-Mobile-universal.apk"
+      "arm64-v8a": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.74/flutteriptv-Android-Mobile-arm64-v8a.apk",
+      "armeabi-v7a": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.74/flutteriptv-Android-Mobile-armeabi-v7a.apk",
+      "x86_64": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.74/flutteriptv-Android-Mobile-x86_64.apk",
+      "universal": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.74/flutteriptv-Android-Mobile-universal.apk"
     },
     "android_tv": {
-      "arm64-v8a": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.73/flutteriptv-AndroidTV-arm64-v8a.apk",
-      "armeabi-v7a": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.73/flutteriptv-AndroidTV-armeabi-v7a.apk",
-      "x86_64": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.73/flutteriptv-AndroidTV-x86_64.apk",
-      "universal": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.73/flutteriptv-AndroidTV-universal.apk"
+      "arm64-v8a": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.74/flutteriptv-AndroidTV-arm64-v8a.apk",
+      "armeabi-v7a": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.74/flutteriptv-AndroidTV-armeabi-v7a.apk",
+      "x86_64": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.74/flutteriptv-AndroidTV-x86_64.apk",
+      "universal": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.74/flutteriptv-AndroidTV-universal.apk"
     }
   },
   "changelog": {
-    "zh": "- 新增应用内自动更新功能\n- 修复 DLNA 服务重启后不自动启动的问题\n- 支持多架构 APK 下载（arm64/arm32/x86_64）",
-    "en": "- Add in-app auto-update feature\n- Fix DLNA service not auto-starting after app restart\n- Support multi-arch APK downloads (arm64/arm32/x86_64)"
+    "zh": "- 新增应用内自动更新功能\n- 支持根据设备 CPU 架构自动选择 APK\n- 安装完成后自动清理下载缓存\n- 修复 DLNA 服务重启后不自动启动的问题",
+    "en": "- Add in-app auto-update feature\n- Auto-select APK based on device CPU architecture\n- Auto-cleanup download cache after installation\n- Fix DLNA service not auto-starting after app restart"
   },
   "minVersion": "1.0.0"
 }

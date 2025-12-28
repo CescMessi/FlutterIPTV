@@ -86,7 +86,8 @@ class UpdateService {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
-        return AppUpdate.fromVersionJson(data);
+        // 使用异步方法获取正确的下载链接
+        return await AppUpdate.fromVersionJsonAsync(data);
       } else {
         debugPrint('UPDATE: 获取版本信息失败，状态码: ${response.statusCode}');
       }
@@ -136,8 +137,21 @@ class UpdateService {
 
       // 获取临时目录
       final tempDir = await getTemporaryDirectory();
-      final fileName = Platform.isWindows ? 'flutter_iptv_update.zip' : 'flutter_iptv_update.apk';
+      
+      // 从 URL 中提取文件名
+      String fileName;
+      final uri = Uri.parse(downloadUrl);
+      final urlFileName = uri.pathSegments.isNotEmpty ? uri.pathSegments.last : '';
+      if (urlFileName.isNotEmpty) {
+        fileName = urlFileName;
+      } else if (Platform.isWindows) {
+        fileName = 'flutter_iptv_update.exe';
+      } else {
+        fileName = 'flutter_iptv_update.apk';
+      }
+      
       final file = File('${tempDir.path}/$fileName');
+      debugPrint('UPDATE: 保存到: ${file.path}');
 
       // 下载文件
       final request = http.Request('GET', Uri.parse(downloadUrl));
@@ -151,6 +165,7 @@ class UpdateService {
       }
 
       final contentLength = response.contentLength ?? 0;
+      debugPrint('UPDATE: 文件大小: $contentLength bytes');
       int receivedBytes = 0;
       
       final sink = file.openWrite();
@@ -165,10 +180,11 @@ class UpdateService {
       
       await sink.close();
       
-      debugPrint('UPDATE: 下载完成: ${file.path}');
+      debugPrint('UPDATE: 下载完成: ${file.path}, 大小: $receivedBytes bytes');
       return file;
-    } catch (e) {
+    } catch (e, stack) {
       debugPrint('UPDATE: 下载更新时发生错误: $e');
+      debugPrint('UPDATE: Stack: $stack');
       return null;
     }
   }

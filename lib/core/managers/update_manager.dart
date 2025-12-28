@@ -144,35 +144,39 @@ class UpdateManager {
     double progress = 0;
     bool cancelled = false;
     void Function(void Function())? dialogSetState;
+    BuildContext? dialogContext;
     
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) {
-          dialogSetState = setState;
-          return AlertDialog(
-            title: const Text('下载更新'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                LinearProgressIndicator(value: progress),
-                const SizedBox(height: 16),
-                Text('${(progress * 100).toStringAsFixed(1)}%'),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  cancelled = true;
-                  Navigator.of(dialogContext).pop();
-                },
-                child: const Text('取消'),
+      builder: (ctx) {
+        dialogContext = ctx;
+        return StatefulBuilder(
+          builder: (context, setState) {
+            dialogSetState = setState;
+            return AlertDialog(
+              title: const Text('下载更新'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  LinearProgressIndicator(value: progress),
+                  const SizedBox(height: 16),
+                  Text('${(progress * 100).toStringAsFixed(1)}%'),
+                ],
               ),
-            ],
-          );
-        },
-      ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    cancelled = true;
+                    Navigator.of(ctx).pop();
+                  },
+                  child: const Text('取消'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
 
     try {
@@ -188,23 +192,42 @@ class UpdateManager {
 
       if (cancelled) {
         debugPrint('UPDATE_MANAGER: 用户取消下载');
+        // 删除未完成的下载文件
+        if (file != null && await file.exists()) {
+          await file.delete();
+        }
         return;
       }
 
       // 关闭下载对话框
-      if (context.mounted) {
-        Navigator.of(context).pop();
+      if (dialogContext != null && dialogContext!.mounted) {
+        Navigator.of(dialogContext!).pop();
       }
 
       if (file != null) {
         debugPrint('UPDATE_MANAGER: 下载完成，开始安装: ${file.path}');
         await _installApk(file.path);
+        
+        // 安装启动后删除缓存文件（延迟删除，确保安装程序已读取文件）
+        Future.delayed(const Duration(seconds: 5), () async {
+          try {
+            if (await file.exists()) {
+              await file.delete();
+              debugPrint('UPDATE_MANAGER: 已删除安装缓存文件');
+            }
+          } catch (e) {
+            debugPrint('UPDATE_MANAGER: 删除缓存文件失败: $e');
+          }
+        });
       } else {
         throw Exception('下载失败');
       }
     } catch (e) {
+      debugPrint('UPDATE_MANAGER: 下载失败: $e');
+      if (dialogContext != null && dialogContext!.mounted) {
+        Navigator.of(dialogContext!).pop();
+      }
       if (context.mounted) {
-        Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('下载失败: $e'),
@@ -229,36 +252,41 @@ class UpdateManager {
   Future<void> _downloadAndInstallWindows(BuildContext context, AppUpdate update) async {
     double progress = 0;
     bool cancelled = false;
+    bool dialogOpen = true;
     void Function(void Function())? dialogSetState;
+    final navigatorState = Navigator.of(context);
     
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) {
-          dialogSetState = setState;
-          return AlertDialog(
-            title: const Text('下载更新'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                LinearProgressIndicator(value: progress),
-                const SizedBox(height: 16),
-                Text('${(progress * 100).toStringAsFixed(1)}%'),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  cancelled = true;
-                  Navigator.of(dialogContext).pop();
-                },
-                child: const Text('取消'),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (_, setState) {
+            dialogSetState = setState;
+            return AlertDialog(
+              title: const Text('下载更新'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  LinearProgressIndicator(value: progress),
+                  const SizedBox(height: 16),
+                  Text('${(progress * 100).toStringAsFixed(1)}%'),
+                ],
               ),
-            ],
-          );
-        },
-      ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    cancelled = true;
+                    dialogOpen = false;
+                    Navigator.of(ctx).pop();
+                  },
+                  child: const Text('取消'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
 
     try {
@@ -274,32 +302,52 @@ class UpdateManager {
 
       if (cancelled) {
         debugPrint('UPDATE_MANAGER: 用户取消下载');
+        // 删除未完成的下载文件
+        if (file != null && await file.exists()) {
+          await file.delete();
+          debugPrint('UPDATE_MANAGER: 已删除未完成的下载文件');
+        }
         return;
       }
 
       // 关闭下载对话框
-      if (context.mounted) {
-        Navigator.of(context).pop();
+      if (dialogOpen) {
+        dialogOpen = false;
+        navigatorState.pop();
       }
+
+      debugPrint('UPDATE_MANAGER: 对话框已关闭，file=${file?.path}');
 
       if (file != null) {
         debugPrint('UPDATE_MANAGER: 下载完成: ${file.path}');
         
         // Windows: 启动安装程序
         if (context.mounted) {
-          showDialog(
+          await showDialog(
             context: context,
-            builder: (context) => AlertDialog(
+            builder: (ctx) => AlertDialog(
               title: const Text('下载完成'),
               content: const Text('是否立即运行安装程序？'),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () async {
+                    Navigator.of(ctx).pop();
+                    // 用户选择稍后，删除下载文件
+                    try {
+                      if (await file.exists()) {
+                        await file.delete();
+                        debugPrint('UPDATE_MANAGER: 已删除下载文件');
+                      }
+                    } catch (e) {
+                      debugPrint('UPDATE_MANAGER: 删除文件失败: $e');
+                    }
+                  },
                   child: const Text('稍后'),
                 ),
                 TextButton(
                   onPressed: () async {
-                    Navigator.of(context).pop();
+                    Navigator.of(ctx).pop();
+                    debugPrint('UPDATE_MANAGER: 启动安装程序: ${file.path}');
                     // 启动安装程序
                     await Process.start(file.path, [], mode: ProcessStartMode.detached);
                     // 退出当前应用
@@ -310,13 +358,21 @@ class UpdateManager {
               ],
             ),
           );
+        } else {
+          debugPrint('UPDATE_MANAGER: context not mounted, 直接启动安装');
+          await Process.start(file.path, [], mode: ProcessStartMode.detached);
+          exit(0);
         }
       } else {
         throw Exception('下载失败');
       }
     } catch (e) {
+      debugPrint('UPDATE_MANAGER: 下载失败: $e');
+      if (dialogOpen) {
+        dialogOpen = false;
+        navigatorState.pop();
+      }
       if (context.mounted) {
-        Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('下载失败: $e'),
