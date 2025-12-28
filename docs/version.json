@@ -1,22 +1,22 @@
 {
-  "version": "1.1.76",
-  "build": 76,
+  "version": "1.1.77",
+  "build": 77,
   "releaseDate": "2025-12-28",
   "assets": {
-    "windows": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.76/flutteriptv-Windows-x64-Setup.exe",
+    "windows": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.77/flutteriptv-Windows-x64-Setup.exe",
     "android_mobile": {
-      "arm64-v8a": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.76/flutteriptv-Android-Mobile-arm64-v8a.apk",
-      "armeabi-v7a": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.76/flutteriptv-Android-Mobile-armeabi-v7a.apk",
-      "x86_64": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.76/flutteriptv-Android-Mobile-x86_64.apk"
+      "arm64-v8a": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.77/flutteriptv-Android-Mobile-arm64-v8a.apk",
+      "armeabi-v7a": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.77/flutteriptv-Android-Mobile-armeabi-v7a.apk",
+      "x86_64": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.77/flutteriptv-Android-Mobile-x86_64.apk"
     },
     "android_tv": {
-      "arm64-v8a": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.76/flutteriptv-AndroidTV-arm64-v8a.apk",
-      "armeabi-v7a": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.76/flutteriptv-AndroidTV-armeabi-v7a.apk",
-      "x86_64": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.76/flutteriptv-AndroidTV-x86_64.apk"
+      "arm64-v8a": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.77/flutteriptv-AndroidTV-arm64-v8a.apk",
+      "armeabi-v7a": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.77/flutteriptv-AndroidTV-armeabi-v7a.apk",
+      "x86_64": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.77/flutteriptv-AndroidTV-x86_64.apk"
     }
   },
   "changelog": {
-    "zh": "- 修复 Release 包签名问题，解决在线更新时软件包冲突\n- 首页标题显示版本号\n- 新增应用内自动更新功能\n- 支持根据设备 CPU 架构自动选择 APK\n- 安装完成后自动清理下载缓存",
+    "zh": "- 修复 Release 包签名问题，解决在线更新时软件包冲突\n- 首页标题显示版本号\n- 新增应用内自动更新功能\n- 支持根据设备 CPU 架构自动选择 APK\n- 安装完成后自动清理下载缓�?,
     "en": "- Fix release signing issue, resolve package conflict during in-app update\n- Show version number in home screen title\n- Add in-app auto-update feature\n- Auto-select APK based on device CPU architecture\n- Auto-cleanup download cache after installation"
   },
   "minVersion": "1.0.0"
