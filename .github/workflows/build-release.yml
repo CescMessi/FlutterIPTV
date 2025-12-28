@@ -33,9 +33,6 @@ jobs:
           channel: 'stable'
           cache: true
       
-      - name: Enable Windows Desktop Support
-        run: flutter config --enable-windows-desktop
-      
       - name: Get dependencies
         run: flutter pub get
       
@@ -44,79 +41,27 @@ jobs:
       
       - name: Download SQLite3 DLL
         run: |
-          # Try to download SQLite3 DLL from official source
-          # SQLite version format: 3.51.1 = 3510100
-          $success = $false
-          
-          # Try sqlite.org first (2025 directory for latest versions)
           $urls = @(
             "https://www.sqlite.org/2025/sqlite-dll-win-x64-3510100.zip",
-            "https://www.sqlite.org/2024/sqlite-dll-win-x64-3470200.zip",
-            "https://www.sqlite.org/2024/sqlite-dll-win-x64-3460100.zip"
+            "https://www.sqlite.org/2024/sqlite-dll-win-x64-3470200.zip"
           )
-          
           foreach ($url in $urls) {
             try {
-              Write-Host "Trying: $url"
               Invoke-WebRequest -Uri $url -OutFile "sqlite3.zip" -TimeoutSec 30
-              if (Test-Path "sqlite3.zip") {
-                Expand-Archive -Path "sqlite3.zip" -DestinationPath "sqlite3_temp" -Force
-                if (Test-Path "sqlite3_temp/sqlite3.dll") {
-                  Copy-Item -Path "sqlite3_temp/sqlite3.dll" -Destination "build/windows/x64/runner/Release/" -Force
-                  Write-Host "Successfully downloaded sqlite3.dll from: $url"
-                  $success = $true
-                  break
-                }
+              Expand-Archive -Path "sqlite3.zip" -DestinationPath "sqlite3_temp" -Force
+              if (Test-Path "sqlite3_temp/sqlite3.dll") {
+                Copy-Item "sqlite3_temp/sqlite3.dll" "build/windows/x64/runner/Release/" -Force
+                break
               }
-            } catch {
-              Write-Host "Failed to download from: $url - $_"
-              continue
-            }
-          }
-          
-          if (-not $success) {
-            Write-Error "Failed to download sqlite3.dll from any source!"
-            exit 1
+            } catch { continue }
           }
         shell: pwsh
       
-      - name: Create Windows Distribution Package
-        run: |
-          # Create distribution folder
-          New-Item -ItemType Directory -Force -Path "dist/windows"
-          
-          # Copy the entire Release folder contents (includes all DLLs and data folder)
-          Copy-Item -Path "build/windows/x64/runner/Release/*" -Destination "dist/windows/" -Recurse -Force
-          
-          # Verify critical files exist
-          if (!(Test-Path "dist/windows/flutter_iptv.exe")) {
-            Write-Error "flutter_iptv.exe not found!"
-            exit 1
-          }
-          if (!(Test-Path "dist/windows/flutter_windows.dll")) {
-            Write-Error "flutter_windows.dll not found!"
-            exit 1
-          }
-          if (!(Test-Path "dist/windows/data")) {
-            Write-Error "data folder not found!"
-            exit 1
-          }
-          if (!(Test-Path "dist/windows/sqlite3.dll")) {
-            Write-Error "sqlite3.dll not found!"
-            exit 1
-          }
-          
-          # List contents for debugging
-          Write-Host "Windows package contents:"
-          Get-ChildItem -Path "dist/windows/" -Recurse | ForEach-Object { Write-Host $_.FullName }
-        shell: pwsh
-      
-      - name: Create Inno Setup Script
+      - name: Create Installer
         run: |
           $version = "${{ github.ref_name }}".TrimStart('v')
-          if ([string]::IsNullOrEmpty($version)) { $version = "1.0.0" }
-          
-          $issContent = @"
+          if (!$version) { $version = "1.0.0" }
+          @"
           [Setup]
           AppName=FlutterIPTV
           AppVersion=$version
@@ -129,28 +74,16 @@ jobs:
           SolidCompression=yes
           ArchitecturesInstallIn64BitMode=x64
           PrivilegesRequired=lowest
-          
           [Files]
-          Source: "dist\windows\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
-          
+          Source: "build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
           [Icons]
           Name: "{group}\FlutterIPTV"; Filename: "{app}\flutter_iptv.exe"
-          Name: "{group}\Uninstall FlutterIPTV"; Filename: "{uninstallexe}"
           Name: "{autodesktop}\FlutterIPTV"; Filename: "{app}\flutter_iptv.exe"; Tasks: desktopicon
-          
           [Tasks]
-          Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional icons:"
-          
+          Name: "desktopicon"; Description: "Create desktop shortcut"; GroupDescription: "Additional icons:"
           [Run]
           Filename: "{app}\flutter_iptv.exe"; Description: "Launch FlutterIPTV"; Flags: nowait postinstall skipifsilent
-          "@
-          
-          $issContent | Out-File -FilePath "installer.iss" -Encoding UTF8
-          Write-Host "Inno Setup script created"
-        shell: pwsh
-      
-      - name: Build Windows Installer
-        run: |
+          "@ | Out-File "installer.iss" -Encoding UTF8
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
         shell: pwsh
       
@@ -162,10 +95,10 @@ jobs:
           retention-days: 5
 
   # ============================================
-  # Build Android Mobile APK
+  # Build All Android APKs (Mobile + TV)
   # ============================================
-  build-android-mobile:
-    name: Build Android Mobile
+  build-android:
+    name: Build Android
     runs-on: ubuntu-latest
     
     steps:
@@ -189,98 +122,36 @@ jobs:
       - name: Setup Android Signing
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/release-key.jks
-          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
-          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
-          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
-          echo "storeFile=release-key.jks" >> android/key.properties
+          cat > android/key.properties << EOF
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          storeFile=release-key.jks
+          EOF
       
       - name: Get dependencies
         run: flutter pub get
       
-      - name: Build Android APK (Split by ABI)
-        run: flutter build apk --release --split-per-abi
-      
-      - name: Rename APKs for Mobile
+      - name: Build Mobile APKs
         run: |
-          mkdir -p dist/android-mobile
-          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk dist/android-mobile/flutteriptv-Android-Mobile-armeabi-v7a.apk
-          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk dist/android-mobile/flutteriptv-Android-Mobile-arm64-v8a.apk
-          cp build/app/outputs/flutter-apk/app-x86_64-release.apk dist/android-mobile/flutteriptv-Android-Mobile-x86_64.apk
+          flutter build apk --release --split-per-abi
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk dist/flutteriptv-Android-Mobile-arm64-v8a.apk
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk dist/flutteriptv-Android-Mobile-armeabi-v7a.apk
+          cp build/app/outputs/flutter-apk/app-x86_64-release.apk dist/flutteriptv-Android-Mobile-x86_64.apk
       
-      - name: Build Universal APK
-        run: flutter build apk --release
-      
-      - name: Copy Universal APK
+      - name: Build TV APKs
         run: |
-          cp build/app/outputs/flutter-apk/app-release.apk dist/android-mobile/flutteriptv-Android-Mobile-universal.apk
-      
-      - name: Upload Android Mobile Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-mobile-release
-          path: dist/android-mobile/
-          retention-days: 5
-
-  # ============================================
-  # Build Android TV APK
-  # ============================================
-  build-android-tv:
-    name: Build Android TV
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'gradle'
-      
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: 'stable'
-          cache: true
-      
-      - name: Setup Android Signing
-        run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/release-key.jks
-          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
-          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
-          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
-          echo "storeFile=release-key.jks" >> android/key.properties
-      
-      - name: Get dependencies
-        run: flutter pub get
-      
-      - name: Build Android TV APK
-        run: |
-          # Build with TV flag enabled
           flutter build apk --release --dart-define=IS_TV=true --split-per-abi
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk dist/flutteriptv-AndroidTV-arm64-v8a.apk
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk dist/flutteriptv-AndroidTV-armeabi-v7a.apk
+          cp build/app/outputs/flutter-apk/app-x86_64-release.apk dist/flutteriptv-AndroidTV-x86_64.apk
       
-      - name: Rename APKs for TV
-        run: |
-          mkdir -p dist/android-tv
-          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk dist/android-tv/flutteriptv-AndroidTV-armeabi-v7a.apk
-          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk dist/android-tv/flutteriptv-AndroidTV-arm64-v8a.apk
-          cp build/app/outputs/flutter-apk/app-x86_64-release.apk dist/android-tv/flutteriptv-AndroidTV-x86_64.apk
-      
-      - name: Build Universal TV APK
-        run: flutter build apk --release --dart-define=IS_TV=true
-      
-      - name: Copy Universal TV APK
-        run: |
-          cp build/app/outputs/flutter-apk/app-release.apk dist/android-tv/flutteriptv-AndroidTV-universal.apk
-      
-      - name: Upload Android TV Artifacts
+      - name: Upload Android Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: android-tv-release
-          path: dist/android-tv/
+          name: android-release
+          path: dist/
           retention-days: 5
 
   # ============================================
@@ -288,7 +159,7 @@ jobs:
   # ============================================
   create-release:
     name: Create Release
-    needs: [build-windows, build-android-mobile, build-android-tv]
+    needs: [build-windows, build-android]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -296,26 +167,15 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       
-      - name: Download Windows Artifact
+      - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
-          name: windows-release
           path: ./release-assets/
       
-      - name: Download Android Mobile Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: android-mobile-release
-          path: ./release-assets/android-mobile/
-      
-      - name: Download Android TV Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: android-tv-release
-          path: ./release-assets/android-tv/
-      
-      - name: Get version from tag or input
+      - name: Get version
         id: version
         run: |
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
@@ -326,68 +186,26 @@ jobs:
             echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           fi
       
-      - name: Get Commit Messages
-        id: commits
-        run: |
-          # Get all tags sorted by version
-          TAGS=$(git tag -l 'v*' --sort=-v:refname)
-          CURRENT_TAG="${GITHUB_REF#refs/tags/}"
-          
-          # Find the previous tag
-          PREV_TAG=""
-          FOUND_CURRENT=false
-          for tag in $TAGS; do
-            if [ "$FOUND_CURRENT" = true ]; then
-              PREV_TAG=$tag
-              break
-            fi
-            if [ "$tag" = "$CURRENT_TAG" ]; then
-              FOUND_CURRENT=true
-            fi
-          done
-          
-          echo "Current tag: $CURRENT_TAG"
-          echo "Previous tag: $PREV_TAG"
-          
-          if [ -n "$PREV_TAG" ]; then
-            # Get commits between previous tag and current
-            git log --pretty=format:"- %s" $PREV_TAG..$CURRENT_TAG 2>/dev/null > commits.txt || echo "- Initial release" > commits.txt
-          else
-            # Get recent commits for this tag if no previous tag
-            git log --pretty=format:"- %s" -20 $CURRENT_TAG 2>/dev/null > commits.txt || echo "- Initial release" > commits.txt
-          fi
-          
-          # Filter out merge commits
-          grep -v "^- Merge" commits.txt > commits_filtered.txt || true
-          mv commits_filtered.txt commits.txt
-          
-          echo "Got commits:"
-          cat commits.txt
-      
       - name: Generate Release Notes
-        id: release_notes
         run: |
-          # Read commits
-          COMMITS=$(cat commits.txt)
           VERSION="${{ steps.version.outputs.VERSION }}"
           TAG="${{ steps.version.outputs.TAG }}"
-          REPO="${{ github.repository }}"
-          BASE_URL="https://github.com/${REPO}/releases/download/${TAG}"
+          BASE_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}"
           
-          cat << 'EOFHEADER' > release_notes.md
-          ## 📺 FlutterIPTV VERSION_PLACEHOLDER
+          # Get commits since last tag
+          PREV_TAG=$(git tag -l 'v*' --sort=-v:refname | grep -v "^${TAG}$" | head -1)
+          if [ -n "$PREV_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"- %s" ${PREV_TAG}..${TAG} 2>/dev/null | grep -v "^- Merge" || echo "- Bug fixes and improvements")
+          else
+            COMMITS="- Initial release"
+          fi
+          
+          cat > release_notes.md << EOF
+          ## 📺 FlutterIPTV ${VERSION}
           
           ### 📝 更新内容
           
-          EOFHEADER
-          
-          # Replace version placeholder
-          sed -i "s/VERSION_PLACEHOLDER/${VERSION}/g" release_notes.md
-          
-          # Add commits
-          cat commits.txt >> release_notes.md
-          
-          cat << EOFBODY >> release_notes.md
+          ${COMMITS}
           
           ---
           
@@ -404,7 +222,6 @@ jobs:
           | [flutteriptv-Android-Mobile-arm64-v8a.apk](${BASE_URL}/flutteriptv-Android-Mobile-arm64-v8a.apk) | 64位 ARM 设备（推荐） |
           | [flutteriptv-Android-Mobile-armeabi-v7a.apk](${BASE_URL}/flutteriptv-Android-Mobile-armeabi-v7a.apk) | 32位 ARM 设备 |
           | [flutteriptv-Android-Mobile-x86_64.apk](${BASE_URL}/flutteriptv-Android-Mobile-x86_64.apk) | x86_64 模拟器 |
-          | [flutteriptv-Android-Mobile-universal.apk](${BASE_URL}/flutteriptv-Android-Mobile-universal.apk) | 通用版 |
           
           #### 📺 Android TV 电视版
           | 文件 | 说明 |
@@ -412,8 +229,7 @@ jobs:
           | [flutteriptv-AndroidTV-arm64-v8a.apk](${BASE_URL}/flutteriptv-AndroidTV-arm64-v8a.apk) | 64位 ARM 电视（推荐） |
           | [flutteriptv-AndroidTV-armeabi-v7a.apk](${BASE_URL}/flutteriptv-AndroidTV-armeabi-v7a.apk) | 32位 ARM 电视 |
           | [flutteriptv-AndroidTV-x86_64.apk](${BASE_URL}/flutteriptv-AndroidTV-x86_64.apk) | x86_64 电视模拟器 |
-          | [flutteriptv-AndroidTV-universal.apk](${BASE_URL}/flutteriptv-AndroidTV-universal.apk) | 通用电视版 |
-          EOFBODY
+          EOF
       
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -424,14 +240,12 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            release-assets/flutteriptv-Windows-x64-Setup.exe
-            release-assets/android-mobile/flutteriptv-Android-Mobile-arm64-v8a.apk
-            release-assets/android-mobile/flutteriptv-Android-Mobile-armeabi-v7a.apk
-            release-assets/android-mobile/flutteriptv-Android-Mobile-x86_64.apk
-            release-assets/android-mobile/flutteriptv-Android-Mobile-universal.apk
-            release-assets/android-tv/flutteriptv-AndroidTV-arm64-v8a.apk
-            release-assets/android-tv/flutteriptv-AndroidTV-armeabi-v7a.apk
-            release-assets/android-tv/flutteriptv-AndroidTV-x86_64.apk
-            release-assets/android-tv/flutteriptv-AndroidTV-universal.apk
+            release-assets/windows-release/flutteriptv-Windows-x64-Setup.exe
+            release-assets/android-release/flutteriptv-Android-Mobile-arm64-v8a.apk
+            release-assets/android-release/flutteriptv-Android-Mobile-armeabi-v7a.apk
+            release-assets/android-release/flutteriptv-Android-Mobile-x86_64.apk
+            release-assets/android-release/flutteriptv-AndroidTV-arm64-v8a.apk
+            release-assets/android-release/flutteriptv-AndroidTV-armeabi-v7a.apk
+            release-assets/android-release/flutteriptv-AndroidTV-x86_64.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -7,14 +7,12 @@
     "android_mobile": {
       "arm64-v8a": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.76/flutteriptv-Android-Mobile-arm64-v8a.apk",
       "armeabi-v7a": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.76/flutteriptv-Android-Mobile-armeabi-v7a.apk",
-      "x86_64": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.76/flutteriptv-Android-Mobile-x86_64.apk",
-      "universal": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.76/flutteriptv-Android-Mobile-universal.apk"
+      "x86_64": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.76/flutteriptv-Android-Mobile-x86_64.apk"
     },
     "android_tv": {
       "arm64-v8a": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.76/flutteriptv-AndroidTV-arm64-v8a.apk",
       "armeabi-v7a": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.76/flutteriptv-AndroidTV-armeabi-v7a.apk",
-      "x86_64": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.76/flutteriptv-AndroidTV-x86_64.apk",
-      "universal": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.76/flutteriptv-AndroidTV-universal.apk"
+      "x86_64": "https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.76/flutteriptv-AndroidTV-x86_64.apk"
     }
   },
   "changelog": {
