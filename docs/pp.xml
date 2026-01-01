@@ -56241,6 +56241,9 @@
 	<programme channel="newtv军旅剧场" start="20260101195100 +0800" stop="20260101203600 +0800">
 		<title lang="zh">21_尖锋之烈焰青春</title>
 	</programme>
+	<programme channel="newtv军旅剧场" start="20260101203600 +0800" stop="20260101212700 +0800">
+		<title lang="zh">人民国肽健行固力维骨肌修复肽</title>
+	</programme>
 	<channel id="newtv家庭剧场">
 		<display-name lang="zh">NEWTV家庭剧场</display-name>
 	</channel>
@@ -57005,6 +57008,9 @@
 	</programme>
 	<programme channel="newtv炫舞未来" start="20260101201600 +0800" stop="20260101204600 +0800">
 		<title lang="zh">健康生活-氨糖</title>
+	</programme>
+	<programme channel="newtv炫舞未来" start="20260101204600 +0800" stop="20260101213200 +0800">
+		<title lang="zh">44_金婚</title>
 	</programme>
 	<channel id="newtv精品综合">
 		<display-name lang="zh">NEWTV精品综合</display-name>
