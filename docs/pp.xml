@@ -60189,6 +60189,9 @@
 	<programme channel="黑莓电影" start="20260103165000 +0800" stop="20260103183400 +0800">
 		<title lang="zh">百鸟朝凤</title>
 	</programme>
+	<programme channel="黑莓电影" start="20260103183400 +0800" stop="20260103201700 +0800">
+		<title lang="zh">东北告别天团2</title>
+	</programme>
 	<channel id="黑龙江卫视">
 		<display-name lang="zh">黑龙江卫视</display-name>
 	</channel>
@@ -61350,6 +61353,9 @@
 	<programme channel="newtv古装剧场" start="20260103175800 +0800" stop="20260103183300 +0800">
 		<title lang="zh">巴康洋双面黑金石墨烯保暖被-渠道（右）</title>
 	</programme>
+	<programme channel="newtv古装剧场" start="20260103183300 +0800" stop="20260103191900 +0800">
+		<title lang="zh">17_九重紫</title>
+	</programme>
 	<channel id="newtv军旅剧场">
 		<display-name lang="zh">NEWTV军旅剧场</display-name>
 	</channel>
@@ -61515,6 +61521,9 @@
 	<programme channel="newtv家庭剧场" start="20260103180000 +0800" stop="20260103184000 +0800">
 		<title lang="zh">益健堂半导体激光表</title>
 	</programme>
+	<programme channel="newtv家庭剧场" start="20260103184000 +0800" stop="20260103192400 +0800">
+		<title lang="zh">27_四喜</title>
+	</programme>
 	<channel id="newtv热播精选">
 		<display-name lang="zh">NEWTV热播精选</display-name>
 	</channel>
@@ -61671,6 +61680,9 @@
 	<programme channel="newtv爱情喜剧" start="20260103175900 +0800" stop="20260103183700 +0800">
 		<title lang="zh">半导体激光治疗仪-医用光量子腕表治疗仪-渠道（右）</title>
 	</programme>
+	<programme channel="newtv爱情喜剧" start="20260103183700 +0800" stop="20260103192200 +0800">
+		<title lang="zh">17_空姐日记</title>
+	</programme>
 	<channel id="newtv动作电影">
 		<display-name lang="zh">NEWTV动作电影</display-name>
 	</channel>
@@ -61811,6 +61823,9 @@
 	</programme>
 	<programme channel="newtv怡伴健康" start="20260103175900 +0800" stop="20260103183400 +0800">
 		<title lang="zh">BURRSAIL荣耀真钻机械腕表尊享组-渠道（右）</title>
+	</programme>
+	<programme channel="newtv怡伴健康" start="20260103183400 +0800" stop="20260103191100 +0800">
+		<title lang="zh">安徽星尘vs广东瑜满珠江-第2局</title>
 	</programme>
 	<channel id="newtv潮妈辣婆">
 		<display-name lang="zh">NEWTV潮妈辣婆</display-name>
@@ -62006,6 +62021,9 @@
 	</programme>
 	<programme channel="newtv军事评论" start="20260103181500 +0800" stop="20260103183700 +0800">
 		<title lang="zh">营地炊烟（13）</title>
+	</programme>
+	<programme channel="newtv军事评论" start="20260103183700 +0800" stop="20260103185900 +0800">
+		<title lang="zh">“珠峰友谊-2024”</title>
 	</programme>
 	<channel id="newtv炫舞未来">
 		<display-name lang="zh">NEWTV炫舞未来</display-name>
