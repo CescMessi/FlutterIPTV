@@ -183,6 +183,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
         final showFps = settingsProvider.showFps;
         final showClock = settingsProvider.showClock;
         final showNetworkSpeed = settingsProvider.showNetworkSpeed;
+        final showVideoInfo = settingsProvider.showVideoInfo;
 
         // Launch native player with channel list and callback for when it closes
         final launched = await NativePlayerChannel.launchPlayer(
@@ -198,6 +199,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
           showFps: showFps,
           showClock: showClock,
           showNetworkSpeed: showNetworkSpeed,
+          showVideoInfo: showVideoInfo,
           onClosed: () {
             debugPrint('PlayerScreen: Native player closed callback');
             // 停止 DLNA 同步定时器

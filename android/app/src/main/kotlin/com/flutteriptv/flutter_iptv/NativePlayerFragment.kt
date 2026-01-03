@@ -148,6 +148,10 @@ class NativePlayerFragment : Fragment() {
     private val NETWORK_SPEED_UPDATE_INTERVAL = 1000L
     private var lastRxBytes = 0L
     private var lastSpeedUpdateTime = 0L
+
+    // Video info display
+    private lateinit var resolutionText: TextView
+    private var showVideoInfo: Boolean = true
     
     var onCloseListener: (() -> Unit)? = null
 
@@ -164,6 +168,7 @@ class NativePlayerFragment : Fragment() {
         private const val ARG_SHOW_FPS = "show_fps"
         private const val ARG_SHOW_CLOCK = "show_clock"
         private const val ARG_SHOW_NETWORK_SPEED = "show_network_speed"
+        private const val ARG_SHOW_VIDEO_INFO = "show_video_info"
 
         fun newInstance(
             videoUrl: String,
@@ -177,7 +182,8 @@ class NativePlayerFragment : Fragment() {
             bufferStrength: String = "fast",
             showFps: Boolean = true,
             showClock: Boolean = true,
-            showNetworkSpeed: Boolean = true
+            showNetworkSpeed: Boolean = true,
+            showVideoInfo: Boolean = true
         ): NativePlayerFragment {
             return NativePlayerFragment().apply {
                 arguments = Bundle().apply {
@@ -193,6 +199,7 @@ class NativePlayerFragment : Fragment() {
                     putBoolean(ARG_SHOW_FPS, showFps)
                     putBoolean(ARG_SHOW_CLOCK, showClock)
                     putBoolean(ARG_SHOW_NETWORK_SPEED, showNetworkSpeed)
+                    putBoolean(ARG_SHOW_VIDEO_INFO, showVideoInfo)
                 }
             }
         }
@@ -222,6 +229,7 @@ class NativePlayerFragment : Fragment() {
             showFps = it.getBoolean(ARG_SHOW_FPS, true)
             showClock = it.getBoolean(ARG_SHOW_CLOCK, true)
             showNetworkSpeed = it.getBoolean(ARG_SHOW_NETWORK_SPEED, true)
+            showVideoInfo = it.getBoolean(ARG_SHOW_VIDEO_INFO, true)
             currentSourceIndex = 0 // 初始化为第一个源
         }
         
@@ -269,6 +277,9 @@ class NativePlayerFragment : Fragment() {
 
         // Network speed display
         speedText = view.findViewById(R.id.speed_text)
+
+        // Video info display (resolution + bitrate)
+        resolutionText = view.findViewById(R.id.resolution_text)
         
         // Source indicator
         sourceIndicator = view.findViewById(R.id.source_indicator)
@@ -1277,6 +1288,25 @@ class NativePlayerFragment : Fragment() {
                 fpsText.visibility = View.VISIBLE
             } else {
                 fpsText.visibility = View.GONE
+            }
+
+            // 更新右上角分辨率和码率显示
+            if (showVideoInfo && videoWidth > 0 && videoHeight > 0) {
+                val p = player
+                var totalBitrate = 0
+                p?.videoFormat?.let { if (it.bitrate > 0) totalBitrate += it.bitrate }
+                p?.audioFormat?.let { if (it.bitrate > 0) totalBitrate += it.bitrate }
+                
+                val resInfo = if (totalBitrate > 0) {
+                    val bitrateMbps = totalBitrate / 1000000.0
+                    "${videoWidth}x${videoHeight} %.1fMbps".format(bitrateMbps)
+                } else {
+                    "${videoWidth}x${videoHeight}"
+                }
+                resolutionText.text = resInfo
+                resolutionText.visibility = View.VISIBLE
+            } else {
+                resolutionText.visibility = View.GONE
             }
         }
     }

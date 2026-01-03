@@ -363,7 +363,7 @@
         android:visibility="gone"
         android:padding="16dp" />
 
-    <!-- Network Speed, Clock and FPS Display (Top Right) -->
+    <!-- Network Speed, Clock, FPS and Video Info Display (Top Right) -->
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -404,6 +404,19 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:background="#4DE53935"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="4dp"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/resolution_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="#4D2196F3"
             android:paddingHorizontal="8dp"
             android:paddingVertical="4dp"
             android:textColor="#FFFFFF"

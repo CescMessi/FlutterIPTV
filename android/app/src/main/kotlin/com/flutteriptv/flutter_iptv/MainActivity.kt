@@ -92,11 +92,12 @@ class MainActivity: FlutterFragmentActivity() {
                     val showFps = call.argument<Boolean>("showFps") ?: true
                     val showClock = call.argument<Boolean>("showClock") ?: true
                     val showNetworkSpeed = call.argument<Boolean>("showNetworkSpeed") ?: true
+                    val showVideoInfo = call.argument<Boolean>("showVideoInfo") ?: true
                     
                     if (url != null) {
-                        Log.d(TAG, "Launching native player fragment: $name (index $index of ${urls?.size ?: 0}, isDlna=$isDlnaMode, buffer=$bufferStrength, showFps=$showFps, showClock=$showClock, showNetworkSpeed=$showNetworkSpeed)")
+                        Log.d(TAG, "Launching native player fragment: $name (index $index of ${urls?.size ?: 0}, isDlna=$isDlnaMode)")
                         try {
-                            showPlayerFragment(url, name, index, urls, names, groups, sources, isDlnaMode, bufferStrength, showFps, showClock, showNetworkSpeed)
+                            showPlayerFragment(url, name, index, urls, names, groups, sources, isDlnaMode, bufferStrength, showFps, showClock, showNetworkSpeed, showVideoInfo)
                             result.success(true)
                         } catch (e: Exception) {
                             Log.e(TAG, "Failed to launch player", e)
@@ -185,9 +186,10 @@ class MainActivity: FlutterFragmentActivity() {
         bufferStrength: String = "fast",
         showFps: Boolean = true,
         showClock: Boolean = true,
-        showNetworkSpeed: Boolean = true
+        showNetworkSpeed: Boolean = true,
+        showVideoInfo: Boolean = true
     ) {
-        Log.d(TAG, "showPlayerFragment isDlnaMode=$isDlnaMode, bufferStrength=$bufferStrength, showFps=$showFps, showClock=$showClock, showNetworkSpeed=$showNetworkSpeed")
+        Log.d(TAG, "showPlayerFragment isDlnaMode=$isDlnaMode, bufferStrength=$bufferStrength")
         
         // Enable back press callback when player is showing
         backPressedCallback.isEnabled = true
@@ -223,7 +225,8 @@ class MainActivity: FlutterFragmentActivity() {
             bufferStrength,
             showFps,
             showClock,
-            showNetworkSpeed
+            showNetworkSpeed,
+            showVideoInfo
         ).apply {
             onCloseListener = {
                 runOnUiThread {

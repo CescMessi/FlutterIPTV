@@ -145,6 +145,18 @@ class SettingsScreen extends StatelessWidget {
               _buildDivider(),
               _buildSwitchTile(
                 context,
+                title: '显示分辨率',
+                subtitle: '在播放器右上角显示视频分辨率和码率',
+                icon: Icons.high_quality_rounded,
+                value: settings.showVideoInfo,
+                onChanged: (value) {
+                  settings.setShowVideoInfo(value);
+                  _showSuccess(context, value ? '已启用分辨率显示' : '已关闭分辨率显示');
+                },
+              ),
+              _buildDivider(),
+              _buildSwitchTile(
+                context,
                 title: AppStrings.of(context)?.volumeNormalization ?? 'Volume Normalization',
                 subtitle: '${AppStrings.of(context)?.volumeNormalizationSubtitle ?? 'Auto-adjust volume differences between channels'} (未实现)',
                 icon: Icons.volume_up_rounded,

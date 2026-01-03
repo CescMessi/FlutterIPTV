@@ -71,13 +71,14 @@ class NativePlayerChannel {
     bool showFps = true,
     bool showClock = true,
     bool showNetworkSpeed = true,
+    bool showVideoInfo = true,
     Function? onClosed,
   }) async {
     try {
       init(); // Ensure initialized
       _onPlayerClosedCallback = onClosed;
 
-      debugPrint('NativePlayerChannel: launching player with url=$url, name=$name, index=$index, channels=${urls?.length ?? 0}, isDlna=$isDlnaMode, buffer=$bufferStrength, showFps=$showFps, showClock=$showClock, showNetworkSpeed=$showNetworkSpeed');
+      debugPrint('NativePlayerChannel: launching player with url=$url, name=$name, index=$index, channels=${urls?.length ?? 0}, isDlna=$isDlnaMode, buffer=$bufferStrength');
       final result = await _channel.invokeMethod<bool>('launchPlayer', {
         'url': url,
         'name': name,
@@ -91,6 +92,7 @@ class NativePlayerChannel {
         'showFps': showFps,
         'showClock': showClock,
         'showNetworkSpeed': showNetworkSpeed,
+        'showVideoInfo': showVideoInfo,
       });
       debugPrint('NativePlayerChannel: launch result=$result');
       return result ?? false;

@@ -25,6 +25,7 @@ class SettingsProvider extends ChangeNotifier {
   static const String _keyShowFps = 'show_fps';
   static const String _keyShowClock = 'show_clock';
   static const String _keyShowNetworkSpeed = 'show_network_speed';
+  static const String _keyShowVideoInfo = 'show_video_info';
 
   // Settings values
   String _themeMode = 'dark';
@@ -49,6 +50,7 @@ class SettingsProvider extends ChangeNotifier {
   bool _showFps = true; // 默认显示FPS
   bool _showClock = true; // 默认显示时间
   bool _showNetworkSpeed = true; // 默认显示网速
+  bool _showVideoInfo = true; // 默认显示分辨率码率
 
   // Getters
   String get themeMode => _themeMode;
@@ -72,6 +74,7 @@ class SettingsProvider extends ChangeNotifier {
   bool get showFps => _showFps;
   bool get showClock => _showClock;
   bool get showNetworkSpeed => _showNetworkSpeed;
+  bool get showVideoInfo => _showVideoInfo;
 
   SettingsProvider() {
     _loadSettings();
@@ -107,6 +110,7 @@ class SettingsProvider extends ChangeNotifier {
     _showFps = prefs.getBool(_keyShowFps) ?? true;
     _showClock = prefs.getBool(_keyShowClock) ?? true;
     _showNetworkSpeed = prefs.getBool(_keyShowNetworkSpeed) ?? true;
+    _showVideoInfo = prefs.getBool(_keyShowVideoInfo) ?? true;
     // 不在构造函数中调用 notifyListeners()，避免 build 期间触发重建
   }
 
@@ -147,6 +151,7 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.setBool(_keyShowFps, _showFps);
     await prefs.setBool(_keyShowClock, _showClock);
     await prefs.setBool(_keyShowNetworkSpeed, _showNetworkSpeed);
+    await prefs.setBool(_keyShowVideoInfo, _showVideoInfo);
   }
 
   // Setters with persistence
@@ -288,6 +293,12 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setShowVideoInfo(bool show) async {
+    _showVideoInfo = show;
+    await _saveSettings();
+    notifyListeners();
+  }
+
   // Reset all settings to defaults
   Future<void> resetSettings() async {
     _themeMode = 'dark';
@@ -308,6 +319,7 @@ class SettingsProvider extends ChangeNotifier {
     _showFps = true;
     _showClock = true;
     _showNetworkSpeed = true;
+    _showVideoInfo = true;
 
     await _saveSettings();
     notifyListeners();
