@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_theme.dart';
@@ -72,6 +73,8 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildSearchHeader() {
+    final isTV = PlatformDetector.isTV || PlatformDetector.useDPadNavigation;
+    
     return Container(
       padding: EdgeInsets.only(
         top: MediaQuery.of(context).padding.top + 16,
@@ -111,55 +114,309 @@ class _SearchScreenState extends State<SearchScreen> {
 
           const SizedBox(width: 16),
 
-          // Search Field
+          // Search Field - TV 端使用可点击的搜索框
           Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppTheme.getCardColor(context),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: TextField(
-                controller: _searchController,
-                focusNode: _searchFocusNode,
-                style: TextStyle(
-                  color: AppTheme.getTextPrimary(context),
-                  fontSize: 16,
-                ),
-                decoration: InputDecoration(
-                  hintText: AppStrings.of(context)?.searchHint ?? 'Search channels...',
-                  hintStyle: TextStyle(color: AppTheme.getTextMuted(context)),
-                  prefixIcon: Icon(
-                    Icons.search_rounded,
-                    color: AppTheme.getTextMuted(context),
-                  ),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          icon: Icon(
-                            Icons.clear_rounded,
-                            color: AppTheme.getTextMuted(context),
-                          ),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _searchQuery = '');
-                          },
-                        )
-                      : null,
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                ),
-                onChanged: (value) {
-                  setState(() => _searchQuery = value);
-                },
-                textInputAction: TextInputAction.search,
-              ),
-            ),
+            child: isTV 
+                ? _buildTVSearchField()
+                : _buildMobileSearchField(),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildTVSearchField() {
+    return TVFocusable(
+      autofocus: true,
+      onSelect: () => _showTVSearchDialog(),
+      focusScale: 1.02,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppTheme.getCardColor(context),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.search_rounded,
+              color: AppTheme.getTextMuted(context),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                _searchQuery.isEmpty 
+                    ? (AppStrings.of(context)?.searchHint ?? 'Search channels...')
+                    : _searchQuery,
+                style: TextStyle(
+                  color: _searchQuery.isEmpty 
+                      ? AppTheme.getTextMuted(context)
+                      : AppTheme.getTextPrimary(context),
+                  fontSize: 16,
+                ),
+              ),
+            ),
+            if (_searchQuery.isNotEmpty)
+              GestureDetector(
+                onTap: () => setState(() {
+                  _searchQuery = '';
+                  _searchController.clear();
+                }),
+                child: Icon(
+                  Icons.clear_rounded,
+                  color: AppTheme.getTextMuted(context),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileSearchField() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(context),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: TextField(
+        controller: _searchController,
+        focusNode: _searchFocusNode,
+        style: TextStyle(
+          color: AppTheme.getTextPrimary(context),
+          fontSize: 16,
+        ),
+        decoration: InputDecoration(
+          hintText: AppStrings.of(context)?.searchHint ?? 'Search channels...',
+          hintStyle: TextStyle(color: AppTheme.getTextMuted(context)),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            color: AppTheme.getTextMuted(context),
+          ),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: Icon(
+                    Icons.clear_rounded,
+                    color: AppTheme.getTextMuted(context),
+                  ),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                )
+              : null,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
+        ),
+        onChanged: (value) {
+          setState(() => _searchQuery = value);
+        },
+        textInputAction: TextInputAction.search,
+      ),
+    );
+  }
+
+  void _showTVSearchDialog() {
+    final dialogController = TextEditingController(text: _searchQuery);
+    final searchButtonFocusNode = FocusNode();
+    final cancelButtonFocusNode = FocusNode();
+    final inputFocusNode = FocusNode();
+    bool isInputFocused = false;
+    
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: AppTheme.getSurfaceColor(context),
+              title: Text(
+                AppStrings.of(context)?.searchChannels ?? 'Search Channels',
+                style: TextStyle(color: AppTheme.getTextPrimary(context)),
+              ),
+              content: SizedBox(
+                width: 400,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 输入框区域 - 使用 Focus 包装来处理焦点
+                    Focus(
+                      onFocusChange: (hasFocus) {
+                        setDialogState(() {
+                          isInputFocused = hasFocus;
+                        });
+                      },
+                      onKeyEvent: (node, event) {
+                        // 当按下向下键时，移动焦点到搜索按钮
+                        if (event is KeyDownEvent) {
+                          if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                            searchButtonFocusNode.requestFocus();
+                            return KeyEventResult.handled;
+                          }
+                        }
+                        return KeyEventResult.ignored;
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isInputFocused ? AppTheme.primaryColor : Colors.transparent,
+                            width: 2,
+                          ),
+                        ),
+                        child: TextField(
+                          controller: dialogController,
+                          focusNode: inputFocusNode,
+                          autofocus: true,
+                          style: TextStyle(
+                            color: AppTheme.getTextPrimary(context),
+                            fontSize: 18,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: AppStrings.of(context)?.searchHint ?? 'Search channels...',
+                            hintStyle: TextStyle(color: AppTheme.getTextMuted(context)),
+                            filled: true,
+                            fillColor: AppTheme.getCardColor(context),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 16,
+                            ),
+                          ),
+                          onSubmitted: (value) {
+                            setState(() {
+                              _searchQuery = value;
+                              _searchController.text = value;
+                            });
+                            Navigator.pop(dialogContext);
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        // 取消按钮
+                        Focus(
+                          focusNode: cancelButtonFocusNode,
+                          onKeyEvent: (node, event) {
+                            if (event is KeyDownEvent) {
+                              if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+                                inputFocusNode.requestFocus();
+                                return KeyEventResult.handled;
+                              }
+                              if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+                                searchButtonFocusNode.requestFocus();
+                                return KeyEventResult.handled;
+                              }
+                              if (event.logicalKey == LogicalKeyboardKey.select ||
+                                  event.logicalKey == LogicalKeyboardKey.enter) {
+                                Navigator.pop(dialogContext);
+                                return KeyEventResult.handled;
+                              }
+                            }
+                            return KeyEventResult.ignored;
+                          },
+                          child: Builder(
+                            builder: (context) {
+                              final hasFocus = Focus.of(context).hasFocus;
+                              return Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: hasFocus ? AppTheme.primaryColor : Colors.transparent,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: TextButton(
+                                  onPressed: () => Navigator.pop(dialogContext),
+                                  child: Text(
+                                    AppStrings.of(context)?.cancel ?? 'Cancel',
+                                    style: const TextStyle(color: AppTheme.textMuted),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // 搜索按钮
+                        Focus(
+                          focusNode: searchButtonFocusNode,
+                          onKeyEvent: (node, event) {
+                            if (event is KeyDownEvent) {
+                              if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+                                inputFocusNode.requestFocus();
+                                return KeyEventResult.handled;
+                              }
+                              if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+                                cancelButtonFocusNode.requestFocus();
+                                return KeyEventResult.handled;
+                              }
+                              if (event.logicalKey == LogicalKeyboardKey.select ||
+                                  event.logicalKey == LogicalKeyboardKey.enter) {
+                                setState(() {
+                                  _searchQuery = dialogController.text;
+                                  _searchController.text = dialogController.text;
+                                });
+                                Navigator.pop(dialogContext);
+                                return KeyEventResult.handled;
+                              }
+                            }
+                            return KeyEventResult.ignored;
+                          },
+                          child: Builder(
+                            builder: (context) {
+                              final hasFocus = Focus.of(context).hasFocus;
+                              return Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: hasFocus ? Colors.white : Colors.transparent,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      _searchQuery = dialogController.text;
+                                      _searchController.text = dialogController.text;
+                                    });
+                                    Navigator.pop(dialogContext);
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppTheme.primaryColor,
+                                  ),
+                                  child: Text(
+                                    AppStrings.of(context)?.search ?? 'Search',
+                                    style: const TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    ).then((_) {
+      searchButtonFocusNode.dispose();
+      cancelButtonFocusNode.dispose();
+      inputFocusNode.dispose();
+    });
   }
 
   Widget _buildSearchResults() {
