@@ -1,23 +1,23 @@
 {
-  "version": "1.1.97",
-  "build": 97,
+  "version": "1.1.98",
+  "build": 98,
   "releaseDate": "2026-01-08",
   "assets": {
-    "windows": "https://github.boki.moe/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.97/flutteriptv-Windows-x64-Setup.exe",
+    "windows": "https://github.boki.moe/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.98/flutteriptv-Windows-x64-Setup.exe",
     "android_mobile": {
-      "arm64-v8a": "https://github.boki.moe/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.97/flutteriptv-Android-Mobile-arm64-v8a.apk",
-      "armeabi-v7a": "https://github.boki.moe/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.97/flutteriptv-Android-Mobile-armeabi-v7a.apk",
-      "x86_64": "https://github.boki.moe/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.97/flutteriptv-Android-Mobile-x86_64.apk"
+      "arm64-v8a": "https://github.boki.moe/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.98/flutteriptv-Android-Mobile-arm64-v8a.apk",
+      "armeabi-v7a": "https://github.boki.moe/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.98/flutteriptv-Android-Mobile-armeabi-v7a.apk",
+      "x86_64": "https://github.boki.moe/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.98/flutteriptv-Android-Mobile-x86_64.apk"
     },
     "android_tv": {
-      "arm64-v8a": "https://github.boki.moe/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.97/flutteriptv-AndroidTV-arm64-v8a.apk",
-      "armeabi-v7a": "https://github.boki.moe/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.97/flutteriptv-AndroidTV-armeabi-v7a.apk",
-      "x86_64": "https://github.boki.moe/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.97/flutteriptv-AndroidTV-x86_64.apk"
+      "arm64-v8a": "https://github.boki.moe/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.98/flutteriptv-AndroidTV-arm64-v8a.apk",
+      "armeabi-v7a": "https://github.boki.moe/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.98/flutteriptv-AndroidTV-armeabi-v7a.apk",
+      "x86_64": "https://github.boki.moe/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.1.98/flutteriptv-AndroidTV-x86_64.apk"
     }
   },
   "changelog": {
-    "zh": "- Windows mini 模式隐藏标题栏",
-    "en": "- Hide title bar in Windows mini mode"
+    "zh": "- 首页更多按钮焦点优化\n- 频道页面焦点导航修复",
+    "en": "- Home page more button focus optimization\n- Channel page focus navigation fix"
   },
   "minVersion": "1.0.0"
 }

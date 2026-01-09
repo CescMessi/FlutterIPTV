@@ -53,6 +53,30 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
 
     if (_selectedGroup != null) {
       context.read<ChannelProvider>().selectGroup(_selectedGroup!);
+      
+      // 如果是从首页"更多"按钮跳转过来的，延迟跳转焦点到第一个频道
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (PlatformDetector.isTV) {
+          // 延迟一点时间确保UI完全构建完成
+          Future.delayed(const Duration(milliseconds: 300), () {
+            if (mounted) {
+              // 找到对应分类的索引
+              final provider = context.read<ChannelProvider>();
+              final groupIndex = provider.groups.indexWhere((g) => g.name == _selectedGroup);
+              if (groupIndex >= 0) {
+                // +1 因为第一个是"全部频道"
+                _currentGroupIndex = groupIndex + 1;
+              }
+              
+              // 跳转焦点到第一个频道并记住索引
+              if (_channelFocusNodes.isNotEmpty) {
+                _lastChannelIndex = 0; // 记住是第一个频道
+                _channelFocusNodes[0].requestFocus();
+              }
+            }
+          });
+        }
+      });
     }
   }
 
@@ -495,6 +519,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                         onLeft: (PlatformDetector.isTV && isFirstColumn)
                             ? () {
                                 // 第一列按左键，跳转到当前选中的分类
+                                debugPrint('ChannelsScreen: onLeft pressed, _currentGroupIndex=$_currentGroupIndex, _selectedGroup=$_selectedGroup');
                                 if (_currentGroupIndex < _groupFocusNodes.length) {
                                   _groupFocusNodes[_currentGroupIndex].requestFocus();
                                 }
