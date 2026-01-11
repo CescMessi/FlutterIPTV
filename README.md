@@ -26,6 +26,17 @@
 
 Lotus IPTV is a modern, high-performance IPTV player built with Flutter. Features a beautiful Lotus-themed UI with pink/purple gradient accents, optimized for seamless viewing across desktop, mobile, and TV platforms.
 
+## 📸 Screenshots
+
+<p align="center">
+  <img src="assets/screenshots/s1.jpg" width="30%" alt="Home Screen">
+  <img src="assets/screenshots/s2.jpg" width="30%" alt="Channels Screen">
+  <img src="assets/screenshots/s5.jpg" width="30%" alt="Player Screen">
+  <img src="assets/screenshots/s3.jpg" width="30%" alt="Favorites Screen">
+  <img src="assets/screenshots/s4.jpg" width="30%" alt="Setting Screen">
+  
+</p>
+
 ## ✨ Features
 
 ### 🎨 Lotus Theme UI
@@ -76,16 +87,7 @@ Lotus IPTV is a modern, high-performance IPTV player built with Flutter. Feature
 - Playback control from casting device (play/pause/seek/volume)
 - Auto-start DLNA service option
 
-## 📸 Screenshots
 
-<p align="center">
-  <img src="assets/screenshots/home_screen.png" width="30%" alt="Home Screen">
-  <img src="assets/screenshots/channels_screen.png" width="30%" alt="Channels Screen">
-  <img src="assets/screenshots/player_screen.png" width="30%" alt="Player Screen">
-  <img src="assets/screenshots/fav_screen.png" width="30%" alt="Favorites Screen">
-  <img src="assets/screenshots/setting_screen.png" width="30%" alt="Setting Screen">
-  
-</p>
 
 ## 🚀 Download
 
