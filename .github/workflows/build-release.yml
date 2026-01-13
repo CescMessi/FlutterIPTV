@@ -2,7 +2,7 @@ name: Build and Release
 
 on:
   push:
-    # branches: [ main ]  # 在main分支推送时触发
+    branches: [ main ]  # 在main分支推送时触发
     tags:
       - 'v*.*.*'
   workflow_dispatch:
