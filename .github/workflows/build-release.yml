@@ -2,9 +2,8 @@ name: Build and Release
 
 on:
   push:
-    branches: [ main ]  # 在main分支推送时触发
     tags:
-      - 'v*.*.*'
+      - 'v*.*.*'  # 仅在推送tag时触发
   workflow_dispatch:
     inputs:
       version:
