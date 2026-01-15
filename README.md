@@ -84,15 +84,40 @@ Download the latest version from [Releases Page](https://github.com/shnulaa/Flut
 
 ## 🎮 Controls
 
-| Action | Keyboard | TV Remote |
-|--------|----------|-----------|
-| Play/Pause | Space/Enter | OK |
-| Channel Up | ↑ | D-Pad Up |
-| Channel Down | ↓ | D-Pad Down |
-| Open Category Panel | ← | D-Pad Left |
-| Favorite | F | Long Press OK |
+### Desktop/Mobile
+
+| Action | Keyboard | Mouse/Touch |
+|--------|----------|-------------|
+| Play/Pause | Space/Enter | Click |
+| Channel Up | ↑ | Swipe Up |
+| Channel Down | ↓ | Swipe Down |
+| Open Category Panel | ← | - |
+| Switch Source | ←/→ | - |
+| Favorite | F | Long Press |
 | Mute | M | - |
-| Exit Player | Double Esc | Double Back |
+| Exit Player | Double Esc | - |
+| Enter Multi-Screen | - | Click Button |
+
+### Android TV
+
+| Action | Remote Button | Description |
+|--------|---------------|-------------|
+| Play/Pause | OK (short press) | Toggle playback |
+| Channel Up/Down | D-Pad Up/Down | Switch channels |
+| Open Category Panel | D-Pad Left (long press) | Show category list |
+| Switch Source | D-Pad Left/Right | Switch between sources |
+| Favorite | OK (double click) | Add/remove favorite |
+| Enter Multi-Screen | OK (long press) | Enter 2x2 split screen mode |
+| Exit Player | Back (double press) | Return to channel list |
+
+### TV Multi-Screen Mode
+
+| Action | Remote Button | Description |
+|--------|---------------|-------------|
+| Move Focus | D-Pad | Move between 4 screens (also switches audio) |
+| Select Channel | OK (short press) | Open channel selector for focused screen |
+| Clear Screen | OK (long press) | Clear channel from focused screen |
+| Exit Multi-Screen | Back | Return to single player (if channel playing) or exit |
 
 
 ## ✨ Features
@@ -130,7 +155,7 @@ Download the latest version from [Releases Page](https://github.com/shnulaa/Flut
 - Watch history tracking
 - Default channel logo for missing thumbnails
 - **Multi-source support**: Auto-merge channels with same name, switch sources with LEFT/RIGHT keys
-- **Multi-screen mode** (Desktop): 2x2 split screen for simultaneous viewing of 4 channels, with independent EPG display and mini mode support
+- **Multi-screen mode** (Desktop & TV): 2x2 split screen for simultaneous viewing of 4 channels, with independent EPG display and mini mode support (Desktop)
 
 ### 📡 EPG (Electronic Program Guide)
 - Support for XMLTV format EPG data
