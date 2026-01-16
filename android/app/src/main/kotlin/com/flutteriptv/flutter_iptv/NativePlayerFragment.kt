@@ -167,7 +167,7 @@ class NativePlayerFragment : Fragment() {
     private var isFavorite: Boolean = false
     
     var onCloseListener: (() -> Unit)? = null
-    var onEnterMultiScreen: ((Int) -> Unit)? = null  // 进入分屏模式，传递当前频道索引
+    var onEnterMultiScreen: ((Int, Int) -> Unit)? = null  // 进入分屏模式，传递当前频道索引和源索引
 
     companion object {
         private const val ARG_VIDEO_URL = "video_url"
@@ -183,6 +183,7 @@ class NativePlayerFragment : Fragment() {
         private const val ARG_SHOW_CLOCK = "show_clock"
         private const val ARG_SHOW_NETWORK_SPEED = "show_network_speed"
         private const val ARG_SHOW_VIDEO_INFO = "show_video_info"
+        private const val ARG_INITIAL_SOURCE_INDEX = "initial_source_index"
 
         fun newInstance(
             videoUrl: String,
@@ -197,7 +198,8 @@ class NativePlayerFragment : Fragment() {
             showFps: Boolean = true,
             showClock: Boolean = true,
             showNetworkSpeed: Boolean = true,
-            showVideoInfo: Boolean = true
+            showVideoInfo: Boolean = true,
+            initialSourceIndex: Int = 0
         ): NativePlayerFragment {
             return NativePlayerFragment().apply {
                 arguments = Bundle().apply {
@@ -214,6 +216,7 @@ class NativePlayerFragment : Fragment() {
                     putBoolean(ARG_SHOW_CLOCK, showClock)
                     putBoolean(ARG_SHOW_NETWORK_SPEED, showNetworkSpeed)
                     putBoolean(ARG_SHOW_VIDEO_INFO, showVideoInfo)
+                    putInt(ARG_INITIAL_SOURCE_INDEX, initialSourceIndex)
                 }
             }
         }
@@ -244,7 +247,7 @@ class NativePlayerFragment : Fragment() {
             showClock = it.getBoolean(ARG_SHOW_CLOCK, true)
             showNetworkSpeed = it.getBoolean(ARG_SHOW_NETWORK_SPEED, true)
             showVideoInfo = it.getBoolean(ARG_SHOW_VIDEO_INFO, true)
-            currentSourceIndex = 0 // 初始化为第一个源
+            currentSourceIndex = it.getInt(ARG_INITIAL_SOURCE_INDEX, 0) // 使用传入的初始源索引
         }
         
         Log.d(TAG, "Playing: $currentName (index $currentIndex of ${channelUrls.size}, isDlna=$isDlnaMode, sources=${getCurrentSources().size})")
@@ -757,7 +760,7 @@ class NativePlayerFragment : Fragment() {
                         centerLongPressHandled = true
                         // 长按OK键进入分屏模式
                         if (!isDlnaMode && channelUrls.isNotEmpty()) {
-                            onEnterMultiScreen?.invoke(currentIndex)
+                            onEnterMultiScreen?.invoke(currentIndex, currentSourceIndex)
                         }
                         return true
                     }

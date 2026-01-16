@@ -1325,6 +1325,11 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     // 如果分屏有记住的频道，恢复播放
     if (multiScreenProvider.hasAnyChannel) {
       multiScreenProvider.resumeAllScreens();
+      // 如果当前有频道，更新活动屏幕为当前频道（保留源索引）
+      if (currentChannel != null) {
+        final activeIndex = multiScreenProvider.activeScreenIndex;
+        multiScreenProvider.playChannelOnScreen(activeIndex, currentChannel);
+      }
     } else if (currentChannel != null) {
       // 否则如果有当前频道，在默认位置播放
       final defaultPosition = settingsProvider.defaultScreenPosition;

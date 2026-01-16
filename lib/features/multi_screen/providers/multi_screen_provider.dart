@@ -124,13 +124,15 @@ class MultiScreenProvider extends ChangeNotifier {
   Future<void> playChannelOnScreen(int screenIndex, Channel channel) async {
     if (screenIndex < 0 || screenIndex >= 4) return;
     
-    debugPrint('MultiScreenProvider: playChannelOnScreen - screenIndex=$screenIndex, channel=${channel.name}, activeScreen=$_activeScreenIndex');
+    // 使用 currentUrl 而不是 url，以保留当前选择的源索引
+    final playUrl = channel.currentUrl;
+    debugPrint('MultiScreenProvider: playChannelOnScreen - screenIndex=$screenIndex, channel=${channel.name}, sourceIndex=${channel.currentSourceIndex}, url=$playUrl, activeScreen=$_activeScreenIndex');
     
     final screen = _screens[screenIndex];
     
-    // 如果已经在播放相同的频道，不重复播放
-    if (screen.channel?.url == channel.url && screen.isPlaying) {
-      debugPrint('MultiScreenProvider: Already playing same channel, skipping');
+    // 如果已经在播放相同的频道和相同的源，不重复播放
+    if (screen.channel?.currentUrl == playUrl && screen.isPlaying) {
+      debugPrint('MultiScreenProvider: Already playing same channel and source, skipping');
       return;
     }
     
@@ -188,9 +190,9 @@ class MultiScreenProvider extends ChangeNotifier {
       // 设置音量（只有活动屏幕有声音，使用有效音量包含音量增强）
       _applyVolumeToScreen(screenIndex);
       
-      // 播放频道
-      debugPrint('MultiScreenProvider: Opening media for screen $screenIndex: ${channel.url}');
-      await screen.player!.open(Media(channel.url));
+      // 播放频道（使用 currentUrl 保留源索引）
+      debugPrint('MultiScreenProvider: Opening media for screen $screenIndex: $playUrl');
+      await screen.player!.open(Media(playUrl));
       
       // 播放开始后再次确保音量正确
       _applyVolumeToScreen(screenIndex);
@@ -323,7 +325,8 @@ class MultiScreenProvider extends ChangeNotifier {
     final currentChannel = _screens[_activeScreenIndex].channel;
     if (currentChannel == null || channels.isEmpty) return;
     
-    final currentIndex = channels.indexWhere((c) => c.url == currentChannel.url);
+    // 使用 id 或 name 进行比较，而不是 url（因为同一频道可能有多个源）
+    final currentIndex = channels.indexWhere((c) => c.id == currentChannel.id || c.name == currentChannel.name);
     if (currentIndex == -1) return;
     
     final nextIndex = (currentIndex + 1) % channels.length;
@@ -335,7 +338,8 @@ class MultiScreenProvider extends ChangeNotifier {
     final currentChannel = _screens[_activeScreenIndex].channel;
     if (currentChannel == null || channels.isEmpty) return;
     
-    final currentIndex = channels.indexWhere((c) => c.url == currentChannel.url);
+    // 使用 id 或 name 进行比较，而不是 url（因为同一频道可能有多个源）
+    final currentIndex = channels.indexWhere((c) => c.id == currentChannel.id || c.name == currentChannel.name);
     if (currentIndex == -1) return;
     
     final prevIndex = (currentIndex - 1 + channels.length) % channels.length;

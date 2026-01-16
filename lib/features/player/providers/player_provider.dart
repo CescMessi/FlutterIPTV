@@ -417,11 +417,15 @@ class PlayerProvider extends ChangeNotifier {
     loadVolumeSettings(); // Apply volume boost settings
     notifyListeners();
 
+    // 使用 currentUrl 而不是 url，以保留当前选择的源索引
+    final playUrl = channel.currentUrl;
+    debugPrint('PlayerProvider: playChannel - ${channel.name}, sourceIndex=${channel.currentSourceIndex}, url=$playUrl');
+
     try {
       if (_useExoPlayer) {
-        await _initExoPlayer(channel.url);
+        await _initExoPlayer(playUrl);
       } else {
-        await _mediaKitPlayer?.open(Media(channel.url));
+        await _mediaKitPlayer?.open(Media(playUrl));
         _state = PlayerState.playing;
       }
     } catch (e) {

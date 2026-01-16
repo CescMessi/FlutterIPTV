@@ -266,9 +266,10 @@ class MainActivity: FlutterFragmentActivity() {
         showFps: Boolean = true,
         showClock: Boolean = true,
         showNetworkSpeed: Boolean = true,
-        showVideoInfo: Boolean = true
+        showVideoInfo: Boolean = true,
+        initialSourceIndex: Int = 0  // 初始源索引
     ) {
-        Log.d(TAG, "showPlayerFragment isDlnaMode=$isDlnaMode, bufferStrength=$bufferStrength, logos=${logos?.size ?: 0}")
+        Log.d(TAG, "showPlayerFragment isDlnaMode=$isDlnaMode, bufferStrength=$bufferStrength, logos=${logos?.size ?: 0}, sourceIndex=$initialSourceIndex")
         
         // 保存频道数据（用于切换到分屏时传递）
         lastChannelUrls = urls
@@ -312,7 +313,8 @@ class MainActivity: FlutterFragmentActivity() {
             showFps,
             showClock,
             showNetworkSpeed,
-            showVideoInfo
+            showVideoInfo,
+            initialSourceIndex  // 传递初始源索引
         ).apply {
             onCloseListener = {
                 runOnUiThread {
@@ -320,7 +322,7 @@ class MainActivity: FlutterFragmentActivity() {
                 }
             }
             // 从普通播放器进入分屏模式
-            onEnterMultiScreen = { channelIndex ->
+            onEnterMultiScreen = { channelIndex, sourceIndex ->
                 runOnUiThread {
                     if (urls != null && names != null && groups != null) {
                         // 先隐藏普通播放器
@@ -331,7 +333,8 @@ class MainActivity: FlutterFragmentActivity() {
                             channelIndex, 
                             lastVolumeBoostDb, 
                             lastDefaultScreenPosition,
-                            restoreFromLocal = true  // 恢复之前的分屏状态（从本地保存）
+                            restoreFromLocal = true,  // 恢复之前的分屏状态（从本地保存）
+                            initialSourceIndex = sourceIndex  // 传递当前源索引
                         )
                     }
                 }
@@ -387,10 +390,11 @@ class MainActivity: FlutterFragmentActivity() {
         defaultScreenPosition: Int = 1,
         restoreFromLocal: Boolean = false,  // 是否从本地保存的状态恢复（单屏切换到分屏）
         restoreActiveIndex: Int = -1,  // 从 Flutter 传递的恢复活动屏幕索引（首页继续播放）
-        restoreScreenChannels: List<Int?>? = null  // 从 Flutter 传递的恢复频道索引（首页继续播放）
+        restoreScreenChannels: List<Int?>? = null,  // 从 Flutter 传递的恢复频道索引（首页继续播放）
+        initialSourceIndex: Int = 0  // 初始源索引（从单屏进入分屏时传递）
     ) {
         val shouldRestoreFromFlutter = restoreActiveIndex >= 0 && restoreScreenChannels != null
-        Log.d(TAG, "showMultiScreenFragment with ${urls.size} channels, initial=$initialChannelIndex, volumeBoost=$volumeBoostDb, defaultScreen=$defaultScreenPosition, restoreFromLocal=$restoreFromLocal, restoreFromFlutter=$shouldRestoreFromFlutter")
+        Log.d(TAG, "showMultiScreenFragment with ${urls.size} channels, initial=$initialChannelIndex, sourceIndex=$initialSourceIndex, volumeBoost=$volumeBoostDb, defaultScreen=$defaultScreenPosition, restoreFromLocal=$restoreFromLocal, restoreFromFlutter=$shouldRestoreFromFlutter")
         
         // 保存频道数据
         lastChannelUrls = urls
@@ -459,6 +463,7 @@ class MainActivity: FlutterFragmentActivity() {
             sourcesArrayList,
             logosArrayList,
             initialChannelIndex,
+            initialSourceIndex,  // 传递初始源索引
             volumeBoostDb,
             defaultScreenPosition,
             finalRestoreActiveIndex,
@@ -471,7 +476,7 @@ class MainActivity: FlutterFragmentActivity() {
                     hideMultiScreenFragment()
                 }
             }
-            onExitToNormalPlayer = { channelIndex ->
+            onExitToNormalPlayer = { channelIndex, sourceIndex ->
                 runOnUiThread {
                     // 先保存分屏状态到本地（用于单屏切换回分屏时恢复）
                     saveMultiScreenState()
@@ -498,8 +503,10 @@ class MainActivity: FlutterFragmentActivity() {
                     
                     // 退出分屏后启动普通播放器
                     if (channelIndex >= 0 && channelIndex < urls.size) {
+                        // 使用传递的源索引获取正确的URL
                         val url = if (sources != null && channelIndex < sources.size && sources[channelIndex].isNotEmpty()) {
-                            sources[channelIndex][0]
+                            val validSourceIndex = sourceIndex.coerceIn(0, sources[channelIndex].size - 1)
+                            sources[channelIndex][validSourceIndex]
                         } else {
                             urls[channelIndex]
                         }
@@ -509,7 +516,7 @@ class MainActivity: FlutterFragmentActivity() {
                         // 先隐藏分屏（不通知 Flutter，因为上面已经通知了）
                         hideMultiScreenFragment(notifyFlutter = false)
                         
-                        // 启动普通播放器
+                        // 启动普通播放器（传递源索引）
                         showPlayerFragment(
                             url, name, channelIndex,
                             urls, names, groups, sources, logos,
@@ -518,7 +525,8 @@ class MainActivity: FlutterFragmentActivity() {
                             showFps = true,
                             showClock = true,
                             showNetworkSpeed = true,
-                            showVideoInfo = true
+                            showVideoInfo = true,
+                            initialSourceIndex = sourceIndex  // 传递源索引
                         )
                     }
                 }

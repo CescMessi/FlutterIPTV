@@ -104,6 +104,8 @@ class MultiScreenPlayerFragment : Fragment() {
     
     // 初始频道索引（从频道列表进入时选择的频道）
     private var initialChannelIndex = 0
+    // 初始源索引（从单屏进入分屏时的源索引）
+    private var initialSourceIndex = 0
     
     // 默认屏幕位置（1-4，对应四个屏幕）
     private var defaultScreenPosition = 1
@@ -126,7 +128,7 @@ class MultiScreenPlayerFragment : Fragment() {
 
     // 回调
     var onCloseListener: (() -> Unit)? = null
-    var onExitToNormalPlayer: ((Int) -> Unit)? = null  // 退出到普通播放器，传递当前频道索引
+    var onExitToNormalPlayer: ((Int, Int) -> Unit)? = null  // 退出到普通播放器，传递当前频道索引和源索引
 
     companion object {
         private const val ARG_CHANNEL_URLS = "channel_urls"
@@ -135,6 +137,7 @@ class MultiScreenPlayerFragment : Fragment() {
         private const val ARG_CHANNEL_SOURCES = "channel_sources"
         private const val ARG_CHANNEL_LOGOS = "channel_logos"
         private const val ARG_INITIAL_CHANNEL_INDEX = "initial_channel_index"
+        private const val ARG_INITIAL_SOURCE_INDEX = "initial_source_index"
         private const val ARG_VOLUME_BOOST_DB = "volume_boost_db"
         private const val ARG_DEFAULT_SCREEN_POSITION = "default_screen_position"
         private const val ARG_RESTORE_ACTIVE_INDEX = "restore_active_index"
@@ -152,6 +155,7 @@ class MultiScreenPlayerFragment : Fragment() {
             channelSources: ArrayList<ArrayList<String>>,
             channelLogos: ArrayList<String>,
             initialChannelIndex: Int = 0,
+            initialSourceIndex: Int = 0,
             volumeBoostDb: Int = 0,
             defaultScreenPosition: Int = 1,
             restoreActiveIndex: Int = -1,
@@ -166,6 +170,7 @@ class MultiScreenPlayerFragment : Fragment() {
                     putSerializable(ARG_CHANNEL_SOURCES, channelSources)
                     putStringArrayList(ARG_CHANNEL_LOGOS, channelLogos)
                     putInt(ARG_INITIAL_CHANNEL_INDEX, initialChannelIndex)
+                    putInt(ARG_INITIAL_SOURCE_INDEX, initialSourceIndex)
                     putInt(ARG_VOLUME_BOOST_DB, volumeBoostDb)
                     putInt(ARG_DEFAULT_SCREEN_POSITION, defaultScreenPosition)
                     putInt(ARG_RESTORE_ACTIVE_INDEX, restoreActiveIndex)
@@ -211,6 +216,7 @@ class MultiScreenPlayerFragment : Fragment() {
             channelSources = it.getSerializable(ARG_CHANNEL_SOURCES) as? ArrayList<ArrayList<String>> ?: arrayListOf()
             channelLogos = it.getStringArrayList(ARG_CHANNEL_LOGOS) ?: arrayListOf()
             initialChannelIndex = it.getInt(ARG_INITIAL_CHANNEL_INDEX, 0)
+            initialSourceIndex = it.getInt(ARG_INITIAL_SOURCE_INDEX, 0)
             volumeBoostDb = it.getInt(ARG_VOLUME_BOOST_DB, 0)
             defaultScreenPosition = it.getInt(ARG_DEFAULT_SCREEN_POSITION, 1)
             restoreActiveIndex = it.getInt(ARG_RESTORE_ACTIVE_INDEX, -1)
@@ -219,7 +225,7 @@ class MultiScreenPlayerFragment : Fragment() {
             restoreScreenStates = it.getSerializable(ARG_RESTORE_SCREEN_STATES) as? ArrayList<ArrayList<String>>
         }
 
-        Log.d(TAG, "Loaded ${channelUrls.size} channels, initial=$initialChannelIndex, volumeBoost=$volumeBoostDb, defaultScreen=$defaultScreenPosition, restoreActive=$restoreActiveIndex")
+        Log.d(TAG, "Loaded ${channelUrls.size} channels, initial=$initialChannelIndex, sourceIndex=$initialSourceIndex, volumeBoost=$volumeBoostDb, defaultScreen=$defaultScreenPosition, restoreActive=$restoreActiveIndex")
 
         // 初始化视图
         initViews(view)
@@ -255,6 +261,10 @@ class MultiScreenPlayerFragment : Fragment() {
             }
             activeScreenIndex = restoreActiveIndex.coerceIn(0, 3)
             focusedScreenIndex = restoreFocusedIndex.coerceIn(0, 3)
+            // 如果有初始频道和源索引，更新活动屏幕的频道（从单屏切换到分屏时）
+            if (initialChannelIndex >= 0 && initialChannelIndex < channelUrls.size) {
+                playChannelOnScreen(activeScreenIndex, initialChannelIndex, initialSourceIndex)
+            }
             // 确保活动屏幕有声音
             for (i in 0..3) {
                 players[i]?.volume = if (i == activeScreenIndex) getEffectiveVolume() else 0f
@@ -267,8 +277,8 @@ class MultiScreenPlayerFragment : Fragment() {
                 // 先设置活动屏幕索引，确保播放时有声音
                 activeScreenIndex = screenIndex
                 focusedScreenIndex = screenIndex
-                // 然后播放频道
-                playChannelOnScreen(screenIndex, initialChannelIndex)
+                // 然后播放频道（使用初始源索引）
+                playChannelOnScreen(screenIndex, initialChannelIndex, initialSourceIndex)
                 // 确保该屏幕有声音
                 players[screenIndex]?.volume = getEffectiveVolume()
             }
@@ -428,19 +438,24 @@ class MultiScreenPlayerFragment : Fragment() {
         return (baseVolume * boostFactor).coerceIn(0.0, 2.0).toFloat()
     }
 
-    private fun playChannelOnScreen(screenIndex: Int, channelIndex: Int) {
+    private fun playChannelOnScreen(screenIndex: Int, channelIndex: Int, sourceIndex: Int = 0) {
         if (screenIndex < 0 || screenIndex > 3) return
         if (channelIndex < 0 || channelIndex >= channelUrls.size) return
 
-        val url = if (channelIndex < channelSources.size && channelSources[channelIndex].isNotEmpty()) {
-            channelSources[channelIndex][0]
+        // 获取源列表
+        val sources = if (channelIndex < channelSources.size) channelSources[channelIndex] else arrayListOf()
+        
+        // 使用指定的源索引，如果超出范围则使用第一个源
+        val validSourceIndex = if (sources.isNotEmpty()) sourceIndex.coerceIn(0, sources.size - 1) else 0
+        val url = if (sources.isNotEmpty()) {
+            sources[validSourceIndex]
         } else {
             channelUrls[channelIndex]
         }
 
         val name = channelNames.getOrElse(channelIndex) { "Channel ${channelIndex + 1}" }
 
-        Log.d(TAG, "Playing channel '$name' on screen $screenIndex")
+        Log.d(TAG, "Playing channel '$name' on screen $screenIndex, source ${validSourceIndex + 1}/${sources.size.coerceAtLeast(1)}")
 
         screenStates[screenIndex].apply {
             this.channelIndex = channelIndex
@@ -451,7 +466,7 @@ class MultiScreenPlayerFragment : Fragment() {
             this.videoWidth = 0
             this.videoHeight = 0
             this.retryCount = 0  // 重置重试计数
-            this.currentSourceIndex = 0  // 重置源索引
+            this.currentSourceIndex = validSourceIndex  // 使用指定的源索引
         }
 
         updateScreenOverlay(screenIndex)
@@ -811,12 +826,12 @@ class MultiScreenPlayerFragment : Fragment() {
         
         // 检查是否有活动屏幕正在播放
         val activeState = screenStates[activeScreenIndex]
-        Log.d(TAG, "Active screen channel index: ${activeState.channelIndex}")
+        Log.d(TAG, "Active screen channel index: ${activeState.channelIndex}, source index: ${activeState.currentSourceIndex}")
         
         if (activeState.channelIndex >= 0) {
-            // 有频道在播放，退出分屏进入普通播放模式
-            Log.d(TAG, "Exiting to normal player with channel: ${activeState.channelIndex}")
-            onExitToNormalPlayer?.invoke(activeState.channelIndex)
+            // 有频道在播放，退出分屏进入普通播放模式（传递源索引）
+            Log.d(TAG, "Exiting to normal player with channel: ${activeState.channelIndex}, source: ${activeState.currentSourceIndex}")
+            onExitToNormalPlayer?.invoke(activeState.channelIndex, activeState.currentSourceIndex)
         } else {
             // 没有播放内容，直接关闭分屏返回频道列表
             Log.d(TAG, "No active channel, closing multi-screen")
@@ -833,8 +848,8 @@ class MultiScreenPlayerFragment : Fragment() {
             .setTitle(getString(R.string.exit_multi_screen))
             .setMessage(getString(R.string.currently_playing, channelName))
             .setPositiveButton(getString(R.string.continue_playing)) { _, _ ->
-                // 退出分屏，转为普通播放器继续播放
-                onExitToNormalPlayer?.invoke(activeState.channelIndex)
+                // 退出分屏，转为普通播放器继续播放（传递源索引）
+                onExitToNormalPlayer?.invoke(activeState.channelIndex, activeState.currentSourceIndex)
                 onCloseListener?.invoke()
             }
             .setNegativeButton(getString(R.string.close)) { _, _ ->
