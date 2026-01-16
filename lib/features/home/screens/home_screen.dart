@@ -368,16 +368,18 @@ class _HomeScreenState extends State<HomeScreen> {
     final continueLabel = AppStrings.of(context)?.continueWatching ?? 'Continue';
     final isMobile = PlatformDetector.isMobile;
 
-    return Container(
-      padding: EdgeInsets.fromLTRB(isMobile ? 12 : 24, isMobile ? 10 : 16, isMobile ? 12 : 24, isMobile ? 8 : 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ShaderMask(
-                  shaderCallback: (bounds) => AppTheme.lotusGradient.createShader(bounds),
+    return SafeArea(
+      bottom: false,
+      child: Container(
+        padding: EdgeInsets.fromLTRB(isMobile ? 12 : 24, isMobile ? 8 : 16, isMobile ? 12 : 24, isMobile ? 8 : 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ShaderMask(
+                    shaderCallback: (bounds) => AppTheme.lotusGradient.createShader(bounds),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -443,6 +445,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ],
+      ),
       ),
     );
   }
