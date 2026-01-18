@@ -126,6 +126,7 @@ class AppStrings {
   String get clearAll => _localizedValues['clearAll']!;
   String get noFavoritesYet => _localizedValues['noFavoritesYet']!;
   String get favoritesHint => _localizedValues['favoritesHint']!;
+  String get noProgramInfo => _localizedValues['noProgramInfo']!;
   String get browseChannels => _localizedValues['browseChannels']!;
   String get removedFromFavorites => _localizedValues['removedFromFavorites']!;
   String get undo => _localizedValues['undo']!;
@@ -459,6 +460,7 @@ class _AppStringsDelegate extends LocalizationsDelegate<AppStrings> {
     'clearAll': '清空',
     'noFavoritesYet': '暂无收藏',
     'favoritesHint': '长按频道可添加到收藏',
+    'noProgramInfo': '暂无节目信息',
     'browseChannels': '浏览频道',
     'removedFromFavorites': '已从收藏中移除 "{name}"',
     'undo': '撤销',
@@ -757,6 +759,7 @@ class _AppStringsDelegate extends LocalizationsDelegate<AppStrings> {
     'clearAll': 'Clear All',
     'noFavoritesYet': 'No Favorites Yet',
     'favoritesHint': 'Long press on a channel to add it to favorites',
+    'noProgramInfo': 'No Program Info',
     'browseChannels': 'Browse Channels',
     'removedFromFavorites': 'Removed "{name}" from favorites',
     'undo': 'Undo',

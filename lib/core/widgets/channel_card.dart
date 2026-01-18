@@ -6,7 +6,8 @@ import '../platform/platform_detector.dart';
 import '../i18n/app_strings.dart';
 import 'tv_focusable.dart';
 
-/// A 16:9 card widget for displaying channel information
+/// A card widget for displaying channel information
+/// 使用固定宽高比，内部布局自适应
 /// TV端优化：无特效，长按显示菜单
 class ChannelCard extends StatelessWidget {
   final String name;
@@ -51,6 +52,7 @@ class ChannelCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isTV = PlatformDetector.isTV;
+    final isMobile = PlatformDetector.isMobile;
 
     return TVFocusable(
       autofocus: autofocus,
@@ -76,7 +78,11 @@ class ChannelCard extends StatelessWidget {
               width: isFocused ? 2 : 1,
             ),
           ),
-          child: child,
+          child: MouseRegion(
+            onEnter: (_) => _onHoverChanged(true),
+            onExit: (_) => _onHoverChanged(false),
+            child: child,
+          ),
         );
       },
       child: GestureDetector(
@@ -84,9 +90,9 @@ class ChannelCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Logo area - 使用flex比例自动计算高度
+            // Logo area - 固定占60%高度
             Expanded(
-              flex: PlatformDetector.isMobile ? 50 : 60,
+              flex: 60,
               child: ClipRRect(
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(AppTheme.radiusMedium),
@@ -105,20 +111,20 @@ class ChannelCard extends StatelessWidget {
                     // Playing indicator
                     if (isPlaying)
                       Positioned(
-                        top: 6,
-                        left: 6,
+                        top: 4,
+                        left: 4,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                          padding: EdgeInsets.symmetric(horizontal: isMobile ? 4 : 6, vertical: isMobile ? 2 : 3),
                           decoration: BoxDecoration(
                             gradient: AppTheme.lotusGradient,
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.circle, color: Colors.white, size: 5),
-                              SizedBox(width: 3),
-                              Text('LIVE', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                              Icon(Icons.circle, color: Colors.white, size: isMobile ? 4 : 5),
+                              SizedBox(width: isMobile ? 2 : 3),
+                              Text('LIVE', style: TextStyle(color: Colors.white, fontSize: isMobile ? 7 : 9, fontWeight: FontWeight.bold)),
                             ],
                           ),
                         ),
@@ -126,14 +132,14 @@ class ChannelCard extends StatelessWidget {
                     // 非TV端显示收藏和测试按钮
                     if (!isTV)
                       Positioned(
-                        top: 4,
-                        right: 4,
+                        top: 3,
+                        right: 3,
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            if (onTest != null) _buildTestButton(),
-                            const SizedBox(width: 4),
-                            _buildFavoriteButton(),
+                            if (onTest != null) _buildTestButton(isMobile),
+                            SizedBox(width: isMobile ? 2 : 4),
+                            _buildFavoriteButton(isMobile),
                           ],
                         ),
                       ),
@@ -147,85 +153,49 @@ class ChannelCard extends StatelessWidget {
                     // Unavailable indicator
                     if (isUnavailable)
                       Positioned(
-                        top: 6,
-                        left: 6,
+                        top: 4,
+                        left: 4,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          padding: EdgeInsets.symmetric(horizontal: isMobile ? 3 : 5, vertical: isMobile ? 1 : 2),
                           decoration: BoxDecoration(
                             color: AppTheme.warningColor,
                             borderRadius: BorderRadius.circular(3),
                           ),
-                          child: Text(AppStrings.of(context)?.unavailable ?? 'Unavailable', style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+                          child: Text(AppStrings.of(context)?.unavailable ?? 'Unavailable', style: TextStyle(color: Colors.white, fontSize: isMobile ? 6 : 8, fontWeight: FontWeight.bold)),
                         ),
                       ),
                   ],
                 ),
               ),
             ),
-            // 内容区域 - 使用flex比例自动计算高度
+            // 内容区域 - 固定占40%高度，内容自适应
             Expanded(
-              flex: PlatformDetector.isMobile ? 50 : 40,
+              flex: 40,
               child: Container(
                 padding: EdgeInsets.symmetric(
-                  horizontal: PlatformDetector.isMobile ? 6 : 8,
-                  vertical: PlatformDetector.isMobile ? 3 : 5,
+                  horizontal: isMobile ? 4 : 8,
+                  vertical: isMobile ? 3 : 5,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
+                    // 频道名称 - 始终显示
                     Text(
                       name,
                       style: TextStyle(
                         color: AppTheme.getTextPrimary(context),
-                        fontSize: PlatformDetector.isMobile ? 10 : 11,
+                        fontSize: isMobile ? 9 : 11,
                         fontWeight: FontWeight.w600,
+                        height: 1.2,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (currentProgram != null && currentProgram!.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Icon(Icons.play_circle_filled, color: AppTheme.primaryColor, size: PlatformDetector.isMobile ? 8 : 9),
-                          const SizedBox(width: 3),
-                          Expanded(
-                            child: Text(
-                              currentProgram!,
-                              style: TextStyle(color: AppTheme.primaryColor, fontSize: PlatformDetector.isMobile ? 8 : 9),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                    if (nextProgram != null && nextProgram!.isNotEmpty) ...[
-                      const SizedBox(height: 1),
-                      Row(
-                        children: [
-                          Icon(Icons.schedule, color: AppTheme.getTextMuted(context), size: PlatformDetector.isMobile ? 8 : 9),
-                          const SizedBox(width: 3),
-                          Expanded(
-                            child: Text(
-                              nextProgram!,
-                              style: TextStyle(color: AppTheme.getTextMuted(context), fontSize: PlatformDetector.isMobile ? 7 : 8),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ] else if (currentProgram == null && groupName != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        groupName!,
-                        style: TextStyle(color: AppTheme.getTextMuted(context), fontSize: PlatformDetector.isMobile ? 8 : 9),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                    // EPG或分类信息 - 自适应显示
+                    Expanded(
+                      child: _buildInfoSection(context, isMobile),
+                    ),
                   ],
                 ),
               ),
@@ -233,6 +203,97 @@ class ChannelCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _onHoverChanged(bool isHovered) {
+    // 预留：未来可用于悬停效果
+  }
+
+  /// 构建信息区域（EPG或分类）- 静态显示当前和下一个节目
+  Widget _buildInfoSection(BuildContext context, bool isMobile) {
+    final hasCurrentProgram = currentProgram != null && currentProgram!.isNotEmpty;
+    final hasNextProgram = nextProgram != null && nextProgram!.isNotEmpty;
+    final hasGroup = groupName != null && groupName!.isNotEmpty;
+    final hasEpg = hasCurrentProgram || hasNextProgram;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        // 如果有EPG信息，显示EPG
+        if (hasEpg) ...[
+          if (hasCurrentProgram) ...[
+            SizedBox(height: isMobile ? 1 : 2),
+            Row(
+              children: [
+                Icon(Icons.play_circle_filled, color: AppTheme.primaryColor, size: isMobile ? 7 : 9),
+                SizedBox(width: isMobile ? 2 : 3),
+                Expanded(
+                  child: Text(
+                    currentProgram!,
+                    style: TextStyle(
+                      color: AppTheme.primaryColor, 
+                      fontSize: isMobile ? 7 : 9,
+                      height: 1.1,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (hasNextProgram) ...[
+            SizedBox(height: isMobile ? 1 : 2),
+            Row(
+              children: [
+                Icon(Icons.schedule, color: AppTheme.getTextMuted(context), size: isMobile ? 7 : 9),
+                SizedBox(width: isMobile ? 2 : 3),
+                Expanded(
+                  child: Text(
+                    nextProgram!,
+                    style: TextStyle(
+                      color: AppTheme.getTextMuted(context), 
+                      fontSize: isMobile ? 6 : 8,
+                      height: 1.1,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ] 
+        // 如果没有EPG信息，显示分类和"暂无节目信息"
+        else ...[
+          if (hasGroup) ...[
+            SizedBox(height: isMobile ? 1 : 2),
+            Text(
+              groupName!,
+              style: TextStyle(
+                color: AppTheme.getTextMuted(context), 
+                fontSize: isMobile ? 7 : 9,
+                height: 1.1,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          SizedBox(height: isMobile ? 1 : 2),
+          Text(
+            AppStrings.of(context)?.noProgramInfo ?? 'No Program Info',
+            style: TextStyle(
+              color: AppTheme.getTextMuted(context).withOpacity(0.6), 
+              fontSize: isMobile ? 6 : 8,
+              height: 1.1,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ],
     );
   }
 
@@ -313,25 +374,25 @@ class ChannelCard extends StatelessWidget {
     );
   }
 
-  Widget _buildTestButton() {
+  Widget _buildTestButton(bool isMobile) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTest,
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.all(5),
+          padding: EdgeInsets.all(isMobile ? 3 : 5),
           decoration: BoxDecoration(
             color: isUnavailable ? AppTheme.warningColor.withAlpha(200) : const Color(0x80000000),
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.speed_rounded, color: Colors.white, size: 12),
+          child: Icon(Icons.speed_rounded, color: Colors.white, size: isMobile ? 10 : 12),
         ),
       ),
     );
   }
 
-  Widget _buildFavoriteButton() {
+  Widget _buildFavoriteButton(bool isMobile) {
     return Builder(
       builder: (context) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -341,7 +402,7 @@ class ChannelCard extends StatelessWidget {
             onTap: onFavoriteToggle,
             borderRadius: BorderRadius.circular(16),
             child: Container(
-              padding: const EdgeInsets.all(5),
+              padding: EdgeInsets.all(isMobile ? 3 : 5),
               decoration: BoxDecoration(
                 color: isDark ? const Color(0x80000000) : Colors.white,
                 shape: BoxShape.circle,
@@ -358,7 +419,7 @@ class ChannelCard extends StatelessWidget {
               child: Icon(
                 isFavorite ? Icons.favorite : Icons.favorite_border_rounded,
                 color: isFavorite ? AppTheme.primaryColor : (isDark ? Colors.white : Colors.grey[500]),
-                size: 12,
+                size: isMobile ? 10 : 12,
               ),
             ),
           ),

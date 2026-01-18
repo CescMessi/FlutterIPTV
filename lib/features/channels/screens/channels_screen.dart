@@ -16,6 +16,7 @@ import '../../../core/services/channel_test_service.dart';
 import '../../../core/services/service_locator.dart';
 import '../../../core/services/background_test_service.dart';
 import '../../../core/models/channel.dart';
+import '../../../core/utils/card_size_calculator.dart';
 import '../providers/channel_provider.dart';
 import '../widgets/channel_test_dialog.dart';
 import '../../favorites/providers/favorites_provider.dart';
@@ -604,8 +605,6 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
     return Consumer<ChannelProvider>(
       builder: (context, provider, _) {
         final channels = provider.filteredChannels;
-        final size = MediaQuery.of(context).size;
-        final crossAxisCount = PlatformDetector.getGridCrossAxisCount(size.width);
 
         return CustomScrollView(
           controller: _scrollController,
@@ -699,105 +698,114 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
             else
               SliverPadding(
                 padding: EdgeInsets.all(PlatformDetector.isMobile ? 8 : 20),
-                sliver: SliverGrid(
-                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: PlatformDetector.isMobile ? 95 : 180,
-                    childAspectRatio: PlatformDetector.isMobile ? 0.95 : 1.11,
-                    crossAxisSpacing: PlatformDetector.isMobile ? 6 : 16,
-                    mainAxisSpacing: PlatformDetector.isMobile ? 6 : 16,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final channel = channels[index];
-                      final isFavorite = context.watch<FavoritesProvider>().isFavorite(channel.id ?? 0);
-                      final isUnavailable = ChannelProvider.isUnavailableChannel(channel.groupName);
+                sliver: SliverLayoutBuilder(
+                  builder: (context, constraints) {
+                    final availableWidth = constraints.crossAxisExtent;
+                    final crossAxisCount = CardSizeCalculator.calculateCardsPerRow(availableWidth);
+                    
+                    return SliverGrid(
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        childAspectRatio: CardSizeCalculator.aspectRatio(),
+                        crossAxisSpacing: CardSizeCalculator.spacing,
+                        mainAxisSpacing: CardSizeCalculator.spacing,
+                      ),
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final channel = channels[index];
+                          final isFavorite = context.watch<FavoritesProvider>().isFavorite(channel.id ?? 0);
+                          final isUnavailable = ChannelProvider.isUnavailableChannel(channel.groupName);
 
-                      // 获取 EPG 当前节目和下一个节目
-                      final epgProvider = context.watch<EpgProvider>();
-                      final currentProgram = epgProvider.getCurrentProgram(channel.epgId, channel.name);
-                      final nextProgram = epgProvider.getNextProgram(channel.epgId, channel.name);
+                          // 获取 EPG 当前节目和下一个节目
+                          final epgProvider = context.watch<EpgProvider>();
+                          final currentProgram = epgProvider.getCurrentProgram(channel.epgId, channel.name);
+                          final nextProgram = epgProvider.getNextProgram(channel.epgId, channel.name);
 
-                      // TV端：确保焦点节点数量正确
-                      if (PlatformDetector.isTV) {
-                        while (_channelFocusNodes.length <= index) {
-                          _channelFocusNodes.add(FocusNode());
-                        }
-                      }
-
-                      // TV端：判断是否是第一列（需要处理左键导航）
-                      final isFirstColumn = index % crossAxisCount == 0;
-
-                      // TV端：判断是否是最后一行（需要处理下键切换分类）
-                      final totalRows = (channels.length / crossAxisCount).ceil();
-                      final currentRow = index ~/ crossAxisCount;
-                      final isLastRow = currentRow == totalRows - 1;
-
-                      return ChannelCard(
-                        name: channel.name,
-                        logoUrl: channel.logoUrl,
-                        groupName: isUnavailable ? ChannelProvider.extractOriginalGroup(channel.groupName) : channel.groupName,
-                        currentProgram: currentProgram?.title,
-                        nextProgram: nextProgram?.title,
-                        isFavorite: isFavorite,
-                        isUnavailable: isUnavailable,
-                        autofocus: index == 0,
-                        focusNode: PlatformDetector.isTV && index < _channelFocusNodes.length ? _channelFocusNodes[index] : null,
-                        onFocused: PlatformDetector.isTV
-                            ? () {
-                                // 记住当前聚焦的频道索引
-                                _lastChannelIndex = index;
-                              }
-                            : null,
-                        onLeft: (PlatformDetector.isTV && isFirstColumn)
-                            ? () {
-                                // 第一列按左键，跳转到当前选中的分类
-                                debugPrint('ChannelsScreen: onLeft pressed, _currentGroupIndex=$_currentGroupIndex, _selectedGroup=$_selectedGroup');
-                                if (_currentGroupIndex < _groupFocusNodes.length) {
-                                  _groupFocusNodes[_currentGroupIndex].requestFocus();
-                                }
-                              }
-                            : null,
-                        onDown: (PlatformDetector.isTV && isLastRow)
-                            ? () {
-                                // 最后一行按下键，不做任何事（阻止跳转）
-                              }
-                            : null,
-                        onFavoriteToggle: () {
-                          context.read<FavoritesProvider>().toggleFavorite(channel);
-                        },
-                        onTest: () => _testSingleChannel(context, channel),
-                        onTap: () async {
-                          final settingsProvider = context.read<SettingsProvider>();
-                          
-                          // 保存上次播放的频道ID
-                          if (settingsProvider.rememberLastChannel && channel.id != null) {
-                            settingsProvider.setLastChannelId(channel.id);
+                          // TV端：确保焦点节点数量正确
+                          if (PlatformDetector.isTV) {
+                            while (_channelFocusNodes.length <= index) {
+                              _channelFocusNodes.add(FocusNode());
+                            }
                           }
 
-                          debugPrint('ChannelsScreen: onTap - enableMultiScreen=${settingsProvider.enableMultiScreen}, isDesktop=${PlatformDetector.isDesktop}, isTV=${PlatformDetector.isTV}');
+                          // TV端：判断是否是第一列（需要处理左键导航）
+                          final isFirstColumn = index % crossAxisCount == 0;
 
-                          // 检查是否启用了分屏模式
-                          if (settingsProvider.enableMultiScreen) {
-                            // TV 端使用原生分屏播放器
-                            if (PlatformDetector.isTV && PlatformDetector.isAndroid) {
-                              debugPrint('ChannelsScreen: TV Multi-screen mode, launching native multi-screen player');
-                              final channelProvider = context.read<ChannelProvider>();
-                              final channels = channelProvider.channels;
+                          // TV端：判断是否是最后一行（需要处理下键切换分类）
+                          final totalRows = (channels.length / crossAxisCount).ceil();
+                          final currentRow = index ~/ crossAxisCount;
+                          final isLastRow = currentRow == totalRows - 1;
+
+                          return ChannelCard(
+                            name: channel.name,
+                            logoUrl: channel.logoUrl,
+                            groupName: isUnavailable ? ChannelProvider.extractOriginalGroup(channel.groupName) : channel.groupName,
+                            currentProgram: currentProgram?.title,
+                            nextProgram: nextProgram?.title,
+                            isFavorite: isFavorite,
+                            isUnavailable: isUnavailable,
+                            autofocus: index == 0,
+                            focusNode: PlatformDetector.isTV && index < _channelFocusNodes.length ? _channelFocusNodes[index] : null,
+                            onFocused: PlatformDetector.isTV
+                                ? () {
+                                    // 记住当前聚焦的频道索引
+                                    _lastChannelIndex = index;
+                                  }
+                                : null,
+                            onLeft: (PlatformDetector.isTV && isFirstColumn)
+                                ? () {
+                                    // 第一列按左键，跳转到当前选中的分类
+                                    debugPrint('ChannelsScreen: onLeft pressed, _currentGroupIndex=$_currentGroupIndex, _selectedGroup=$_selectedGroup');
+                                    if (_currentGroupIndex < _groupFocusNodes.length) {
+                                      _groupFocusNodes[_currentGroupIndex].requestFocus();
+                                    }
+                                  }
+                                : null,
+                            onDown: (PlatformDetector.isTV && isLastRow)
+                                ? () {
+                                    // 最后一行按下键，不做任何事（阻止跳转）
+                                  }
+                                : null,
+                            onFavoriteToggle: () {
+                              context.read<FavoritesProvider>().toggleFavorite(channel);
+                            },
+                            onTest: () => _testSingleChannel(context, channel),
+                            onTap: () async {
+                              final settingsProvider = context.read<SettingsProvider>();
                               
-                              // 找到当前点击频道的索引
-                              final clickedIndex = channels.indexWhere((c) => c.url == channel.url);
-                              
-                              // 准备频道数据
-                              final urls = channels.map((c) => c.url).toList();
-                              final names = channels.map((c) => c.name).toList();
-                              final groups = channels.map((c) => c.groupName ?? '').toList();
-                              final sources = channels.map((c) => c.sources).toList();
-                              final logos = channels.map((c) => c.logoUrl ?? '').toList();
-                              
-                              // 启动原生分屏播放器，传递初始频道索引和音量增强
-                              await NativePlayerChannel.launchMultiScreen(
-                                urls: urls,
-                                names: names,
+                              // 保存上次播放的频道ID
+                              if (settingsProvider.rememberLastChannel && channel.id != null) {
+                                settingsProvider.setLastChannelId(channel.id);
+                              }
+
+                              debugPrint('ChannelsScreen: onTap - enableMultiScreen=${settingsProvider.enableMultiScreen}, isDesktop=${PlatformDetector.isDesktop}, isTV=${PlatformDetector.isTV}');
+
+                              // 检查是否启用了分屏模式
+                              if (settingsProvider.enableMultiScreen) {
+                                // TV 端使用原生分屏播放器
+                                if (PlatformDetector.isTV && PlatformDetector.isAndroid) {
+                                  debugPrint('ChannelsScreen: TV Multi-screen mode, launching native multi-screen player');
+                                  final channelProvider = context.read<ChannelProvider>();
+                                  final favoritesProvider = context.read<FavoritesProvider>();
+                                  final channels = channelProvider.channels;
+                                  
+                                  // 设置 providers 用于收藏功能
+                                  NativePlayerChannel.setProviders(favoritesProvider, channelProvider, settingsProvider);
+                                  
+                                  // 找到当前点击频道的索引
+                                  final clickedIndex = channels.indexWhere((c) => c.url == channel.url);
+                                  
+                                  // 准备频道数据
+                                  final urls = channels.map((c) => c.url).toList();
+                                  final names = channels.map((c) => c.name).toList();
+                                  final groups = channels.map((c) => c.groupName ?? '').toList();
+                                  final sources = channels.map((c) => c.sources).toList();
+                                  final logos = channels.map((c) => c.logoUrl ?? '').toList();
+                                  
+                                  // 启动原生分屏播放器，传递初始频道索引和音量增强
+                                  await NativePlayerChannel.launchMultiScreen(
+                                    urls: urls,
+                                    names: names,
                                 groups: groups,
                                 sources: sources,
                                 logos: logos,
@@ -857,6 +865,8 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                     },
                     childCount: channels.length,
                   ),
+                    );
+                  },
                 ),
               ),
           ],

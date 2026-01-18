@@ -12,6 +12,7 @@ import '../../../core/platform/platform_detector.dart';
 import '../../../core/i18n/app_strings.dart';
 import '../../../core/services/update_service.dart';
 import '../../../core/models/app_update.dart';
+import '../../../core/utils/card_size_calculator.dart';
 import '../../channels/providers/channel_provider.dart';
 import '../../channels/screens/channels_screen.dart';
 import '../../playlist/providers/playlist_provider.dart';
@@ -687,17 +688,16 @@ class _HomeScreenState extends State<HomeScreen> {
               return const SizedBox.shrink();
             }
 
-            // 手机端使用更小的卡片
-            final isMobile = PlatformDetector.isMobile;
-            final cardWidth = isMobile ? 95.0 : 160.0;
-            final cardSpacing = isMobile ? 6.0 : 12.0;
-            final cardHeight = isMobile ? 100.0 : 140.0;
             final availableWidth = constraints.maxWidth;
+            // 首页使用专门的计算方法，显示更多更小的卡片
+            final cardsPerRow = CardSizeCalculator.calculateHomeCardsPerRow(availableWidth);
+            final cardSpacing = CardSizeCalculator.spacing;
+            final totalSpacing = (cardsPerRow - 1) * cardSpacing;
+            final cardWidth = (availableWidth - totalSpacing) / cardsPerRow;
+            final cardHeight = cardWidth / CardSizeCalculator.aspectRatio();
 
-            // 计算能显示多少个卡片，多加1个让布局更美观
-            final maxCards = ((availableWidth + cardSpacing) / (cardWidth + cardSpacing)).floor() + 1;
-            // 显示数量不能超过实际频道数量，最少显示1个
-            final displayCount = maxCards.clamp(1, channels.length);
+            // 显示数量不能超过实际频道数量
+            final displayCount = cardsPerRow.clamp(1, channels.length);
 
             return SizedBox(
               height: cardHeight,

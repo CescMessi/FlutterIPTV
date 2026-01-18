@@ -1629,8 +1629,26 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
               final isFav = currentChannel != null && favorites.isFavorite(currentChannel.id ?? 0);
 
               return TVFocusable(
-                onSelect: () {
-                  if (currentChannel != null) favorites.toggleFavorite(currentChannel);
+                onSelect: () async {
+                  if (currentChannel != null) {
+                    debugPrint('TV播放器: 尝试切换收藏状态 - 频道: ${currentChannel.name}, ID: ${currentChannel.id}');
+                    final success = await favorites.toggleFavorite(currentChannel);
+                    debugPrint('TV播放器: 收藏切换${success ? "成功" : "失败"}');
+                    
+                    if (success) {
+                      final newIsFav = favorites.isFavorite(currentChannel.id ?? 0);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            newIsFav ? '已添加到收藏' : '已从收藏中移除',
+                          ),
+                          duration: const Duration(seconds: 1),
+                        ),
+                      );
+                    }
+                  } else {
+                    debugPrint('TV播放器: 当前频道为空，无法切换收藏');
+                  }
                 },
                 focusScale: 1.0,
                 showFocusBorder: false,

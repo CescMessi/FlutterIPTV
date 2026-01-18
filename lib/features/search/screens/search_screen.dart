@@ -9,6 +9,7 @@ import '../../../core/widgets/tv_sidebar.dart';
 import '../../../core/widgets/channel_card.dart';
 import '../../../core/platform/platform_detector.dart';
 import '../../../core/i18n/app_strings.dart';
+import '../../../core/utils/card_size_calculator.dart';
 import '../../channels/providers/channel_provider.dart';
 import '../../favorites/providers/favorites_provider.dart';
 import '../../settings/providers/settings_provider.dart';
@@ -576,105 +577,112 @@ class _SearchScreenState extends State<SearchScreen> {
 
         // Results Grid
         Expanded(
-          child: GridView.builder(
-            padding: EdgeInsets.symmetric(horizontal: PlatformDetector.isMobile ? 8 : 20),
-            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: PlatformDetector.isMobile ? 95 : 180,
-              childAspectRatio: PlatformDetector.isMobile ? 0.95 : 1.11,
-              crossAxisSpacing: PlatformDetector.isMobile ? 6 : 16,
-              mainAxisSpacing: PlatformDetector.isMobile ? 6 : 16,
-            ),
-            itemCount: results.length,
-            itemBuilder: (context, index) {
-              final channel = results[index];
-              final isFavorite = context.read<FavoritesProvider>().isFavorite(channel.id ?? 0);
-              final epgProvider = context.watch<EpgProvider>();
-              final currentProgram = epgProvider.getCurrentProgram(channel.epgId, channel.name);
-              final nextProgram = epgProvider.getNextProgram(channel.epgId, channel.name);
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final availableWidth = constraints.maxWidth - (PlatformDetector.isMobile ? 16 : 40); // 减去padding
+              final crossAxisCount = CardSizeCalculator.calculateCardsPerRow(availableWidth);
+              
+              return GridView.builder(
+                padding: EdgeInsets.symmetric(horizontal: PlatformDetector.isMobile ? 8 : 20),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  childAspectRatio: CardSizeCalculator.aspectRatio(),
+                  crossAxisSpacing: CardSizeCalculator.spacing,
+                  mainAxisSpacing: CardSizeCalculator.spacing,
+                ),
+                itemCount: results.length,
+                itemBuilder: (context, index) {
+                  final channel = results[index];
+                  final isFavorite = context.read<FavoritesProvider>().isFavorite(channel.id ?? 0);
+                  final epgProvider = context.watch<EpgProvider>();
+                  final currentProgram = epgProvider.getCurrentProgram(channel.epgId, channel.name);
+                  final nextProgram = epgProvider.getNextProgram(channel.epgId, channel.name);
 
-              return ChannelCard(
-                name: channel.name,
-                logoUrl: channel.logoUrl,
-                groupName: channel.groupName,
-                currentProgram: currentProgram?.title,
-                nextProgram: nextProgram?.title,
-                isFavorite: isFavorite,
-                autofocus: index == 0 && PlatformDetector.useDPadNavigation,
-                onFavoriteToggle: () {
-                  context.read<FavoritesProvider>().toggleFavorite(channel);
-                },
-                onTap: () {
-                  // 保存上次播放的频道ID
-                  final settingsProvider = context.read<SettingsProvider>();
-                  if (settingsProvider.rememberLastChannel && channel.id != null) {
-                    settingsProvider.setLastChannelId(channel.id);
-                  }
+                  return ChannelCard(
+                    name: channel.name,
+                    logoUrl: channel.logoUrl,
+                    groupName: channel.groupName,
+                    currentProgram: currentProgram?.title,
+                    nextProgram: nextProgram?.title,
+                    isFavorite: isFavorite,
+                    autofocus: index == 0 && PlatformDetector.useDPadNavigation,
+                    onFavoriteToggle: () {
+                      context.read<FavoritesProvider>().toggleFavorite(channel);
+                    },
+                    onTap: () {
+                      // 保存上次播放的频道ID
+                      final settingsProvider = context.read<SettingsProvider>();
+                      if (settingsProvider.rememberLastChannel && channel.id != null) {
+                        settingsProvider.setLastChannelId(channel.id);
+                      }
 
-                  // 检查是否启用了分屏模式
-                  if (settingsProvider.enableMultiScreen) {
-                    // TV 端使用原生分屏播放器
-                    if (PlatformDetector.isTV && PlatformDetector.isAndroid) {
-                      final channelProvider = context.read<ChannelProvider>();
-                      final channels = channelProvider.channels;
-                      
-                      // 找到当前点击频道的索引
-                      final clickedIndex = channels.indexWhere((c) => c.url == channel.url);
-                      
-                      // 准备频道数据
-                      final urls = channels.map((c) => c.url).toList();
-                      final names = channels.map((c) => c.name).toList();
-                      final groups = channels.map((c) => c.groupName ?? '').toList();
-                      final sources = channels.map((c) => c.sources).toList();
-                      final logos = channels.map((c) => c.logoUrl ?? '').toList();
-                      
-                      // 启动原生分屏播放器
-                      NativePlayerChannel.launchMultiScreen(
-                        urls: urls,
-                        names: names,
-                        groups: groups,
-                        sources: sources,
-                        logos: logos,
-                        initialChannelIndex: clickedIndex >= 0 ? clickedIndex : 0,
-                        volumeBoostDb: settingsProvider.volumeBoost,
-                        defaultScreenPosition: settingsProvider.defaultScreenPosition,
-                        onClosed: () {
-                          debugPrint('SearchScreen: Native multi-screen closed');
-                        },
-                      );
-                    } else if (PlatformDetector.isDesktop) {
-                      final multiScreenProvider = context.read<MultiScreenProvider>();
-                      final defaultPosition = settingsProvider.defaultScreenPosition;
-                      // 设置音量增强到分屏Provider
-                      multiScreenProvider.setVolumeSettings(1.0, settingsProvider.volumeBoost);
-                      multiScreenProvider.playChannelAtDefaultPosition(channel, defaultPosition);
-                      
-                      Navigator.pushNamed(context, AppRouter.player, arguments: {
-                        'channelUrl': '',
-                        'channelName': '',
-                        'channelLogo': null,
-                      });
-                    } else {
-                      Navigator.pushNamed(
-                        context,
-                        AppRouter.player,
-                        arguments: {
-                          'channelUrl': channel.url,
-                          'channelName': channel.name,
-                          'channelLogo': channel.logoUrl,
-                        },
-                      );
-                    }
-                  } else {
-                    Navigator.pushNamed(
-                      context,
-                      AppRouter.player,
-                      arguments: {
-                        'channelUrl': channel.url,
-                        'channelName': channel.name,
-                        'channelLogo': channel.logoUrl,
-                      },
-                    );
-                  }
+                      // 检查是否启用了分屏模式
+                      if (settingsProvider.enableMultiScreen) {
+                        // TV 端使用原生分屏播放器
+                        if (PlatformDetector.isTV && PlatformDetector.isAndroid) {
+                          final channelProvider = context.read<ChannelProvider>();
+                          final channels = channelProvider.channels;
+                          
+                          // 找到当前点击频道的索引
+                          final clickedIndex = channels.indexWhere((c) => c.url == channel.url);
+                          
+                          // 准备频道数据
+                          final urls = channels.map((c) => c.url).toList();
+                          final names = channels.map((c) => c.name).toList();
+                          final groups = channels.map((c) => c.groupName ?? '').toList();
+                          final sources = channels.map((c) => c.sources).toList();
+                          final logos = channels.map((c) => c.logoUrl ?? '').toList();
+                          
+                          // 启动原生分屏播放器
+                          NativePlayerChannel.launchMultiScreen(
+                            urls: urls,
+                            names: names,
+                            groups: groups,
+                            sources: sources,
+                            logos: logos,
+                            initialChannelIndex: clickedIndex >= 0 ? clickedIndex : 0,
+                            volumeBoostDb: settingsProvider.volumeBoost,
+                            defaultScreenPosition: settingsProvider.defaultScreenPosition,
+                            onClosed: () {
+                              debugPrint('SearchScreen: Native multi-screen closed');
+                            },
+                          );
+                        } else if (PlatformDetector.isDesktop) {
+                          final multiScreenProvider = context.read<MultiScreenProvider>();
+                          final defaultPosition = settingsProvider.defaultScreenPosition;
+                          // 设置音量增强到分屏Provider
+                          multiScreenProvider.setVolumeSettings(1.0, settingsProvider.volumeBoost);
+                          multiScreenProvider.playChannelAtDefaultPosition(channel, defaultPosition);
+                          
+                          Navigator.pushNamed(context, AppRouter.player, arguments: {
+                            'channelUrl': '',
+                            'channelName': '',
+                            'channelLogo': null,
+                          });
+                        } else {
+                          Navigator.pushNamed(
+                            context,
+                            AppRouter.player,
+                            arguments: {
+                              'channelUrl': channel.url,
+                              'channelName': channel.name,
+                              'channelLogo': channel.logoUrl,
+                            },
+                          );
+                        }
+                      } else {
+                        Navigator.pushNamed(
+                          context,
+                          AppRouter.player,
+                          arguments: {
+                            'channelUrl': channel.url,
+                            'channelName': channel.name,
+                            'channelLogo': channel.logoUrl,
+                          },
+                        );
+                      }
+                    },
+                  );
                 },
               );
             },

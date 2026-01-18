@@ -135,12 +135,21 @@ class FavoritesProvider extends ChangeNotifier {
 
   // Toggle favorite status
   Future<bool> toggleFavorite(Channel channel) async {
-    if (channel.id == null) return false;
+    if (channel.id == null) {
+      debugPrint('收藏切换失败: 频道ID为空 - ${channel.name}');
+      return false;
+    }
+
+    debugPrint('收藏切换: 频道=${channel.name}, ID=${channel.id}, 当前状态=${isFavorite(channel.id!)}');
 
     if (isFavorite(channel.id!)) {
-      return removeFavorite(channel.id!);
+      final success = await removeFavorite(channel.id!);
+      debugPrint('移除收藏${success ? "成功" : "失败"}');
+      return success;
     } else {
-      return addFavorite(channel);
+      final success = await addFavorite(channel);
+      debugPrint('添加收藏${success ? "成功" : "失败"}');
+      return success;
     }
   }
 
