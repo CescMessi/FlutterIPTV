@@ -63,13 +63,13 @@ class _TVSidebarState extends State<TVSidebar> {
     for (final node in _menuFocusNodes) {
       node.dispose();
     }
-    // TVSidebar.menuFocusNodes = null;
-    // TVSidebar.selectedMenuIndex = null;
+    TVSidebar.menuFocusNodes = null;
+    TVSidebar.selectedMenuIndex = null;
     super.dispose();
   }
 
   List<_NavItem> _getNavItems(BuildContext context) {
-    return [
+    final items = [
       _NavItem(icon: Icons.home_rounded, label: AppStrings.of(context)?.home ?? 'Home', route: null),
       _NavItem(icon: Icons.live_tv_rounded, label: AppStrings.of(context)?.channels ?? 'Channels', route: AppRouter.channels),
       _NavItem(icon: Icons.playlist_play_rounded, label: AppStrings.of(context)?.playlistList ?? 'Playlist List', route: AppRouter.playlistList),
@@ -77,6 +77,8 @@ class _TVSidebarState extends State<TVSidebar> {
       _NavItem(icon: Icons.search_rounded, label: AppStrings.of(context)?.search ?? 'Search', route: AppRouter.search),
       _NavItem(icon: Icons.settings_rounded, label: AppStrings.of(context)?.settings ?? 'Settings', route: AppRouter.settings),
     ];
+    debugPrint('TVSidebar: _getNavItems returned ${items.length} items');
+    return items;
   }
 
   void _onNavItemTap(int index, String? route) {

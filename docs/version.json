@@ -16,8 +16,8 @@
     }
   },
   "changelog": {
-    "zh": "- 修复：TV端遥控器焦点导航问题，恢复v1.4.6的焦点遍历策略\n- 优化：侧边栏焦点处理，确保所有菜单项可访问",
-    "en": "- Fixed: TV remote control focus navigation issue by restoring v1.4.6 focus traversal policy\n- Improved: Sidebar focus handling to ensure all menu items are accessible"
+    "zh": "- 修复：TV端遥控器焦点导航问题，清理静态焦点节点引用\n- 修复：GitHub构建时添加flutter clean，避免缓存污染\n- 优化：确保每次构建都是干净的状态",
+    "en": "- Fixed: TV remote control focus navigation by cleaning up static focus node references\n- Fixed: Added flutter clean in GitHub builds to avoid cache pollution\n- Improved: Ensure each build starts with a clean state"
   },
   "minVersion": "1.0.0"
 }

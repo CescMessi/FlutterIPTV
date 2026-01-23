@@ -134,6 +134,7 @@ jobs:
       
       - name: Build Mobile APKs
         run: |
+          flutter clean
           flutter build apk --release --split-per-abi
           mkdir -p dist
           cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk dist/flutteriptv-Android-Mobile-arm64-v8a.apk
@@ -142,6 +143,7 @@ jobs:
       
       - name: Build TV APKs
         run: |
+          flutter clean
           flutter build apk --release --dart-define=IS_TV=true --split-per-abi
           cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk dist/flutteriptv-AndroidTV-arm64-v8a.apk
           cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk dist/flutteriptv-AndroidTV-armeabi-v7a.apk
