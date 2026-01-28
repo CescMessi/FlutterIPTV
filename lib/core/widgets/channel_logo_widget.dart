@@ -92,23 +92,19 @@ class _ChannelLogoWidgetState extends State<ChannelLogoWidget> {
       width: widget.width,
       height: widget.height,
       decoration: BoxDecoration(
-        color: Colors.grey[800],
         borderRadius: widget.borderRadius,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Image.asset(
-          'assets/images/default_logo.png',
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) {
-            // 如果默认图片也加载失败，显示图标
-            return Icon(
-              Icons.tv,
-              size: (widget.width ?? 48) * 0.5,
-              color: Colors.grey[600],
-            );
-          },
-        ),
+      child: Image.asset(
+        'assets/images/default_logo.png',
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          // 如果默认图片也加载失败，显示图标
+          return Icon(
+            Icons.tv,
+            size: (widget.width ?? 48) * 0.5,
+            color: Colors.grey[600],
+          );
+        },
       ),
     );
   }

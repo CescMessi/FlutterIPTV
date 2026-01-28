@@ -1,23 +1,23 @@
 {
-  "version": "1.4.16",
-  "build": 136,
+  "version": "1.4.17",
+  "build": 137,
   "releaseDate": "2026-01-28",
   "assets": {
-    "windows": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.16/flutteriptv-Windows-x64-Setup.exe",
+    "windows": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.17/flutteriptv-Windows-x64-Setup.exe",
     "android_mobile": {
-      "arm64-v8a": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.16/flutteriptv-Android-Mobile-arm64-v8a.apk",
-      "armeabi-v8a": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.16/flutteriptv-Android-Mobile-armeabi-v7a.apk",
-      "x86_64": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.16/flutteriptv-Android-Mobile-x86_64.apk"
+      "arm64-v8a": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.17/flutteriptv-Android-Mobile-arm64-v8a.apk",
+      "armeabi-v8a": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.17/flutteriptv-Android-Mobile-armeabi-v7a.apk",
+      "x86_64": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.17/flutteriptv-Android-Mobile-x86_64.apk"
     },
     "android_tv": {
-      "arm64-v8a": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.16/flutteriptv-AndroidTV-arm64-v8a.apk",
-      "armeabi-v7a": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.16/flutteriptv-AndroidTV-armeabi-v7a.apk",
-      "x86_64": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.16/flutteriptv-AndroidTV-x86_64.apk"
+      "arm64-v8a": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.17/flutteriptv-AndroidTV-arm64-v8a.apk",
+      "armeabi-v7a": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.17/flutteriptv-AndroidTV-armeabi-v7a.apk",
+      "x86_64": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.17/flutteriptv-AndroidTV-x86_64.apk"
     }
   },
   "changelog": {
-    "zh": "- 新增：频道台标自动匹配功能，预埋1088条台标数据\n- 新增：支持TXT格式播放列表自动显示台标\n- 新增：智能模糊匹配算法（如\"CCTV1-综合\"自动匹配\"CCTV1\"）\n- 新增：三级优先级加载（M3U台标→数据库台标→默认图片）\n- 新增：GitHub代理加速台标图片加载\n- 优化：台标缓存机制，提升加载速度\n- 优化：首页、分类、搜索、收藏、多屏播放页面台标显示\n- 修复：台标加载失败时的降级处理",
-    "en": "- Added: Automatic channel logo matching with 1088 pre-embedded logos\n- Added: Auto-display logos for TXT format playlists\n- Added: Smart fuzzy matching (e.g., \"CCTV1-综合\" matches \"CCTV1\")\n- Added: Three-level priority loading (M3U logo → Database logo → Default image)\n- Added: GitHub proxy for faster logo loading\n- Improved: Logo caching mechanism for better performance\n- Improved: Logo display in home, channels, search, favorites, and multi-screen\n- Fixed: Fallback handling when logo loading fails"
+    "zh": "- 优化：台标模糊匹配算法，新增支持\"财经\"、\"国防\"、\"赛事\"、\"中文\"、\"国际\"、\"社会\"、\"与法\"、\"农村\"等后缀\n- 优化：台标匹配规则，支持更多频道名称变体\n- 修复：CCTV-2财经、CCTV-12社会与法、CCTV-17农业农村等频道台标匹配问题\n- 修复：江苏卫视等卫视频道台标匹配问题\n- 新增：台标查询日志，方便调试",
+    "en": "- Improved: Logo fuzzy matching algorithm with more suffix support\n- Improved: Logo matching rules for more channel name variants\n- Fixed: Logo matching for CCTV-2, CCTV-12, CCTV-17 and other channels\n- Fixed: Logo matching for provincial satellite TV channels\n- Added: Logo query logging for debugging"
   },
   "minVersion": "1.0.0"
 }

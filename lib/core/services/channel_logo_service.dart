@@ -44,10 +44,11 @@ class ChannelLogoService {
 
   /// Normalize channel name for matching
   String _normalizeChannelName(String name) {
+    // 先去除常见后缀，再去除空格、下划线（保留 + 号）
     return name
         .toUpperCase()
-        .replaceAll(RegExp(r'[-\s_]+'), '') // Remove spaces, dashes, underscores
-        .replaceAll(RegExp(r'(综合|高清|HD|4K|8K|超清|标清|频道|卫视)'), ''); // Remove common suffixes
+        .replaceAll(RegExp(r'(综合|综艺|体育|新闻|音乐|戏曲|少儿|电影|电视剧|纪录|科教|农业|军事|财经|国防|赛事|中文|国际|社会|与法|农村|高清|HD|4K|8K|超清|标清|频道|卫视)'), '') // Remove common suffixes first
+        .replaceAll(RegExp(r'[-\s_]+'), ''); // Then remove spaces, dashes, underscores (keep + sign)
   }
 
   /// Find logo URL for a channel name with fuzzy matching
@@ -58,7 +59,10 @@ class ChannelLogoService {
 
     // Try exact match from cache first
     final normalized = _normalizeChannelName(channelName);
+    ServiceLocator.log.d('ChannelLogoService: 查询台标 "$channelName" → 规范化为 "$normalized"');
+    
     if (_logoCache.containsKey(normalized)) {
+      ServiceLocator.log.d('ChannelLogoService: 缓存命中 "$normalized"');
       return _logoCache[normalized];
     }
 
@@ -76,9 +80,12 @@ class ChannelLogoService {
       
       if (results.isNotEmpty) {
         final logoUrl = results.first['logo_url'] as String;
+        ServiceLocator.log.d('ChannelLogoService: 数据库模糊匹配成功 "$channelName" → "$logoUrl"');
         // Cache the result
         _logoCache[normalized] = logoUrl;
         return logoUrl;
+      } else {
+        ServiceLocator.log.w('ChannelLogoService: 未找到台标 "$channelName" (规范化: "$normalized")');
       }
     } catch (e) {
       ServiceLocator.log.w('ChannelLogoService: 查询失败: $e');
