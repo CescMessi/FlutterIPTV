@@ -926,6 +926,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                                 initialChannelIndex: clickedIndex >= 0 ? clickedIndex : 0,
                                 volumeBoostDb: settingsProvider.volumeBoost,
                                 defaultScreenPosition: settingsProvider.defaultScreenPosition,
+                                showChannelName: settingsProvider.showMultiScreenChannelName,
                                 onClosed: () {
                                   ServiceLocator.log.d('ChannelsScreen: Native multi-screen closed');
                                 },

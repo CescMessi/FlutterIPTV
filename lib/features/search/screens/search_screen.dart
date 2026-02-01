@@ -777,6 +777,7 @@ class _SearchScreenState extends State<SearchScreen> {
                             initialChannelIndex: clickedIndex >= 0 ? clickedIndex : 0,
                             volumeBoostDb: settingsProvider.volumeBoost,
                             defaultScreenPosition: settingsProvider.defaultScreenPosition,
+                            showChannelName: settingsProvider.showMultiScreenChannelName,
                             onClosed: () {
                               ServiceLocator.log.d('Native multi-screen closed', tag: 'SearchScreen');
                             },

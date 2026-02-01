@@ -1,23 +1,23 @@
 {
-  "version": "1.4.22",
-  "build": 142,
+  "version": "1.4.23",
+  "build": 143,
   "releaseDate": "2026-02-01",
   "assets": {
-    "windows": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.22/flutteriptv-Windows-x64-Setup.exe",
+    "windows": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.23/flutteriptv-Windows-x64-Setup.exe",
     "android_mobile": {
-      "arm64-v8a": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.22/flutteriptv-Android-Mobile-arm64-v8a.apk",
-      "armeabi-v8a": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.22/flutteriptv-Android-Mobile-armeabi-v7a.apk",
-      "x86_64": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.22/flutteriptv-Android-Mobile-x86_64.apk"
+      "arm64-v8a": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.23/flutteriptv-Android-Mobile-arm64-v8a.apk",
+      "armeabi-v8a": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.23/flutteriptv-Android-Mobile-armeabi-v7a.apk",
+      "x86_64": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.23/flutteriptv-Android-Mobile-x86_64.apk"
     },
     "android_tv": {
-      "arm64-v8a": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.22/flutteriptv-AndroidTV-arm64-v8a.apk",
-      "armeabi-v7a": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.22/flutteriptv-AndroidTV-armeabi-v7a.apk",
-      "x86_64": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.22/flutteriptv-AndroidTV-x86_64.apk"
+      "arm64-v8a": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.23/flutteriptv-AndroidTV-arm64-v8a.apk",
+      "armeabi-v7a": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.23/flutteriptv-AndroidTV-armeabi-v7a.apk",
+      "x86_64": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.4.23/flutteriptv-AndroidTV-x86_64.apk"
     }
   },
   "changelog": {
-    "zh": "- 修复：明亮主题下对话框背景色和文字颜色显示问题\n- 优化：明亮主题下鼠标/焦点移动的背景色对比度\n- 修复：M3U 播放列表中 EPG URL 无法正确提取和保存的问题（isolate 内存隔离导致）\n- 修复：手机横屏模式下键盘输入被遮挡的问题",
-    "en": "- Fixed: Dialog background and text color issues in light theme\n- Optimized: Hover/focus background color contrast in light theme\n- Fixed: EPG URL extraction and saving issue from M3U playlists (caused by isolate memory isolation)\n- Fixed: Keyboard input being obscured in mobile landscape mode"
+    "zh": "- 新增：频道卡片长频道名称自动滚动显示（Windows鼠标悬停/TV焦点时触发）\n- 新增：多屏播放频道名称显示开关设置（默认关闭）\n- 修复：多屏播放频道名称显示设置在TV端和Windows端的生效问题\n- 修复：从单屏长按OK进入分屏时使用旧设置值的问题\n- 优化：TV端侧边栏菜单焦点导航，边界处停止不循环",
+    "en": "- Added: Auto-scroll for long channel names on channel cards (triggered by mouse hover on Windows / focus on TV)\n- Added: Toggle setting for multi-screen channel name display (default off)\n- Fixed: Multi-screen channel name display setting not working on TV and Windows\n- Fixed: Using old setting value when entering multi-screen from single player with long press OK\n- Optimized: TV sidebar menu focus navigation, stops at boundaries without looping"
   },
   "minVersion": "1.0.0"
 }

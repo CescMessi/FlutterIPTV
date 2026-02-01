@@ -310,6 +310,7 @@ class _PlayerScreenState extends State<PlayerScreen>
           showNetworkSpeed: showNetworkSpeed,
           showVideoInfo: showVideoInfo,
           progressBarMode: settingsProvider.progressBarMode, // 传递进度条显示模式
+          showChannelName: settingsProvider.showMultiScreenChannelName, // 传递多屏频道名称显示设置
           onClosed: () {
             ServiceLocator.log.d('PlayerScreen: Native player closed callback');
             // 停止 DLNA 同步定时器

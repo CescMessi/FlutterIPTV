@@ -66,6 +66,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           initialChannelIndex: clickedIndex >= 0 ? clickedIndex : 0,
           volumeBoostDb: settingsProvider.volumeBoost,
           defaultScreenPosition: settingsProvider.defaultScreenPosition,
+          showChannelName: settingsProvider.showMultiScreenChannelName,
           onClosed: () {
             ServiceLocator.log.d('FavoritesScreen: Native multi-screen closed');
           },

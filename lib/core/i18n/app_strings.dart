@@ -248,6 +248,10 @@ class AppStrings {
   String get enableMultiScreenSubtitle => _localizedValues['enableMultiScreenSubtitle']!;
   String get multiScreenEnabled => _localizedValues['multiScreenEnabled']!;
   String get multiScreenDisabled => _localizedValues['multiScreenDisabled']!;
+  String get showMultiScreenChannelName => _localizedValues['showMultiScreenChannelName']!;
+  String get showMultiScreenChannelNameSubtitle => _localizedValues['showMultiScreenChannelNameSubtitle']!;
+  String get multiScreenChannelNameEnabled => _localizedValues['multiScreenChannelNameEnabled']!;
+  String get multiScreenChannelNameDisabled => _localizedValues['multiScreenChannelNameDisabled']!;
   String get defaultScreenPosition => _localizedValues['defaultScreenPosition']!;
   String get screenPosition1 => _localizedValues['screenPosition1']!;
   String get screenPosition2 => _localizedValues['screenPosition2']!;
@@ -676,6 +680,10 @@ class _AppStringsDelegate extends LocalizationsDelegate<AppStrings> {
     'enableMultiScreenSubtitle': '启用2x2分屏同时观看多个频道',
     'multiScreenEnabled': '已启用多屏模式',
     'multiScreenDisabled': '已关闭多屏模式',
+    'showMultiScreenChannelName': '显示频道名称',
+    'showMultiScreenChannelNameSubtitle': '在多屏播放时显示频道名称',
+    'multiScreenChannelNameEnabled': '多屏频道名称显示已启用',
+    'multiScreenChannelNameDisabled': '多屏频道名称显示已关闭',
     'defaultScreenPosition': '默认播放位置',
     'screenPosition1': '左上角 (1)',
     'screenPosition2': '右上角 (2)',
@@ -1072,6 +1080,10 @@ class _AppStringsDelegate extends LocalizationsDelegate<AppStrings> {
     'enableMultiScreenSubtitle': 'Enable 2x2 split screen for simultaneous viewing',
     'multiScreenEnabled': 'Multi-screen mode enabled',
     'multiScreenDisabled': 'Multi-screen mode disabled',
+    'showMultiScreenChannelName': 'Show Channel Names',
+    'showMultiScreenChannelNameSubtitle': 'Display channel names in multi-screen playback',
+    'multiScreenChannelNameEnabled': 'Multi-screen channel name display enabled',
+    'multiScreenChannelNameDisabled': 'Multi-screen channel name display disabled',
     'defaultScreenPosition': 'Default Screen Position',
     'screenPosition1': 'Top Left (1)',
     'screenPosition2': 'Top Right (2)',

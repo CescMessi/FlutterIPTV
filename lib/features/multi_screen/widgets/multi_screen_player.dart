@@ -715,6 +715,13 @@ class _MultiScreenPlayerState extends State<MultiScreenPlayer> {
   }
 
   Widget _buildBottomInfo(BuildContext context, ScreenPlayerState screen) {
+    final settingsProvider = context.watch<SettingsProvider>();
+    
+    // 如果设置为不显示频道名称，则返回空组件
+    if (!settingsProvider.showMultiScreenChannelName) {
+      return const SizedBox.shrink();
+    }
+    
     final epgProvider = context.watch<EpgProvider>();
     final currentProgram = screen.channel != null 
         ? epgProvider.getCurrentProgram(screen.channel!.epgId, screen.channel!.name)

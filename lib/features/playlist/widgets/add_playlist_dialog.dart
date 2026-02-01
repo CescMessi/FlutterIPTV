@@ -652,9 +652,27 @@ class _AddPlaylistDialogState extends State<AddPlaylistDialog> {
     required IconData icon,
     required String label,
   }) {
+    final isWindows = !PlatformDetector.isTV && !PlatformDetector.isMobile;
+    
     return TVFocusable(
       onSelect: onPressed,
-      focusScale: 1.02,
+      focusScale: isWindows ? 1.0 : 1.02, // Windows端不缩放
+      showFocusBorder: !isWindows, // Windows端不显示外层焦点边框
+      builder: (context, isFocused, child) {
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: isWindows && isFocused
+                ? Border.all(
+                    color: AppTheme.getPrimaryColor(context),
+                    width: 2,
+                  )
+                : null,
+          ),
+          child: child,
+        );
+      },
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(

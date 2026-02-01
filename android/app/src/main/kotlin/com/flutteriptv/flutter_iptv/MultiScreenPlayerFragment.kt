@@ -115,6 +115,9 @@ class MultiScreenPlayerFragment : Fragment() {
     // 音量增强
     private var volumeBoostDb = 0
     private var baseVolume = 1.0f
+    
+    // 是否显示频道名称
+    private var showChannelName = false
 
     // Handler
     private val handler = Handler(Looper.getMainLooper())
@@ -145,6 +148,7 @@ class MultiScreenPlayerFragment : Fragment() {
         private const val ARG_RESTORE_ACTIVE_INDEX = "restore_active_index"
         private const val ARG_RESTORE_FOCUSED_INDEX = "restore_focused_index"
         private const val ARG_RESTORE_SCREEN_STATES = "restore_screen_states"
+        private const val ARG_SHOW_CHANNEL_NAME = "show_channel_name"
         
         // 静态图片缓存，在 Fragment 之间共享
         private val imageCache = hashMapOf<String, Bitmap?>()
@@ -162,7 +166,8 @@ class MultiScreenPlayerFragment : Fragment() {
             defaultScreenPosition: Int = 1,
             restoreActiveIndex: Int = -1,
             restoreFocusedIndex: Int = -1,
-            restoreScreenStates: ArrayList<ArrayList<String>>? = null
+            restoreScreenStates: ArrayList<ArrayList<String>>? = null,
+            showChannelName: Boolean = false
         ): MultiScreenPlayerFragment {
             return MultiScreenPlayerFragment().apply {
                 arguments = Bundle().apply {
@@ -178,6 +183,7 @@ class MultiScreenPlayerFragment : Fragment() {
                     putInt(ARG_RESTORE_ACTIVE_INDEX, restoreActiveIndex)
                     putInt(ARG_RESTORE_FOCUSED_INDEX, restoreFocusedIndex)
                     restoreScreenStates?.let { putSerializable(ARG_RESTORE_SCREEN_STATES, it) }
+                    putBoolean(ARG_SHOW_CHANNEL_NAME, showChannelName)
                 }
             }
         }
@@ -223,11 +229,12 @@ class MultiScreenPlayerFragment : Fragment() {
             defaultScreenPosition = it.getInt(ARG_DEFAULT_SCREEN_POSITION, 1)
             restoreActiveIndex = it.getInt(ARG_RESTORE_ACTIVE_INDEX, -1)
             restoreFocusedIndex = it.getInt(ARG_RESTORE_FOCUSED_INDEX, -1)
+            showChannelName = it.getBoolean(ARG_SHOW_CHANNEL_NAME, false)
             @Suppress("UNCHECKED_CAST")
             restoreScreenStates = it.getSerializable(ARG_RESTORE_SCREEN_STATES) as? ArrayList<ArrayList<String>>
         }
 
-        Log.d(TAG, "Loaded ${channelUrls.size} channels, initial=$initialChannelIndex, sourceIndex=$initialSourceIndex, volumeBoost=$volumeBoostDb, defaultScreen=$defaultScreenPosition, restoreActive=$restoreActiveIndex")
+        Log.d(TAG, "Loaded ${channelUrls.size} channels, initial=$initialChannelIndex, sourceIndex=$initialSourceIndex, volumeBoost=$volumeBoostDb, defaultScreen=$defaultScreenPosition, restoreActive=$restoreActiveIndex, showChannelName=$showChannelName")
 
         // 初始化视图
         initViews(view)
@@ -703,6 +710,8 @@ class MultiScreenPlayerFragment : Fragment() {
         val isFocused = index == focusedScreenIndex
         val isActive = index == activeScreenIndex && state.channelIndex >= 0
 
+        Log.d(TAG, "updateScreenOverlay: index=$index, showChannelName=$showChannelName, channelIndex=${state.channelIndex}, isLoading=${state.isLoading}, hasError=${state.hasError}")
+
         activity?.runOnUiThread {
             // 只使用一个选择框（焦点框），焦点屏幕显示
             val focusBorder = overlay.findViewById<View>(R.id.focus_border)
@@ -743,7 +752,7 @@ class MultiScreenPlayerFragment : Fragment() {
                     emptyPlaceholder?.visibility = View.GONE
                     loadingIndicator?.visibility = View.GONE
                     errorContainer?.visibility = View.VISIBLE
-                    bottomInfo?.visibility = View.VISIBLE
+                    bottomInfo?.visibility = if (showChannelName) View.VISIBLE else View.GONE
                     channelNameText?.text = state.channelName
                     infoContainer?.visibility = View.GONE
                 }
@@ -751,7 +760,7 @@ class MultiScreenPlayerFragment : Fragment() {
                     emptyPlaceholder?.visibility = View.GONE
                     loadingIndicator?.visibility = View.VISIBLE
                     errorContainer?.visibility = View.GONE
-                    bottomInfo?.visibility = View.VISIBLE
+                    bottomInfo?.visibility = if (showChannelName) View.VISIBLE else View.GONE
                     channelNameText?.text = state.channelName
                     infoContainer?.visibility = View.GONE
                 }
@@ -759,7 +768,7 @@ class MultiScreenPlayerFragment : Fragment() {
                     emptyPlaceholder?.visibility = View.GONE
                     loadingIndicator?.visibility = View.GONE
                     errorContainer?.visibility = View.GONE
-                    bottomInfo?.visibility = View.VISIBLE
+                    bottomInfo?.visibility = if (showChannelName) View.VISIBLE else View.GONE
                     channelNameText?.text = state.channelName
 
                     // 显示分辨率和声音图标

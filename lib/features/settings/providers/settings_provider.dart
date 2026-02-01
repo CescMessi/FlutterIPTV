@@ -34,6 +34,7 @@ class SettingsProvider extends ChangeNotifier {
   static const String _keyActiveScreenIndex = 'active_screen_index';
   static const String _keyLastPlayMode = 'last_play_mode'; // 'single' or 'multi'
   static const String _keyLastMultiScreenChannels = 'last_multi_screen_channels'; // JSON string of channel IDs
+  static const String _keyShowMultiScreenChannelName = 'show_multi_screen_channel_name'; // 多屏播放是否显示频道名称
   static const String _keyDarkColorScheme = 'dark_color_scheme';
   static const String _keyLightColorScheme = 'light_color_scheme';
   static const String _keyFontFamily = 'font_family';
@@ -72,6 +73,7 @@ class SettingsProvider extends ChangeNotifier {
   int _activeScreenIndex = 0; // 当前活动窗口索引
   String _lastPlayMode = 'single'; // 上次播放模式：'single' 或 'multi'
   List<int?> _lastMultiScreenChannels = [null, null, null, null]; // 分屏频道ID列表
+  bool _showMultiScreenChannelName = false; // 多屏播放是否显示频道名称（默认关闭）
   String _darkColorScheme = 'ocean'; // 黑暗模式配色方案（默认海洋）
   String _lightColorScheme = 'sky'; // 明亮模式配色方案（默认天空）
   String _fontFamily = 'Arial'; // 字体设置（默认Arial，英文环境）
@@ -108,6 +110,7 @@ class SettingsProvider extends ChangeNotifier {
   int get activeScreenIndex => _activeScreenIndex;
   String get lastPlayMode => _lastPlayMode;
   List<int?> get lastMultiScreenChannels => _lastMultiScreenChannels;
+  bool get showMultiScreenChannelName => _showMultiScreenChannelName;
   String get darkColorScheme => _darkColorScheme;
   String get lightColorScheme => _lightColorScheme;
   String get fontFamily => _fontFamily;
@@ -165,6 +168,8 @@ class SettingsProvider extends ChangeNotifier {
     _defaultScreenPosition = prefs.getInt(_keyDefaultScreenPosition) ?? 1;
     _activeScreenIndex = prefs.getInt(_keyActiveScreenIndex) ?? 0;
     _lastPlayMode = prefs.getString(_keyLastPlayMode) ?? 'single';
+    _showMultiScreenChannelName = prefs.getBool(_keyShowMultiScreenChannelName) ?? false;
+    ServiceLocator.log.d('SettingsProvider: loaded showMultiScreenChannelName=$_showMultiScreenChannelName');
     
     // 加载分屏频道ID列表
     final multiScreenChannelsJson = prefs.getString(_keyLastMultiScreenChannels);
@@ -273,6 +278,7 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.setInt(_keyActiveScreenIndex, _activeScreenIndex);
     await prefs.setString(_keyLastPlayMode, _lastPlayMode);
     await prefs.setString(_keyLastMultiScreenChannels, _lastMultiScreenChannels.map((e) => e?.toString() ?? '').join(','));
+    await prefs.setBool(_keyShowMultiScreenChannelName, _showMultiScreenChannelName);
     await prefs.setString(_keyDarkColorScheme, _darkColorScheme);
     await prefs.setString(_keyLightColorScheme, _lightColorScheme);
     await prefs.setString(_keyFontFamily, _fontFamily);
@@ -448,6 +454,14 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> setActiveScreenIndex(int index) async {
     _activeScreenIndex = index.clamp(0, 3);
+    await _saveSettings();
+    notifyListeners();
+  }
+
+  /// 设置多屏播放是否显示频道名称
+  Future<void> setShowMultiScreenChannelName(bool show) async {
+    ServiceLocator.log.d('SettingsProvider: setShowMultiScreenChannelName($show)');
+    _showMultiScreenChannelName = show;
     await _saveSettings();
     notifyListeners();
   }

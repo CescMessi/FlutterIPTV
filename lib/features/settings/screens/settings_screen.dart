@@ -275,6 +275,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onTap: () => _showScreenPositionDialog(context, settings),
                   ),
                 ],
+                _buildDivider(),
+                _buildSwitchTile(
+                  context,
+                  title: AppStrings.of(context)?.showMultiScreenChannelName ?? 'Show Channel Names',
+                  subtitle: AppStrings.of(context)?.showMultiScreenChannelNameSubtitle ?? 'Display channel names in multi-screen playback',
+                  icon: Icons.text_fields_rounded,
+                  value: settings.showMultiScreenChannelName,
+                  onChanged: (value) {
+                    settings.setShowMultiScreenChannelName(value);
+                    final strings = AppStrings.of(context);
+                    _showSuccess(context, value ? (strings?.multiScreenChannelNameEnabled ?? 'Multi-screen channel name display enabled') : (strings?.multiScreenChannelNameDisabled ?? 'Multi-screen channel name display disabled'));
+                  },
+                ),
               ],
               // 手机端屏幕方向设置
               if (PlatformDetector.isMobile) ...[

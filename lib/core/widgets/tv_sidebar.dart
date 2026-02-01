@@ -155,12 +155,10 @@ class _TVSidebarState extends State<TVSidebar> {
                 const SizedBox(height: 16),
                 // Nav Items
                 Expanded(
-                  child: TVFocusTraversalGroup(
-                    child: ListView.builder(
-                      padding: EdgeInsets.symmetric(horizontal: shouldExpand ? 6 : 4),
-                      itemCount: navItems.length,
-                      itemBuilder: (context, index) => _buildNavItem(index, navItems[index]),
-                    ),
+                  child: ListView.builder(
+                    padding: EdgeInsets.symmetric(horizontal: shouldExpand ? 6 : 4),
+                    itemCount: navItems.length,
+                    itemBuilder: (context, index) => _buildNavItem(index, navItems[index]),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -237,24 +235,37 @@ class _TVSidebarState extends State<TVSidebar> {
             _pendingNavIndex = null;
           }
         },
-        onKeyEvent: (node, event) {
-          if (event is! KeyDownEvent) return KeyEventResult.ignored;
-
+        onKey: (node, event) {
           final key = event.logicalKey;
-          if (key == LogicalKeyboardKey.select || key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.space) {
+          
+          // 处理选择键
+          if (event is KeyDownEvent && (key == LogicalKeyboardKey.select || key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.space)) {
             // 手动确认时立即导航，取消延迟
             _navDelayTimer?.cancel();
             _pendingNavIndex = null;
             _onNavItemTap(index, item.route);
             return KeyEventResult.handled;
           }
-          if (key == LogicalKeyboardKey.arrowRight && widget.onRight != null) {
+          
+          // 处理右键
+          if (event is KeyDownEvent && key == LogicalKeyboardKey.arrowRight && widget.onRight != null) {
             // 按右键时取消延迟导航
             _navDelayTimer?.cancel();
             _pendingNavIndex = null;
             widget.onRight!();
             return KeyEventResult.handled;
           }
+          
+          // 阻止在边界时的上下键导航 - 同时处理KeyDown和KeyUp
+          if (key == LogicalKeyboardKey.arrowUp && index == 0) {
+            // 在第一个菜单项时，阻止向上导航
+            return KeyEventResult.handled;
+          }
+          if (key == LogicalKeyboardKey.arrowDown && index == 5) {
+            // 在最后一个菜单项（第6个，索引5）时，阻止向下导航
+            return KeyEventResult.handled;
+          }
+          
           return KeyEventResult.ignored;
         },
         child: MouseRegion(

@@ -885,6 +885,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         defaultScreenPosition: settingsProvider.defaultScreenPosition,
         restoreActiveIndex: activeIndex,
         restoreScreenChannels: restoreScreenChannels,
+        showChannelName: settingsProvider.showMultiScreenChannelName,
         onClosed: () {
           ServiceLocator.log.i('原生分屏播放器关闭', tag: 'HomeScreen');
         },
@@ -1202,6 +1203,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           initialChannelIndex: clickedIndex >= 0 ? clickedIndex : 0,
           volumeBoostDb: settingsProvider.volumeBoost,
           defaultScreenPosition: settingsProvider.defaultScreenPosition,
+          showChannelName: settingsProvider.showMultiScreenChannelName,
           onClosed: () {
             ServiceLocator.log.d('HomeScreen: Native multi-screen closed');
           },
