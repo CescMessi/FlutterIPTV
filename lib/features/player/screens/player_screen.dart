@@ -1153,7 +1153,7 @@ class _PlayerScreenState extends State<PlayerScreen>
           autofocus: true,
           onKeyEvent: _handleKeyEvent,
           child: MouseRegion(
-            cursor: _showControls || _mouseOver
+            cursor: _showControls
                 ? SystemMouseCursors.basic
                 : SystemMouseCursors.none,
             onEnter: (_) {
