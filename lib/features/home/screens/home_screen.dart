@@ -39,7 +39,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, RouteAware {
   int _selectedNavIndex = 0;
   List<Channel> _watchHistoryChannels = [];
   int? _lastPlaylistId; // 跟踪上次的播放列表ID
@@ -62,6 +62,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           .read<FavoritesProvider>()
           .addListener(_onFavoritesProviderChanged);
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 注册路由监听
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) {
+      AppRouter.routeObserver.subscribe(this, route);
+    }
+    // 检查是否需要重新加载数据（应用恢复时）
+    _checkAndReloadIfNeeded();
+  }
+
+  // 当从其他页面返回到此页面时触发
+  @override
+  void didPopNext() {
+    super.didPopNext();
+    ServiceLocator.log.i('返回到首页，刷新观看记录', tag: 'HomeScreen');
+    _refreshWatchHistory();
   }
 
   @override
@@ -109,6 +129,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this); // 移除生命周期监听
+    AppRouter.routeObserver.unsubscribe(this); // 移除路由监听
     // 移除监听器时需要小心，因为 context 可能已经不可用
     super.dispose();
   }
@@ -161,13 +182,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (!mounted) return;
     // 收藏状态变化时刷新观看记录
     _refreshWatchHistory();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // 检查是否需要重新加载数据（应用恢复时）
-    _checkAndReloadIfNeeded();
   }
 
   /// 检查并在需要时重新加载数据（处理应用恢复场景）
@@ -537,13 +551,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildMainContent(BuildContext context) {
-    // 每次构建首页内容时刷新观看记录
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _refreshWatchHistory();
-      }
-    });
-    
     return Consumer2<PlaylistProvider, ChannelProvider>(
       builder: (context, playlistProvider, channelProvider, _) {
         if (!playlistProvider.hasPlaylists) return _buildEmptyState();

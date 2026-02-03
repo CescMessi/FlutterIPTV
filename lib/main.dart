@@ -548,6 +548,7 @@ class _DlnaAwareAppState extends State<_DlnaAwareApp> with WindowListener {
         final fontFamily = AppTheme.resolveFontFamily(settings.fontFamily);
         return MaterialApp(
           navigatorKey: _navigatorKey,
+          navigatorObservers: [AppRouter.routeObserver], // 添加路由监听
           title: AppStrings.of(context)?.lotusIptv ?? 'Lotus IPTV',
           debugShowCheckedModeBanner: false,
           theme: AppThemeDynamic.getLightTheme(
