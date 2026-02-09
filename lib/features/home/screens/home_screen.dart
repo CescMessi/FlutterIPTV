@@ -16,6 +16,7 @@ import '../../../core/services/update_service.dart';
 import '../../../core/services/service_locator.dart';
 import '../../../core/models/app_update.dart';
 import '../../../core/utils/card_size_calculator.dart';
+import '../../../core/utils/throttled_state_mixin.dart'; // ✅ 导入节流 mixin
 import '../../channels/providers/channel_provider.dart';
 import '../../channels/screens/channels_screen.dart';
 import '../../playlist/providers/playlist_provider.dart';
@@ -39,7 +40,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, RouteAware {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, RouteAware, ThrottledStateMixin {
   int _selectedNavIndex = 0;
   List<Channel> _watchHistoryChannels = [];
   int? _lastPlaylistId; // 跟踪上次的播放列表ID
@@ -106,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Ro
       // 启动时强制检查一次更新（忽略24小时限制）
       final update = await updateService.checkForUpdates(forceCheck: true);
       if (mounted && update != null) {
-        setState(() {
+        throttledSetState(() {
           _availableUpdate = update;
         });
       }
@@ -119,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Ro
     try {
       final packageInfo = await PackageInfo.fromPlatform();
       if (mounted) {
-        setState(() {
+        throttledSetState(() {
           _appVersion = packageInfo.version;
         });
       }
@@ -164,10 +165,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Ro
       _watchHistoryChannels = [];
       _lastChannelCount = 0;
 
-      // 播放列表切换时，重新加载频道
+      // ✅ 播放列表切换时，清空缓存并重新加载
       if (currentPlaylistId != null) {
         final channelProvider = context.read<ChannelProvider>();
-        channelProvider.loadChannels(currentPlaylistId);
+        ServiceLocator.log.i('播放列表切换，清空缓存并重新加载: $currentPlaylistId', tag: 'HomeScreen');
+        
+        // 1. 清空 setState 队列
+        clearPendingSetState();
+        
+        // 2. 清空 Provider 缓存和通知队列
+        channelProvider.clearCache(); // 清空旧缓存
+        channelProvider.clearLogoLoadingQueue(); // 清理旧的台标加载任务
+        
+        // 3. 加载新数据
+        channelProvider.loadAllChannelsToCache(currentPlaylistId);
       }
     }
 
@@ -175,9 +186,27 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Ro
     // 这样可以确保刷新 M3U 后首页能正确更新
     if (!playlistProvider.isLoading && playlistProvider.hasPlaylists) {
       final channelProvider = context.read<ChannelProvider>();
-      // 如果频道 provider 不在加载中，且观看记录为空，则重新加载
-      if (!channelProvider.isLoading && _watchHistoryChannels.isEmpty) {
-        _refreshWatchHistory();
+      final currentId = playlistProvider.activePlaylist?.id;
+      
+      // ✅ 如果频道列表为空或数量不对，重新加载首页数据
+      if (!channelProvider.isLoading && currentId != null) {
+        // 检查是否需要重新加载（频道为空，或者频道数量明显不对）
+        if (channelProvider.channels.isEmpty) {
+          ServiceLocator.log.i('播放列表刷新完成，频道为空，重新加载', tag: 'HomeScreen');
+          
+          // 1. 清空 setState 队列
+          clearPendingSetState();
+          
+          // 2. 清空 Provider 缓存和通知队列
+          channelProvider.clearCache(); // 清空缓存
+          channelProvider.clearLogoLoadingQueue(); // 清理旧的台标加载任务
+          
+          // 3. 重新加载
+          channelProvider.loadAllChannelsToCache(currentId);
+        } else if (_watchHistoryChannels.isEmpty) {
+          // 只刷新观看记录
+          _refreshWatchHistory();
+        }
       }
     }
   }
@@ -198,8 +227,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Ro
         !playlistProvider.isLoading &&
         channelProvider.channels.isEmpty &&
         !channelProvider.isLoading) {
-      ServiceLocator.log.w('检测到数据状态异常：播放列表存在但频道为空', tag: 'HomeScreen');
-      _loadData();
+      ServiceLocator.log.w('检测到数据状态异常：播放列表存在但频道为空，重新加载', tag: 'HomeScreen');
+      final activePlaylist = playlistProvider.activePlaylist;
+      if (activePlaylist?.id != null) {
+        channelProvider.loadAllChannelsToCache(activePlaylist!.id!);
+      }
     }
   }
 
@@ -228,8 +260,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Ro
 
       if (activePlaylist != null && activePlaylist.id != null) {
         ServiceLocator.log
-            .d('加载播放列表频道: ${activePlaylist.id}', tag: 'HomeScreen');
-        await channelProvider.loadChannels(activePlaylist.id!);
+            .d('首页加载: 加载所有频道到缓存', tag: 'HomeScreen');
+        // ✅ 加载所有频道到全局缓存
+        await channelProvider.loadAllChannelsToCache(activePlaylist.id!);
       } else {
         ServiceLocator.log.d('加载所有频道', tag: 'HomeScreen');
         await channelProvider.loadAllChannels();
@@ -253,15 +286,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Ro
           activePlaylist!.epgUrl!.isNotEmpty) {
         ServiceLocator.log
             .d('HomeScreen: 初始加载播放列表的 EPG URL: ${activePlaylist.epgUrl}');
+        // Background loading - don't block UI
         await epgProvider.loadEpg(
           activePlaylist.epgUrl!,
           fallbackUrl: settingsProvider.epgUrl,
+          silent: true,
         );
       } else if (settingsProvider.epgUrl != null &&
           settingsProvider.epgUrl!.isNotEmpty) {
         ServiceLocator.log
             .d('HomeScreen: 初始加载设置中的兜底 EPG URL: ${settingsProvider.epgUrl}');
-        await epgProvider.loadEpg(settingsProvider.epgUrl!);
+        // Background loading - don't block UI
+        await epgProvider.loadEpg(settingsProvider.epgUrl!, silent: true);
       } else {
         ServiceLocator.log.d('HomeScreen: 没有可用的 EPG URL（播放列表和设置中都没有配置）');
       }
@@ -314,7 +350,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Ro
     
     if (activePlaylist?.id == null) {
       if (_watchHistoryChannels.isNotEmpty) {
-        setState(() {
+        throttledSetState(() {
           _watchHistoryChannels = [];
         });
       }
@@ -324,14 +360,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Ro
     // 异步加载观看记录
     ServiceLocator.watchHistory.getWatchHistory(activePlaylist!.id!, limit: 20).then((history) {
       if (mounted) {
-        setState(() {
+        throttledSetState(() {
           _watchHistoryChannels = history;
         });
       }
     }).catchError((e) {
       ServiceLocator.log.e('加载观看记录失败: $e', tag: 'HomeScreen');
       if (mounted) {
-        setState(() {
+        throttledSetState(() {
           _watchHistoryChannels = [];
         });
       }
@@ -364,9 +400,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Ro
     // 切换页面时清理台标加载队列
     clearLogoLoadingQueue();
 
-    setState(() => _selectedNavIndex = index);
+    immediateSetState(() => _selectedNavIndex = index); // 立即更新导航
     
-    // 切换到首页时刷新观看记录
+    // ✅ 切换到首页时不需要重新加载（使用缓存数据）
     if (index == 0) {
       _refreshWatchHistory();
     }
@@ -559,21 +595,27 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Ro
       builder: (context, playlistProvider, channelProvider, settingsProvider, _) {
         if (!playlistProvider.hasPlaylists) return _buildEmptyState();
 
-        // 播放列表正在刷新或频道正在加载时显示加载状态
-        if (playlistProvider.isLoading || channelProvider.isLoading) {
+        // 播放列表正在刷新时显示加载状态
+        if (playlistProvider.isLoading) {
           return const Center(
               child: CircularProgressIndicator(color: AppTheme.primaryColor));
         }
 
-        // 如果播放列表已加载但频道为空，尝试重新加载
-        if (playlistProvider.hasPlaylists && channelProvider.channels.isEmpty) {
+        // ✅ 首页使用独立的加载状态
+        if (channelProvider.isLoading) {
+          return const Center(
+              child: CircularProgressIndicator(color: AppTheme.primaryColor));
+        }
+
+        // 如果播放列表已加载但首页数据为空，尝试重新加载
+        if (playlistProvider.hasPlaylists && channelProvider.allChannels.isEmpty) {
           // 使用 addPostFrameCallback 避免在 build 期间调用 setState
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted && !channelProvider.isLoading) {
-              ServiceLocator.log.d('HomeScreen: 频道列表为空，触发重新加载');
+              ServiceLocator.log.d('HomeScreen: 频道列表为空，触发数据重新加载');
               final activePlaylist = playlistProvider.activePlaylist;
               if (activePlaylist?.id != null) {
-                channelProvider.loadChannels(activePlaylist!.id!);
+                channelProvider.loadAllChannelsToCache(activePlaylist!.id!);
               }
             }
           });
@@ -582,6 +624,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Ro
         }
 
         final favChannels = _getFavoriteChannels(channelProvider);
+        
+        // ✅ 获取首页数据（显示前8个分类）
+        final homeChannelsByGroup = channelProvider.getHomeChannelsByGroup(maxGroups: 8, channelsPerGroup: 12);
+        final homeGroups = channelProvider.getHomeGroups(maxGroups: 8);
 
         return Column(
           mainAxisSize: MainAxisSize.max,
@@ -626,14 +672,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Ro
                               isFirstRow: !settingsProvider.showWatchHistoryOnHome || _watchHistoryChannels.isEmpty), // 如果观看记录不显示或为空，收藏夹是第一行
                           SizedBox(height: PlatformDetector.isMobile ? 8 : 12),
                         ],
-                        ...channelProvider.groups.take(8).toList().asMap().entries.map((entry) {
+                        // ✅ 使用首页数据显示分类和频道
+                        ...homeGroups.asMap().entries.map((entry) {
                           final index = entry.key;
                           final group = entry.value;
-                          // 取足够多的频道，实际显示数量由宽度决定
-                          final channels = channelProvider.channels
-                              .where((c) => c.groupName == group.name)
-                              .take(20)
-                              .toList();
+                          // ✅ 直接从首页数据中获取该分类的频道
+                          final channels = homeChannelsByGroup[group.name] ?? [];
+                          
+                          // ✅ 如果该分类没有频道，跳过不显示
+                          if (channels.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+                          
                           // 判断是否是第一行：观看记录和收藏夹都不显示时，第一个分类是第一行
                           final isFirst = index == 0 && 
                               (!settingsProvider.showWatchHistoryOnHome || _watchHistoryChannels.isEmpty) && 
@@ -894,8 +944,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Ro
   /// 刷新当前播放列表
   Future<void> _refreshCurrentPlaylist(PlaylistProvider playlistProvider,
       ChannelProvider channelProvider) async {
-    ServiceLocator.log.i('开始刷新当前播放列表', tag: 'HomeScreen');
-    final startTime = DateTime.now();
+    ServiceLocator.log.i('开始刷新当前播放列表（后台模式）', tag: 'HomeScreen');
 
     final activePlaylist = playlistProvider.activePlaylist;
     if (activePlaylist == null) {
@@ -903,77 +952,55 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Ro
       return;
     }
 
-    // 清理台标加载队列和缓存，准备重新加载
-    clearAllLogoCache(); // 完全清理，包括已加载的缓存
-
-    // 显示加载提示
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('刷新中 ${activePlaylist.name}...'),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-
-    ServiceLocator.log.d(
-        '刷新播放列表: ${activePlaylist.name} (ID: ${activePlaylist.id})',
-        tag: 'HomeScreen');
-
-    // 执行刷新
-    final success = await playlistProvider.refreshPlaylist(activePlaylist);
-
     if (!mounted) return;
 
-    if (success) {
-      // 刷新成功，重新加载频道
-      if (activePlaylist.id != null) {
-        await channelProvider.loadChannels(activePlaylist.id!);
-        // 刷新观看记录
-        _refreshWatchHistory();
+    // Use unified refresh method with callback (silent mode for background refresh)
+    await playlistProvider.refreshPlaylistWithCallback(
+      playlist: activePlaylist,
+      context: context,
+      silent: true,
+      onComplete: (success, error) async {
+        if (!mounted) return;
 
-        // 重新加载 EPG（使用播放列表的 EPG URL，如果失败则使用设置中的兜底 URL）
-        final epgProvider = context.read<EpgProvider>();
-        final settingsProvider = context.read<SettingsProvider>();
+        if (success) {
+          // Reload channels
+          if (activePlaylist.id != null) {
+            await channelProvider.loadChannels(activePlaylist.id!);
+            
+            // Clear logo cache
+            clearAllLogoCache();
+            
+            // Refresh watch history
+            _refreshWatchHistory();
 
-        // 重新加载播放列表以获取最新的 EPG URL
-        await playlistProvider.loadPlaylists();
-        final updatedPlaylist = playlistProvider.activePlaylist;
+            // Reload EPG
+            final epgProvider = context.read<EpgProvider>();
+            final settingsProvider = context.read<SettingsProvider>();
 
-        if (updatedPlaylist?.epgUrl != null) {
-          ServiceLocator.log.d(
-              'HomeScreen: 使用播放列表的 EPG URL 重新加载: ${updatedPlaylist!.epgUrl}');
-          await epgProvider.loadEpg(
-            updatedPlaylist.epgUrl!,
-            fallbackUrl: settingsProvider.epgUrl,
-          );
-        } else if (settingsProvider.epgUrl != null) {
-          ServiceLocator.log.d(
-              'HomeScreen: 使用设置中的兜底 EPG URL 重新加载: ${settingsProvider.epgUrl}');
-          await epgProvider.loadEpg(settingsProvider.epgUrl!);
+            await playlistProvider.loadPlaylists();
+            final updatedPlaylist = playlistProvider.activePlaylist;
+
+            if (updatedPlaylist?.epgUrl != null) {
+              ServiceLocator.log.d(
+                  'HomeScreen: 使用播放列表的 EPG URL 重新加载: ${updatedPlaylist!.epgUrl}',
+                  tag: 'HomeScreen');
+              // Background loading - don't block UI
+              await epgProvider.loadEpg(
+                updatedPlaylist.epgUrl!,
+                fallbackUrl: settingsProvider.epgUrl,
+                silent: true,
+              );
+            } else if (settingsProvider.epgUrl != null) {
+              ServiceLocator.log.d(
+                  'HomeScreen: 使用设置中的兜底 EPG URL 重新加载: ${settingsProvider.epgUrl}',
+                  tag: 'HomeScreen');
+              // Background loading - don't block UI
+              await epgProvider.loadEpg(settingsProvider.epgUrl!, silent: true);
+            }
+          }
         }
-      }
-
-      final refreshTime = DateTime.now().difference(startTime).inMilliseconds;
-      ServiceLocator.log.i('播放列表刷新成功，耗时: ${refreshTime}ms', tag: 'HomeScreen');
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('刷新成功'),
-          duration: const Duration(seconds: 2),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } else {
-      ServiceLocator.log.e('播放列表刷新失败', tag: 'HomeScreen');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              '刷新失败: ${playlistProvider.error?.replaceAll("Exception:", "").trim() ?? ""}'),
-          duration: const Duration(seconds: 5),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+      },
+    );
   }
 
   /// 恢复分屏播放
@@ -1234,7 +1261,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Ro
 
   Widget _buildCategoryChips(ChannelProvider provider) {
     return _ResponsiveCategoryChips(
-      groups: provider.groups,
+      groups: provider.getHomeGroups(maxGroups: 8), // ✅ 使用首页独立数据
       onGroupTap: (groupName) => Navigator.pushNamed(
           context, AppRouter.channels,
           arguments: {'groupName': groupName}),
@@ -1377,7 +1404,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Ro
     if (settingsProvider.enableMultiScreen) {
       // TV 端使用原生分屏播放器
       if (PlatformDetector.isTV && PlatformDetector.isAndroid) {
-        final channels = channelProvider.channels;
+        // ✅ 直接使用缓存的所有频道数据
+        final channels = channelProvider.allChannels;
 
         // 找到当前点击频道的索引
         final clickedIndex = channels.indexWhere((c) => c.url == channel.url);
@@ -1546,7 +1574,7 @@ class _ResponsiveCategoryChips extends StatefulWidget {
       _ResponsiveCategoryChipsState();
 }
 
-class _ResponsiveCategoryChipsState extends State<_ResponsiveCategoryChips> {
+class _ResponsiveCategoryChipsState extends State<_ResponsiveCategoryChips> with ThrottledStateMixin {
   bool _isExpanded = false;
 
   @override
@@ -1658,7 +1686,7 @@ class _ResponsiveCategoryChipsState extends State<_ResponsiveCategoryChips> {
 
   Widget _buildExpandButton(int hiddenCount, bool isMobile) {
     return TVFocusable(
-      onSelect: () => setState(() => _isExpanded = true),
+      onSelect: () => immediateSetState(() => _isExpanded = true), // 立即更新展开状态
       focusScale: 1.0,
       showFocusBorder: false,
       builder: (context, isFocused, child) {
@@ -1697,7 +1725,7 @@ class _ResponsiveCategoryChipsState extends State<_ResponsiveCategoryChips> {
 
   Widget _buildCollapseButton(bool isMobile) {
     return TVFocusable(
-      onSelect: () => setState(() => _isExpanded = false),
+      onSelect: () => immediateSetState(() => _isExpanded = false), // 立即更新折叠状态
       focusScale: 1.0,
       showFocusBorder: false,
       builder: (context, isFocused, child) {

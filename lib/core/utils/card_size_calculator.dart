@@ -147,7 +147,7 @@ class CardSizeCalculator {
           cardsPerRow = 3;
         }
       }
-      ServiceLocator.log.d('首页卡片计算 - 手机端$mode: 宽度=${availableWidth.toStringAsFixed(1)}px, 每行=$cardsPerRow张', tag: 'CardSize');
+      // ServiceLocator.log.d('首页卡片计算 - 手机端$mode: 宽度=${availableWidth.toStringAsFixed(1)}px, 每行=$cardsPerRow张', tag: 'CardSize');
       return cardsPerRow;
     } else if (PlatformDetector.isTV) {
       // TV端首页：全宽约1800px，适中卡片数量
@@ -174,7 +174,7 @@ class CardSizeCalculator {
       } else {
         cardsPerRow = 5;
       }
-      ServiceLocator.log.d('首页卡片计算 - TV端: 宽度=${availableWidth.toStringAsFixed(1)}px, 每行=$cardsPerRow张', tag: 'CardSize');
+      // ServiceLocator.log.d('首页卡片计算 - TV端: 宽度=${availableWidth.toStringAsFixed(1)}px, 每行=$cardsPerRow张', tag: 'CardSize');
       return cardsPerRow;
     } else {
       // Windows首页
@@ -201,7 +201,7 @@ class CardSizeCalculator {
       } else {
         cardsPerRow = 5;
       }
-      ServiceLocator.log.d('首页卡片计算 - Desktop端: 宽度=${availableWidth.toStringAsFixed(1)}px, 每行=$cardsPerRow张', tag: 'CardSize');
+      // ServiceLocator.log.d('首页卡片计算 - Desktop端: 宽度=${availableWidth.toStringAsFixed(1)}px, 每行=$cardsPerRow张', tag: 'CardSize');
       return cardsPerRow;
     }
   }
