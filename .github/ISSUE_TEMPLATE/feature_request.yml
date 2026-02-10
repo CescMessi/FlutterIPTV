@@ -27,7 +27,7 @@ body:
       description: 你希望如何实现这个功能？
       placeholder: 描述你期望的功能实现方式...
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: alternatives

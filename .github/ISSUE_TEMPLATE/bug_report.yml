@@ -31,7 +31,8 @@ body:
         3. 滚动到 '...'
         4. 看到错误
     validations:
-      required: true
+      required: false
+    
 
   - type: textarea
     id: expected
@@ -40,7 +41,7 @@ body:
       description: 你期望发生什么？
       placeholder: 描述期望的正常行为...
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: actual
@@ -49,7 +50,7 @@ body:
       description: 实际发生了什么？
       placeholder: 描述实际发生的情况...
     validations:
-      required: true
+      required: false
 
   - type: dropdown
     id: platform
