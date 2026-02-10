@@ -186,6 +186,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Ro
     // 这样可以确保刷新 M3U 后首页能正确更新
     if (!playlistProvider.isLoading && playlistProvider.hasPlaylists) {
       final channelProvider = context.read<ChannelProvider>();
+      final favoritesProvider = context.read<FavoritesProvider>();
       final currentId = playlistProvider.activePlaylist?.id;
       
       // ✅ 如果频道列表为空或数量不对，重新加载首页数据
@@ -201,12 +202,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Ro
           channelProvider.clearCache(); // 清空缓存
           channelProvider.clearLogoLoadingQueue(); // 清理旧的台标加载任务
           
-          // 3. 重新加载
+          // 3. 重新加载频道
           channelProvider.loadAllChannelsToCache(currentId);
-        } else if (_watchHistoryChannels.isEmpty) {
-          // 只刷新观看记录
-          _refreshWatchHistory();
         }
+        
+        // ✅ 播放列表刷新后，重新加载收藏夹和观看记录
+        ServiceLocator.log.i('播放列表刷新完成，重新加载收藏夹和观看记录', tag: 'HomeScreen');
+        favoritesProvider.loadFavorites();
+        _refreshWatchHistory();
       }
     }
   }
@@ -1478,8 +1481,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Ro
 
   List<Channel> _getFavoriteChannels(ChannelProvider provider) {
     final favProvider = context.read<FavoritesProvider>();
-    // 最多取20个作为候选，实际显示数量由宽度决定
-    return provider.channels
+    // ✅ 使用 allChannels 而不是 channels，确保能获取到所有收藏频道
+    // channels 只包含分页显示的频道，可能不包含收藏的频道
+    return provider.allChannels
         .where((c) => favProvider.isFavorite(c.id ?? 0))
         .take(20)
         .toList();

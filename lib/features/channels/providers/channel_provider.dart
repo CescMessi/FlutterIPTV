@@ -192,8 +192,7 @@ class ChannelProvider extends ChangeNotifier {
       // ✅ 初始显示第一批频道
       _loadMoreToDisplay(isInitial: true);
 
-      // 后台填充备用台标，不阻塞UI（分批处理）
-      _populateFallbackLogosInBatches(_allChannels, _loadingGeneration);
+      // ✅ 备用台标已在数据库中，无需后台查询
 
       final loadTime = DateTime.now().difference(startTime).inMilliseconds;
       ServiceLocator.log.i(
@@ -287,8 +286,7 @@ class ChannelProvider extends ChangeNotifier {
       // ✅ 初始显示第一批频道
       _loadMoreToDisplay(isInitial: true);
 
-      // 后台填充备用台标，不阻塞UI（分批处理）
-      _populateFallbackLogosInBatches(_allChannels, _loadingGeneration);
+      // ✅ 备用台标已在数据库中，无需后台查询
 
       final loadTime = DateTime.now().difference(startTime).inMilliseconds;
       ServiceLocator.log.i(
@@ -624,75 +622,6 @@ class ChannelProvider extends ChangeNotifier {
     _loadingGeneration++;
     
     ServiceLocator.log.d('台标加载队列已清理 (generation: $_loadingGeneration)', tag: 'ChannelProvider');
-  }
-
-  // ✅ 后台填充备用台标 (分批处理，避免阻塞主线程)
-  Future<void> _populateFallbackLogosInBatches(
-      List<Channel> channelsToProcess, int generationId) async {
-    final stopwatch = Stopwatch()..start();
-    int processedCount = 0;
-    const batchSize = 20; // 每批20个
-    const delayBetweenBatches = 50; // 每批之间延迟50ms，让出更多时间给UI
-
-    // 创建一个副本进行迭代，避免在迭代时修改列表
-    final List<Channel> processingList = List.from(channelsToProcess);
-
-    for (int i = 0; i < processingList.length; i += batchSize) {
-      // 检查任务是否已取消
-      if (generationId != _loadingGeneration) return;
-
-      // 如果暂停加载，等待直到恢复
-      while (_isLogoLoadingPaused) {
-        if (generationId != _loadingGeneration) return;
-        await Future.delayed(const Duration(milliseconds: 100));
-      }
-
-      final end = (i + batchSize < processingList.length)
-          ? i + batchSize
-          : processingList.length;
-      final batch = processingList.sublist(i, end);
-
-      // 筛选需要查询台标的频道
-      final channelsToQuery =
-          batch.where((c) => c.logoUrl == null || c.logoUrl!.isEmpty).toList();
-
-      if (channelsToQuery.isNotEmpty) {
-        try {
-          final names = channelsToQuery.map((c) => c.name).toList();
-          // 批量查询，显著减少 Platform Channel 消息数量
-          final logos =
-              await ServiceLocator.channelLogo.findLogoUrlsBulk(names);
-
-          // 更新结果
-          for (final channel in channelsToQuery) {
-            if (logos.containsKey(channel.name)) {
-              channel.fallbackLogoUrl = logos[channel.name];
-              processedCount++;
-            }
-          }
-        } catch (e) {
-          ServiceLocator.log.w('批量获取台标失败: $e');
-        }
-      }
-
-      // 每处理完一个批次，延迟更长时间让出主线程
-      if (i + batchSize < processingList.length) {
-        await Future.delayed(Duration(milliseconds: delayBetweenBatches));
-      }
-    }
-
-    stopwatch.stop();
-    if (processedCount > 0 && generationId == _loadingGeneration) {
-      ServiceLocator.log.i(
-          '备用台标处理完成，为 $processedCount 个频道找到台标，耗时: ${stopwatch.elapsedMilliseconds}ms',
-          tag: 'ChannelProvider');
-    }
-  }
-
-  // ✅ 后台填充备用台标 (旧方法，保持兼容)
-  Future<void> _populateFallbackLogos(
-      List<Channel> channelsToProcess, int generationId) async {
-    return _populateFallbackLogosInBatches(channelsToProcess, generationId);
   }
 
   // Clear all data

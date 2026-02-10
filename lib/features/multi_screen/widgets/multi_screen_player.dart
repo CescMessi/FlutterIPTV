@@ -571,12 +571,12 @@ class _MultiScreenPlayerState extends State<MultiScreenPlayer> {
       BuildContext context,
       ChannelProvider channelProvider,
       MultiScreenProvider multiScreenProvider) {
-    // 根据选中的分类过滤频道
+    // ✅ 使用 allChannels 获取全部频道，而不是分页的 channels
     List channels;
     if (_selectedCategory == null) {
-      channels = channelProvider.channels;
+      channels = channelProvider.allChannels;
     } else {
-      channels = channelProvider.channels
+      channels = channelProvider.allChannels
           .where((c) => c.groupName == _selectedCategory)
           .toList();
     }

@@ -7,6 +7,7 @@ import 'package:http/io_client.dart' as io_client;
 import 'dart:io';
 import '../models/channel.dart';
 import '../services/service_locator.dart';
+import '../utils/throttled_state_mixin.dart';
 
 // ========================================
 // ✅ 台标加载性能配置 - 可随意调整这些参数
@@ -37,15 +38,15 @@ import '../services/service_locator.dart';
 
 /// HTTP 连接池配置
 class _HttpPoolConfig {
-  static const int maxConnectionsPerHost = 20; // 每个主机最多连接数
+  static const int maxConnectionsPerHost = 50; // 每个主机最多连接数
   static const Duration connectionTimeout = Duration(seconds: 5); // 连接超时
   static const Duration idleTimeout = Duration(seconds: 30); // 空闲连接保持时间
 }
 
 /// 台标加载并发控制配置
 class _LogoLoadConfig {
-  static const int maxConcurrentLoads = 10; // 最大并发加载数
-  static const int maxQueueSize = 100; // 最大队列大小
+  static const int maxConcurrentLoads = 50; // 最大并发加载数
+  static const int maxQueueSize = 1000; // 最大队列大小
 }
 
 // ========================================
@@ -357,7 +358,7 @@ class ChannelLogoWidget extends StatefulWidget {
   State<ChannelLogoWidget> createState() => _ChannelLogoWidgetState();
 }
 
-class _ChannelLogoWidgetState extends State<ChannelLogoWidget> {
+class _ChannelLogoWidgetState extends State<ChannelLogoWidget> with ThrottledStateMixin {
   final _logoState = _LogoStateManager();
   bool _isDisposed = false;
 
@@ -377,16 +378,14 @@ class _ChannelLogoWidgetState extends State<ChannelLogoWidget> {
     if (_isDisposed) return;
 
     final channelName = widget.channel.name;
-    // 只在第一次失败时触发
+    // 只在第一次失败时标记
     if (!_logoState.isM3uLogoFailed(channelName)) {
-      // 即使在滚动中，也标记为失败，避免下次重建时再次尝试无效链接
+      // 标记为失败，避免下次重建时再次尝试无效链接
       _logoState.markM3uLogoFailed(channelName);
-
-      // ✅ 仅在非滚动状态下刷新UI，避免滚动卡顿
-      if (!_logoState.isScrolling && mounted) {
-        ServiceLocator.log.d('[ChannelLogo] M3U台标失败，刷新UI使用备用 - $channelName');
-        setState(() {});
-      }
+      
+      // ✅ 不调用 setState，避免大量频道失败时消息队列爆炸
+      // errorWidget 会直接返回 fallback，无需重建
+      // ServiceLocator.log.d('[ChannelLogo] M3U台标失败，标记失败状态 - $channelName');
     }
   }
 
@@ -405,6 +404,27 @@ class _ChannelLogoWidgetState extends State<ChannelLogoWidget> {
       errorWidget: (context, url, error) {
         if (isM3uLogo) {
           _onM3uLogoError();
+          
+          // ✅ M3U 失败时，立即尝试显示 fallback 台标
+          final fallback = widget.channel.fallbackLogoUrl;
+          ServiceLocator.log.d('[ChannelLogo] M3U台标失败，标记失败状态. fallbackURL - $fallback');
+          // 只在非滚动状态下加载 fallback，避免滚动时的 IO 拥堵
+          if (!_logoState.isScrolling && fallback != null && fallback.isNotEmpty) {
+            // 使用轻量级 Image.network 临时显示，不走复杂的缓存逻辑
+            // 下次自然重建时会用 CachedNetworkImage 正确加载
+            return Image.network(
+              fallback,
+              width: widget.width,
+              height: widget.height,
+              fit: widget.fit,
+              errorBuilder: (_, __, ___) => _buildPlaceholder(),
+              // 添加简单的加载指示
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return _buildPlaceholder();
+              },
+            );
+          }
         }
         return _buildPlaceholder();
       },

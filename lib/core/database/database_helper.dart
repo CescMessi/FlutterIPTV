@@ -9,7 +9,7 @@ import '../services/service_locator.dart';
 class DatabaseHelper {
   static Database? _database;
   static const String _databaseName = 'flutter_iptv.db';
-  static const int _databaseVersion = 6; // Watch history with playlist_id
+  static const int _databaseVersion = 7; // Added fallback_logo_url to channels
 
   Future<void> initialize() async {
     ServiceLocator.log.d('DatabaseHelper: 开始初始化数据库');
@@ -88,6 +88,7 @@ class DatabaseHelper {
         url TEXT NOT NULL,
         sources TEXT,
         logo_url TEXT,
+        fallback_logo_url TEXT,
         group_name TEXT,
         epg_id TEXT,
         is_active INTEGER DEFAULT 1,
@@ -283,6 +284,16 @@ class DatabaseHelper {
             where: 'playlist_id IS NULL',
           );
         }
+      } catch (e) {
+        ServiceLocator.log.d('Migration error (ignored): $e');
+      }
+    }
+    if (oldVersion < 7) {
+      // Add fallback_logo_url column to channels table
+      try {
+        await db.execute(
+            'ALTER TABLE channels ADD COLUMN fallback_logo_url TEXT');
+        ServiceLocator.log.i('数据库迁移: 添加 fallback_logo_url 字段到 channels 表');
       } catch (e) {
         ServiceLocator.log.d('Migration error (ignored): $e');
       }

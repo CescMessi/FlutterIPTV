@@ -112,6 +112,7 @@ class Channel {
 
   factory Channel.fromMap(Map<String, dynamic> map) {
     final logoUrl = map['logo_url'] as String?;
+    final fallbackLogoUrl = map['fallback_logo_url'] as String?;
     final url = map['url'] as String;
     
     // Parse sources from JSON string or use single URL
@@ -134,6 +135,7 @@ class Channel {
       url: url,
       sources: sources,
       logoUrl: logoUrl,
+      fallbackLogoUrl: fallbackLogoUrl,
       groupName: map['group_name'] as String?,
       epgId: map['epg_id'] as String?,
       isActive: (map['is_active'] as int?) == 1,
@@ -149,6 +151,7 @@ class Channel {
       'url': url,
       'sources': sources.join('|||'), // Store as delimiter-separated string
       'logo_url': logoUrl,
+      'fallback_logo_url': fallbackLogoUrl,
       'group_name': groupName,
       'epg_id': epgId,
       'is_active': isActive ? 1 : 0,

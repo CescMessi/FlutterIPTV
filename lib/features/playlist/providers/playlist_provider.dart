@@ -242,7 +242,24 @@ class PlaylistProvider extends ChangeNotifier {
       
       ServiceLocator.log.i('解析到 ${channels.length} 个频道', tag: 'PlaylistProvider');
 
-      // Step 3: Insert channels in transaction (50% - 90%)
+      // ✅ Step 3: 批量查询备用台标 (50% - 60%)
+      ServiceLocator.log.i('开始批量查询备用台标', tag: 'PlaylistProvider');
+      final channelNames = channels.map((c) => c.name).toList();
+      final fallbackLogos = await ServiceLocator.channelLogo.findLogoUrlsBulk(channelNames);
+      
+      // 将查询到的备用台标赋值给频道
+      for (final channel in channels) {
+        if (fallbackLogos.containsKey(channel.name)) {
+          channel.fallbackLogoUrl = fallbackLogos[channel.name];
+        }
+      }
+      
+      ServiceLocator.log.i('备用台标查询完成，找到 ${fallbackLogos.length} 个台标', tag: 'PlaylistProvider');
+      
+      _importProgress = 0.6;
+      notifyListeners();
+
+      // Step 4: Insert channels in transaction (60% - 90%)
       await ServiceLocator.database.db.transaction((txn) async {
         // Batch insert channels in chunks
         const chunkSize = 500;
@@ -487,10 +504,34 @@ class PlaylistProvider extends ChangeNotifier {
         notifyListeners();
       }
 
+      // ✅ 批量查询备用台标（与导入流程一致）
+      ServiceLocator.log.i('开始批量查询备用台标', tag: 'PlaylistProvider');
+      final channelNames = channels.map((c) => c.name).toList();
+      final fallbackLogos = await ServiceLocator.channelLogo.findLogoUrlsBulk(channelNames);
+      
+      // 将查询到的备用台标赋值给频道
+      for (final channel in channels) {
+        if (fallbackLogos.containsKey(channel.name)) {
+          channel.fallbackLogoUrl = fallbackLogos[channel.name];
+        }
+      }
+      
+      ServiceLocator.log.i('备用台标查询完成，找到 ${fallbackLogos.length} 个台标', tag: 'PlaylistProvider');
+
+      if (!silent) {
+        _importProgress = 0.6;
+        notifyListeners();
+      }
+
       // 在删除旧频道之前，先保存观看记录的频道信息（名称和URL）
       ServiceLocator.log.d('保存观看记录的频道信息...', tag: 'PlaylistProvider');
       final savedChannelInfo = await ServiceLocator.watchHistory.saveWatchHistoryChannelInfo(playlist.id!);
       ServiceLocator.log.d('已保存 ${savedChannelInfo.length} 条观看记录的频道信息', tag: 'PlaylistProvider');
+
+      // ✅ 在删除旧频道之前，保存收藏的频道名称和位置
+      ServiceLocator.log.d('保存收藏频道信息...', tag: 'PlaylistProvider');
+      final favoriteChannelNames = await _saveFavoriteChannelNames(playlist.id!);
+      ServiceLocator.log.d('已保存 ${favoriteChannelNames.length} 个收藏频道', tag: 'PlaylistProvider');
 
       // 使用事务确保数据一致性：先删除旧数据，再插入新数据
       // 如果插入失败，事务会回滚，旧数据不会丢失
@@ -519,6 +560,13 @@ class PlaylistProvider extends ChangeNotifier {
           ServiceLocator.log.d('已插入 $end/${channels.length} 个新频道记录', tag: 'PlaylistProvider');
         }
       });
+
+      // ✅ 恢复收藏关联
+      if (favoriteChannelNames.isNotEmpty) {
+        ServiceLocator.log.d('开始恢复收藏关联...', tag: 'PlaylistProvider');
+        final restoredCount = await _restoreFavoritesByName(playlist.id!, favoriteChannelNames);
+        ServiceLocator.log.d('已恢复 $restoredCount 个收藏频道', tag: 'PlaylistProvider');
+      }
 
       // Update playlist timestamp and EPG URL
       ServiceLocator.log.d('更新播放列表时间戳和EPG URL...', tag: 'PlaylistProvider');
@@ -564,6 +612,9 @@ class PlaylistProvider extends ChangeNotifier {
       if (!silent) {
         _isLoading = false;
       }
+      
+      // ✅ 通知其他 Provider 刷新数据（收藏夹已恢复，需要重新加载）
+      notifyListeners();
       
       return true;
     } catch (e) {
@@ -853,6 +904,81 @@ class PlaylistProvider extends ChangeNotifier {
     } catch (e) {
       ServiceLocator.log.e('数据库优化失败', tag: 'PlaylistProvider', error: e);
       return false;
+    }
+  }
+
+  /// ✅ 保存收藏频道的名称和位置（刷新前）
+  Future<Map<String, int>> _saveFavoriteChannelNames(int playlistId) async {
+    try {
+      ServiceLocator.log.i('开始查询播放列表 $playlistId 的收藏频道', tag: 'PlaylistProvider');
+      
+      final results = await ServiceLocator.database.rawQuery('''
+        SELECT c.name, f.position
+        FROM favorites f
+        INNER JOIN channels c ON f.channel_id = c.id
+        WHERE c.playlist_id = ?
+        ORDER BY f.position
+      ''', [playlistId]);
+      
+      ServiceLocator.log.i('查询到 ${results.length} 条收藏记录', tag: 'PlaylistProvider');
+      
+      final Map<String, int> favoriteMap = {};
+      for (final row in results) {
+        final name = row['name'] as String;
+        final position = row['position'] as int;
+        favoriteMap[name] = position;
+        ServiceLocator.log.d('收藏频道: $name (位置: $position)', tag: 'PlaylistProvider');
+      }
+      
+      return favoriteMap;
+    } catch (e) {
+      ServiceLocator.log.e('保存收藏频道信息失败', tag: 'PlaylistProvider', error: e);
+      return {};
+    }
+  }
+
+  /// ✅ 根据频道名称恢复收藏关联（刷新后）
+  Future<int> _restoreFavoritesByName(int playlistId, Map<String, int> favoriteMap) async {
+    try {
+      ServiceLocator.log.i('开始恢复 ${favoriteMap.length} 个收藏频道', tag: 'PlaylistProvider');
+      int restoredCount = 0;
+      
+      for (final entry in favoriteMap.entries) {
+        final channelName = entry.key;
+        final position = entry.value;
+        
+        ServiceLocator.log.d('查找频道: $channelName', tag: 'PlaylistProvider');
+        
+        // 查找新插入的频道ID
+        final results = await ServiceLocator.database.rawQuery('''
+          SELECT id FROM channels 
+          WHERE playlist_id = ? AND name = ? 
+          LIMIT 1
+        ''', [playlistId, channelName]);
+        
+        if (results.isNotEmpty) {
+          final channelId = results.first['id'] as int;
+          
+          ServiceLocator.log.d('找到频道ID: $channelId，恢复收藏', tag: 'PlaylistProvider');
+          
+          // 重新创建收藏记录
+          await ServiceLocator.database.insert('favorites', {
+            'channel_id': channelId,
+            'position': position,
+            'created_at': DateTime.now().millisecondsSinceEpoch,
+          });
+          
+          restoredCount++;
+        } else {
+          ServiceLocator.log.w('未找到收藏频道: $channelName', tag: 'PlaylistProvider');
+        }
+      }
+      
+      ServiceLocator.log.i('成功恢复 $restoredCount 个收藏频道', tag: 'PlaylistProvider');
+      return restoredCount;
+    } catch (e) {
+      ServiceLocator.log.e('恢复收藏关联失败', tag: 'PlaylistProvider', error: e);
+      return 0;
     }
   }
 }

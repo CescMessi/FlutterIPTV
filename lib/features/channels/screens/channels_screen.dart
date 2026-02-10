@@ -1092,10 +1092,10 @@ class _ChannelsScreenState extends State<ChannelsScreen> with ThrottledStateMixi
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
                           // ✅ 只在前10个和最后10个卡片打印日志，避免日志过多
-                          if (index < 10 || index >= channels.length - 10) {
-                            ServiceLocator.log.d(
-                                '[ChannelsScreen] 构建卡片 #$index/${channels.length}');
-                          }
+                          // if (index < 10 || index >= channels.length - 10) {
+                          //   ServiceLocator.log.d(
+                          //       '[ChannelsScreen] 构建卡片 #$index/${channels.length}');
+                          // }
 
                           final channel = channels[index];
 

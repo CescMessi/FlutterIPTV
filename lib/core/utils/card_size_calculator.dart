@@ -52,7 +52,7 @@ class CardSizeCalculator {
           cardsPerRow = 3;
         }
       }
-      ServiceLocator.log.d('频道页卡片计算 - 手机端$mode: 宽度=${availableWidth.toStringAsFixed(1)}px, 每行=$cardsPerRow张', tag: 'CardSize');
+      // ServiceLocator.log.d('频道页卡片计算 - 手机端$mode: 宽度=${availableWidth.toStringAsFixed(1)}px, 每行=$cardsPerRow张', tag: 'CardSize');
       return cardsPerRow;
     } else if (PlatformDetector.isTV) {
       // TV端频道页：适中卡片数量，确保EPG可读
@@ -83,7 +83,7 @@ class CardSizeCalculator {
       } else {
         cardsPerRow = 5;
       }
-      ServiceLocator.log.d('频道页卡片计算 - TV端: 宽度=${availableWidth.toStringAsFixed(1)}px, 每行=$cardsPerRow张', tag: 'CardSize');
+      // ServiceLocator.log.d('频道页卡片计算 - TV端: 宽度=${availableWidth.toStringAsFixed(1)}px, 每行=$cardsPerRow张', tag: 'CardSize');
       return cardsPerRow;
     } else {
       // Windows/Desktop端：适中卡片数量
@@ -112,7 +112,7 @@ class CardSizeCalculator {
       } else {
         cardsPerRow = 3;
       }
-      ServiceLocator.log.d('频道页卡片计算 - Desktop端: 宽度=${availableWidth.toStringAsFixed(1)}px, 每行=$cardsPerRow张', tag: 'CardSize');
+      // ServiceLocator.log.d('频道页卡片计算 - Desktop端: 宽度=${availableWidth.toStringAsFixed(1)}px, 每行=$cardsPerRow张', tag: 'CardSize');
       return cardsPerRow;
     }
   }
