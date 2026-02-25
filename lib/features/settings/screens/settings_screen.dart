@@ -668,25 +668,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             const SizedBox(height: 24),
 
-            // Backup & Restore Section (只在 Mobile 和 Windows 端显示)
-            if (!PlatformDetector.isTV) ...[
-              _buildSectionHeader(AppStrings.of(context)?.backupAndRestore ?? '备份与恢复'),
-              _buildSettingsCard([
-                _buildActionTile(
-                  context,
-                  title: AppStrings.of(context)?.backupAndRestore ?? '备份与恢复',
-                  subtitle: '备份和恢复应用数据',
-                  icon: Icons.backup_rounded,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => BackupScreen()),
-                    );
-                  },
-                ),
-              ]),
-              const SizedBox(height: 24),
-            ],
+            // Backup & Restore Section (所有平台都显示)
+            _buildSectionHeader(AppStrings.of(context)?.backupAndRestore ?? '备份与恢复'),
+            _buildSettingsCard([
+              _buildActionTile(
+                context,
+                title: AppStrings.of(context)?.backupAndRestore ?? '备份与恢复',
+                subtitle: AppStrings.of(context)?.backupAndRestoreSubtitle ?? '备份和恢复应用数据',
+                icon: Icons.backup_rounded,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => BackupScreen()),
+                  );
+                },
+              ),
+            ]),
+            const SizedBox(height: 24),
 
             // Developer & Debug Settings
             _buildSectionHeader(AppStrings.of(context)?.developerAndDebug ?? 'Developer & Debug'),

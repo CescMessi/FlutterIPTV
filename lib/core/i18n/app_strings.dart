@@ -245,6 +245,13 @@ class AppStrings {
   String get appVersion => _localizedValues['appVersion']!;
   String get backupTime => _localizedValues['backupTime']!;
   String get browse => _localizedValues['browse']!;
+  String get webdavConfigTitle => _localizedValues['webdavConfigTitle']!;
+  String get webdavConfigStep1 => _localizedValues['webdavConfigStep1']!;
+  String get webdavConfigStep2 => _localizedValues['webdavConfigStep2']!;
+  String get webdavConfigStep3 => _localizedValues['webdavConfigStep3']!;
+  String get preparingConfig => _localizedValues['preparingConfig']!;
+  String get configReady => _localizedValues['configReady']!;
+  String get backupAndRestoreSubtitle => _localizedValues['backupAndRestoreSubtitle']!;
   // Home screen
   String get recommendedChannels => _localizedValues['recommendedChannels']!;
   String get watchHistory => _localizedValues['watchHistory']!;
@@ -821,6 +828,13 @@ class _AppStringsDelegate extends LocalizationsDelegate<AppStrings> {
     'appVersion': '应用版本',
     'backupTime': '备份时间',
     'browse': '浏览',
+    'webdavConfigTitle': '扫码配置 WebDAV',
+    'webdavConfigStep1': '使用手机扫描二维码',
+    'webdavConfigStep2': '在网页中输入 WebDAV 配置',
+    'webdavConfigStep3': '点击保存，电视自动接收配置',
+    'preparingConfig': '正在准备配置...',
+    'configReady': '配置已就绪',
+    'backupAndRestoreSubtitle': '备份和恢复应用数据',
     // Home screen
     'recommendedChannels': '推荐频道',
     'watchHistory': '观看记录',
@@ -1319,6 +1333,13 @@ class _AppStringsDelegate extends LocalizationsDelegate<AppStrings> {
     'appVersion': 'App Version',
     'backupTime': 'Backup Time',
     'browse': 'Browse',
+    'webdavConfigTitle': 'Scan to Configure WebDAV',
+    'webdavConfigStep1': 'Scan the QR code with your phone',
+    'webdavConfigStep2': 'Enter WebDAV configuration in the web page',
+    'webdavConfigStep3': 'Click save, TV will receive configuration automatically',
+    'preparingConfig': 'Preparing configuration...',
+    'configReady': 'Configuration ready',
+    'backupAndRestoreSubtitle': 'Backup and restore application data',
     // Home screen
     'recommendedChannels': 'Recommended',
     'watchHistory': 'Watch History',
