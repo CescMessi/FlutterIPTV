@@ -7,6 +7,7 @@ import 'package:version/version.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/app_update.dart';
 import 'service_locator.dart';
+import 'http_user_agent.dart';
 
 class UpdateService {
   // 使用 GitHub Pages 静态文件，无请求次数限制
@@ -80,10 +81,10 @@ class UpdateService {
     try {
       final response = await http.get(
         Uri.parse(_versionJsonUrl),
-        headers: {
+        headers: HttpUserAgent.apply({
           'User-Agent': 'FlutterIPTV-App',
           'Cache-Control': 'no-cache',
-        },
+        }),
       ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
@@ -158,6 +159,7 @@ class UpdateService {
       // 下载文件
       final request = http.Request('GET', Uri.parse(downloadUrl));
       request.headers['User-Agent'] = 'FlutterIPTV-App';
+      HttpUserAgent.applyToRequest(request);
       
       final response = await http.Client().send(request);
       

@@ -9,6 +9,7 @@ import 'log_service.dart';
 import 'channel_logo_service.dart';
 import 'redirect_cache_service.dart';
 import 'watch_history_service.dart';
+import 'user_agent_service.dart';
 import '../managers/update_manager.dart';
 
 /// Service Locator for dependency injection
@@ -22,6 +23,7 @@ class ServiceLocator {
   static late ChannelLogoService _channelLogoService;
   static late RedirectCacheService _redirectCache;
   static late WatchHistoryService _watchHistory;
+  static late UserAgentService _userAgent;
 
   static SharedPreferences get prefs => _prefs;
   static DatabaseHelper get database => _database;
@@ -32,6 +34,7 @@ class ServiceLocator {
   static ChannelLogoService get channelLogo => _channelLogoService;
   static RedirectCacheService get redirectCache => _redirectCache;
   static WatchHistoryService get watchHistory => _watchHistory;
+  static UserAgentService get userAgent => _userAgent;
   
   /// Check if log service is initialized
   static bool get isLogInitialized {
@@ -49,6 +52,8 @@ class ServiceLocator {
     // Initialize log service early (after prefs) - pass prefs to avoid circular dependency
     _logService = LogService();
     await _logService.init(prefs: _prefs);
+
+    _userAgent = UserAgentService(_prefs);
 
     // Detect platform (after log service is initialized)
     await PlatformDetector.init();

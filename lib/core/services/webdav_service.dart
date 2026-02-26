@@ -34,6 +34,8 @@ class WebDAVService {
       sendTimeout: const Duration(seconds: 5),
       headers: {
         'Authorization': 'Basic ${_encodeBasicAuth(username, password)}',
+        if (ServiceLocator.userAgent.userAgent != null)
+          'User-Agent': ServiceLocator.userAgent.userAgent!,
       },
     ));
 

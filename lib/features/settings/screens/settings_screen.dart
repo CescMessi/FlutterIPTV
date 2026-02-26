@@ -691,6 +691,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildSettingsCard([
               _buildSelectTile(
                 context,
+                title: 'User-Agent',
+                subtitle: settings.userAgent.isEmpty ? 'Default' : settings.userAgent,
+                icon: Icons.language_rounded,
+                onTap: () => _showUserAgentDialog(context, settings),
+              ),
+              _buildDivider(),
+              _buildSelectTile(
+                context,
                 title: AppStrings.of(context)?.logLevel ?? 'Log Level',
                 subtitle: _getLogLevelLabel(context, settings.logLevel),
                 icon: Icons.bug_report_rounded,
@@ -2328,6 +2336,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
               }).toList(),
             ),
           ),
+        );
+      },
+    );
+  }
+
+  void _showUserAgentDialog(BuildContext context, SettingsProvider settings) {
+    final controller = TextEditingController(text: settings.userAgent);
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppTheme.getSurfaceColor(context),
+          title: Text(
+            'User-Agent',
+            style: TextStyle(color: AppTheme.getTextPrimary(context)),
+          ),
+          content: TextField(
+            controller: controller,
+            style: TextStyle(color: AppTheme.getTextPrimary(context)),
+            decoration: InputDecoration(
+              hintText: '留空使用默认 UA',
+              hintStyle: TextStyle(color: AppTheme.getTextMuted(context)),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(AppStrings.of(context)?.cancel ?? 'Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                await settings.setUserAgent(controller.text);
+                if (dialogContext.mounted) {
+                  Navigator.pop(dialogContext);
+                }
+                _showSuccess(context, 'User-Agent 已保存');
+              },
+              child: Text(AppStrings.of(context)?.save ?? 'Save'),
+            ),
+          ],
         );
       },
     );

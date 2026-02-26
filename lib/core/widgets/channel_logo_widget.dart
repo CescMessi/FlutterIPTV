@@ -72,7 +72,7 @@ class _HttpConnectionPool {
       ..idleTimeout = _HttpPoolConfig.idleTimeout
       ..maxConnectionsPerHost = _HttpPoolConfig.maxConnectionsPerHost
       ..autoUncompress = true
-      ..userAgent = 'FlutterIPTV/1.0';
+      ..userAgent = (ServiceLocator.userAgent.userAgent ?? 'FlutterIPTV/1.0');
 
     _ioClient = io_client.IOClient(_httpClient!);
     _initialized = true;

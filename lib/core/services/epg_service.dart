@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart';
 import 'package:flutter/foundation.dart';
 import './service_locator.dart';
+import 'http_user_agent.dart';
 
 /// EPG 节目信息
 class EpgProgram {
@@ -221,9 +222,12 @@ class EpgService {
     try {
       ServiceLocator.log.d('EPG: Loading from $url');
 
-      final response = await http.get(Uri.parse(url)).timeout(
-            const Duration(seconds: 30),
-          );
+      final response = await http.get(
+        Uri.parse(url),
+        headers: HttpUserAgent.apply(null),
+      ).timeout(
+        const Duration(seconds: 30),
+      );
 
       if (response.statusCode != 200) {
         ServiceLocator.log.d('EPG: HTTP error ${response.statusCode}');

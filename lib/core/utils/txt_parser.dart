@@ -18,6 +18,10 @@ class TXTParser {
       ServiceLocator.log.d('DEBUG: 开始从URL获取TXT播放列表内容: $url');
 
       final dio = Dio();
+      final userAgent = ServiceLocator.userAgent.userAgent;
+      if (userAgent != null) {
+        dio.options.headers['User-Agent'] = userAgent;
+      }
       // Increased timeout for large playlists
       dio.options.connectTimeout = const Duration(seconds: 15);
       dio.options.receiveTimeout = const Duration(seconds: 30);

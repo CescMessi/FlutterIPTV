@@ -33,6 +33,10 @@ class M3UParser {
 
       // Use Dio for better handling of large files and redirects
       final dio = Dio();
+      final userAgent = ServiceLocator.userAgent.userAgent;
+      if (userAgent != null) {
+        dio.options.headers['User-Agent'] = userAgent;
+      }
       // Increased timeout for large playlists
       dio.options.connectTimeout = const Duration(seconds: 15);
       dio.options.receiveTimeout = const Duration(seconds: 30);

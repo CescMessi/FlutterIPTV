@@ -1296,6 +1296,10 @@ class PlaylistProvider extends ChangeNotifier {
   /// 从URL下载内容
   Future<String> _downloadContentFromUrl(String url) async {
     final dio = Dio();
+    final userAgent = ServiceLocator.userAgent.userAgent;
+    if (userAgent != null) {
+      dio.options.headers['User-Agent'] = userAgent;
+    }
     final response = await dio.get(
       url,
       options: Options(
