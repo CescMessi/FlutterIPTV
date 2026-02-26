@@ -135,7 +135,11 @@ class RedirectCacheService {
       client.connectionTimeout = const Duration(seconds: 2);
       
       final request = await client.getUrl(Uri.parse(url));
-      request.headers.set(HttpHeaders.userAgentHeader, 'Wget/1.21.3');
+      final userAgent = ServiceLocator.userAgent.userAgent;
+      request.headers.set(
+        HttpHeaders.userAgentHeader,
+        userAgent ?? 'Wget/1.21.3',
+      );
       request.followRedirects = false;
       
       final response = await request.close().timeout(const Duration(seconds: 2));
