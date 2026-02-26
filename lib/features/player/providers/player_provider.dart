@@ -292,7 +292,15 @@ class PlayerProvider extends ChangeNotifier {
         ServiceLocator.log.d('>>> 重试: 使用播放地址: $realUrl', tag: 'PlayerProvider');
         
         final playStartTime = DateTime.now();
-        await _mediaKitPlayer?.open(Media(realUrl));
+        await _mediaKitPlayer?.open(
+          Media(
+            realUrl,
+            httpHeaders: {
+              if (ServiceLocator.userAgent.userAgent != null)
+                'User-Agent': ServiceLocator.userAgent.userAgent!,
+            },
+          ),
+        );
         
         final playTime = DateTime.now().difference(playStartTime).inMilliseconds;
         final totalTime = DateTime.now().difference(startTime).inMilliseconds;
@@ -874,9 +882,17 @@ class PlayerProvider extends ChangeNotifier {
         // 开始播放
         ServiceLocator.log.i('>>> Start initializing player', tag: 'PlayerProvider');
         final playStartTime = DateTime.now();
-        
-        await _mediaKitPlayer?.open(Media(realUrl));
-        
+
+        await _mediaKitPlayer?.open(
+          Media(
+            realUrl,
+            httpHeaders: {
+              if (ServiceLocator.userAgent.userAgent != null)
+                'User-Agent': ServiceLocator.userAgent.userAgent!,
+            },
+          ),
+        );
+
         final playTime = DateTime.now().difference(playStartTime).inMilliseconds;
         ServiceLocator.log.i('>>> 播放器初始化完成，耗时: ${playTime}ms', tag: 'PlayerProvider');
         
@@ -983,9 +999,17 @@ class PlayerProvider extends ChangeNotifier {
       // 开始播放
       ServiceLocator.log.i('>>> Start initializing player', tag: 'PlayerProvider');
       final playStartTime = DateTime.now();
-      
-      await _mediaKitPlayer?.open(Media(realUrl));
-      
+
+      await _mediaKitPlayer?.open(
+        Media(
+          realUrl,
+          httpHeaders: {
+            if (ServiceLocator.userAgent.userAgent != null)
+              'User-Agent': ServiceLocator.userAgent.userAgent!,
+          },
+        ),
+      );
+
       final playTime = DateTime.now().difference(playStartTime).inMilliseconds;
       final totalTime = DateTime.now().difference(startTime).inMilliseconds;
         ServiceLocator.log.i('>>> 播放器初始化完成，耗时: ${playTime}ms', tag: 'PlayerProvider');
@@ -1251,7 +1275,15 @@ class PlayerProvider extends ChangeNotifier {
         ServiceLocator.log.d('>>> 切换源: 使用播放地址: $realUrl', tag: 'PlayerProvider');
         
         final playStartTime = DateTime.now();
-        await _mediaKitPlayer?.open(Media(realUrl));
+        await _mediaKitPlayer?.open(
+          Media(
+            realUrl,
+            httpHeaders: {
+              if (ServiceLocator.userAgent.userAgent != null)
+                'User-Agent': ServiceLocator.userAgent.userAgent!,
+            },
+          ),
+        );
         
         final playTime = DateTime.now().difference(playStartTime).inMilliseconds;
         final totalTime = DateTime.now().difference(startTime).inMilliseconds;
