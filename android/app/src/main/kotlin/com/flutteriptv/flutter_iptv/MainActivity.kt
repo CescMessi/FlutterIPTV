@@ -140,6 +140,7 @@ class MainActivity: FlutterFragmentActivity() {
                     val showVideoInfo = call.argument<Boolean>("showVideoInfo") ?: true
                     val progressBarMode = call.argument<String>("progressBarMode") ?: "auto" // 进度条显示模式
                     val showChannelName = call.argument<Boolean>("showChannelName") ?: false // 多屏频道名称显示
+                    val userAgent = call.argument<String>("userAgent")
                     
                     // 保存showChannelName设置，用于从单屏进入分屏时使用
                     lastShowChannelName = showChannelName
@@ -147,7 +148,7 @@ class MainActivity: FlutterFragmentActivity() {
                     if (url != null) {
                         Log.d(TAG, "Launching native player fragment: $name (index $index of ${urls?.size ?: 0}, isDlna=$isDlnaMode, logos=${logos?.size ?: 0}, isSeekable=${isSeekable?.getOrNull(index)}, progressBarMode=$progressBarMode, showChannelName=$showChannelName)")
                         try {
-                            showPlayerFragment(url, name, index, urls, names, groups, sources, logos, epgIds, isSeekable, isDlnaMode, bufferStrength, showFps, showClock, showNetworkSpeed, showVideoInfo, progressBarMode)
+                            showPlayerFragment(url, name, index, urls, names, groups, sources, logos, epgIds, isSeekable, isDlnaMode, bufferStrength, showFps, showClock, showNetworkSpeed, showVideoInfo, progressBarMode, userAgent = userAgent)
                             result.success(true)
                         } catch (e: Exception) {
                             Log.e(TAG, "Failed to launch player", e)
@@ -307,7 +308,8 @@ class MainActivity: FlutterFragmentActivity() {
         showNetworkSpeed: Boolean = true,
         showVideoInfo: Boolean = true,
         progressBarMode: String = "auto",  // 进度条显示模式
-        initialSourceIndex: Int = 0  // 初始源索引
+        initialSourceIndex: Int = 0,  // 初始源索引
+        userAgent: String? = null,
     ) {
         Log.d(TAG, "showPlayerFragment isDlnaMode=$isDlnaMode, bufferStrength=$bufferStrength, logos=${logos?.size ?: 0}, sourceIndex=$initialSourceIndex, isSeekable=${isSeekable?.getOrNull(index)}, progressBarMode=$progressBarMode")
         
@@ -361,7 +363,8 @@ class MainActivity: FlutterFragmentActivity() {
             showNetworkSpeed,
             showVideoInfo,
             progressBarMode,  // 传递进度条显示模式
-            initialSourceIndex  // 传递初始源索引
+            initialSourceIndex,  // 传递初始源索引
+            userAgent,
         ).apply {
             onCloseListener = {
                 runOnUiThread {

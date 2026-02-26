@@ -125,6 +125,7 @@ class NativePlayerFragment : Fragment() {
     private var isDlnaMode: Boolean = false
     private var bufferStrength: String = "fast"
     private var progressBarMode: String = "auto" // 进度条显示模式：auto, always, never
+    private var userAgent: String? = null
     
     // Category data
     private var categories: MutableList<CategoryItem> = mutableListOf()
@@ -215,6 +216,7 @@ class NativePlayerFragment : Fragment() {
         private const val ARG_SHOW_VIDEO_INFO = "show_video_info"
         private const val ARG_PROGRESS_BAR_MODE = "progress_bar_mode"
         private const val ARG_INITIAL_SOURCE_INDEX = "initial_source_index"
+        private const val ARG_USER_AGENT = "user_agent"
 
         fun newInstance(
             videoUrl: String,
@@ -234,7 +236,8 @@ class NativePlayerFragment : Fragment() {
             showNetworkSpeed: Boolean = true,
             showVideoInfo: Boolean = true,
             progressBarMode: String = "auto",
-            initialSourceIndex: Int = 0
+            initialSourceIndex: Int = 0,
+            userAgent: String? = null,
         ): NativePlayerFragment {
             return NativePlayerFragment().apply {
                 arguments = Bundle().apply {
@@ -256,6 +259,9 @@ class NativePlayerFragment : Fragment() {
                     putBoolean(ARG_SHOW_VIDEO_INFO, showVideoInfo)
                     putString(ARG_PROGRESS_BAR_MODE, progressBarMode)
                     putInt(ARG_INITIAL_SOURCE_INDEX, initialSourceIndex)
+                    if (!userAgent.isNullOrBlank()) {
+                        putString(ARG_USER_AGENT, userAgent)
+                    }
                 }
             }
         }
@@ -292,6 +298,7 @@ class NativePlayerFragment : Fragment() {
             isDlnaMode = it.getBoolean(ARG_IS_DLNA_MODE, false)
             bufferStrength = it.getString(ARG_BUFFER_STRENGTH, "fast") ?: "fast"
             progressBarMode = it.getString(ARG_PROGRESS_BAR_MODE, "auto") ?: "auto" // 读取进度条显示模式
+            userAgent = it.getString(ARG_USER_AGENT)
             showFps = it.getBoolean(ARG_SHOW_FPS, true)
             showClock = it.getBoolean(ARG_SHOW_CLOCK, true)
             showNetworkSpeed = it.getBoolean(ARG_SHOW_NETWORK_SPEED, true)
@@ -1289,11 +1296,13 @@ class NativePlayerFragment : Fragment() {
             .build()
         
         // 配置 HTTP 数据源，设置合理的超时时间
+        val effectiveUserAgent = if (!userAgent.isNullOrBlank()) userAgent else "Wget/1.21.3"
+
         val dataSourceFactory = DefaultHttpDataSource.Factory()
             .setConnectTimeoutMs(5000)  // 8秒连接超时（考虑网络延迟）
             .setReadTimeoutMs(5000)    // 15秒读取超时
             .setAllowCrossProtocolRedirects(true)  // 允许跨协议重定向 (HTTP→HTTPS)
-            .setUserAgent("Wget/1.21.3")  // 使用与302解析相同的User-Agent
+            .setUserAgent(effectiveUserAgent)  // User-Agent 可由 Flutter 设置覆盖
         
         // 配置 MediaSourceFactory 支持 HLS/DASH 等流媒体格式
         val mediaSourceFactory = DefaultMediaSourceFactory(requireContext())

@@ -481,11 +481,6 @@ class PlayerProvider extends ChangeNotifier {
     _hwdecMode = effectiveSoftware ? 'no' : _configuredHwdec;
     _vo = vo ?? 'auto';
 
-    final userAgent = ServiceLocator.userAgent.userAgent;
-    if (userAgent != null) {
-      _mediaKitPlayer!.setProperty('user-agent', userAgent);
-    }
-
     _videoController = VideoController(_mediaKitPlayer!, configuration: config);
     _setupMediaKitListeners();
     _updateDebugInfo();

@@ -350,6 +350,7 @@ class NativePlayerChannel {
         'showVideoInfo': showVideoInfo,
         'progressBarMode': progressBarMode, // 传递进度条显示模式
         'showChannelName': showChannelName, // 传递多屏频道名称显示设置
+        'userAgent': ServiceLocator.userAgent.userAgent, // 可选：覆盖播放器UA
       });
       ServiceLocator.log.d('NativePlayerChannel: launch result=$result');
       return result ?? false;

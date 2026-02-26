@@ -336,10 +336,6 @@ class MultiScreenProvider extends ChangeNotifier {
       ),
     );
 
-    final userAgent = ServiceLocator.userAgent.userAgent;
-    if (userAgent != null) {
-      player.setProperty('user-agent', userAgent);
-    }
     screen.player = player;
 
     final effectiveSoftware = useSoftwareDecoding || _decodingMode == 'software';
