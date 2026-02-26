@@ -431,10 +431,6 @@ class PlayerProvider extends ChangeNotifier {
       configuration: PlayerConfiguration(
         bufferSize: bufferSize,
         vo: vo,
-        options: {
-          if (ServiceLocator.userAgent.userAgent != null)
-            'user-agent': ServiceLocator.userAgent.userAgent!,
-        },
         // 设置网络超时（可选）
         // timeout: 3 秒连接最长超时
         // 根据日志级别启用 mpv 日志
@@ -484,6 +480,11 @@ class PlayerProvider extends ChangeNotifier {
     // 默认显示为配置值，后续可被实际运行时覆盖
     _hwdecMode = effectiveSoftware ? 'no' : _configuredHwdec;
     _vo = vo ?? 'auto';
+
+    final userAgent = ServiceLocator.userAgent.userAgent;
+    if (userAgent != null) {
+      _mediaKitPlayer!.setProperty('user-agent', userAgent);
+    }
 
     _videoController = VideoController(_mediaKitPlayer!, configuration: config);
     _setupMediaKitListeners();
