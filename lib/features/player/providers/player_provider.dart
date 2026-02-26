@@ -431,6 +431,10 @@ class PlayerProvider extends ChangeNotifier {
       configuration: PlayerConfiguration(
         bufferSize: bufferSize,
         vo: vo,
+        options: {
+          if (ServiceLocator.userAgent.userAgent != null)
+            'user-agent': ServiceLocator.userAgent.userAgent!,
+        },
         // 设置网络超时（可选）
         // timeout: 3 秒连接最长超时
         // 根据日志级别启用 mpv 日志

@@ -333,6 +333,10 @@ class MultiScreenProvider extends ChangeNotifier {
       configuration: PlayerConfiguration(
         bufferSize: bufferSize,
         vo: vo,
+        options: {
+          if (ServiceLocator.userAgent.userAgent != null)
+            'user-agent': ServiceLocator.userAgent.userAgent!,
+        },
       ),
     );
     screen.player = player;
