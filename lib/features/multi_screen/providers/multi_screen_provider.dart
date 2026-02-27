@@ -282,7 +282,15 @@ class MultiScreenProvider extends ChangeNotifier {
       ServiceLocator.log.d('MultiScreenProvider: Opening media for screen $screenIndex: $realUrl');
       final playStartTime = DateTime.now();
       
-      await screen.player!.open(Media(realUrl));
+      await screen.player!.open(
+        Media(
+          realUrl,
+          httpHeaders: {
+            if (ServiceLocator.userAgent.userAgent != null)
+              'User-Agent': ServiceLocator.userAgent.userAgent!,
+          },
+        ),
+      );
       
       final playTime = DateTime.now().difference(playStartTime).inMilliseconds;
       ServiceLocator.log.d('MultiScreenProvider: >>> 屏幕$screenIndex 播放器初始化完成，耗时: ${playTime}ms');

@@ -68,7 +68,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   void _loadAndPlay() {
     try {
-      _player.open(Media(widget.channel.url));
+      _player.open(
+        Media(
+          widget.channel.url,
+          httpHeaders: {
+            if (ServiceLocator.userAgent.userAgent != null)
+              'User-Agent': ServiceLocator.userAgent.userAgent!,
+          },
+        ),
+      );
     } catch (e) {
       ServiceLocator.log.d('Error loading channel: $e');
     }
