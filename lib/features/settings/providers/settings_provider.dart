@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../../core/services/service_locator.dart';
 import '../../../core/services/log_service.dart';
+import '../../../core/theme/app_theme.dart';
 
 class SettingsProvider extends ChangeNotifier {
   // Keys for SharedPreferences
@@ -41,6 +42,7 @@ class SettingsProvider extends ChangeNotifier {
   static const String _keyLastMultiScreenSourceIndexes =
       'last_multi_screen_source_indexes'; // comma-separated source indexes
   static const String _keyShowMultiScreenChannelName = 'show_multi_screen_channel_name'; // 多屏播放是否显示频道名称
+  static const String _keySeekStepSeconds = 'seek_step_seconds'; // 快进/快退跨度（秒）
   static const String _keyDarkColorScheme = 'dark_color_scheme';
   static const String _keyLightColorScheme = 'light_color_scheme';
   static const String _keyFontFamily = 'font_family';
@@ -88,9 +90,10 @@ class SettingsProvider extends ChangeNotifier {
   List<int?> _lastMultiScreenChannels = [null, null, null, null]; // 分屏频道ID列表
   List<int> _lastMultiScreenSourceIndexes = [0, 0, 0, 0]; // 分屏源索引列表
   bool _showMultiScreenChannelName = false; // 多屏播放是否显示频道名称（默认关闭）
+  int _seekStepSeconds = 10; // 快进/快退跨度（秒），默认10秒
   String _darkColorScheme = 'ocean'; // 黑暗模式配色方案（默认海洋）
   String _lightColorScheme = 'sky'; // 明亮模式配色方案（默认天空）
-  String _fontFamily = 'Arial'; // 字体设置（默认Arial，英文环境）
+  String _fontFamily = 'System'; // 字体设置（默认System，使用系统字体）
   bool _simpleMenu = true; // 是否使用简单菜单栏（不展开）- 默认启用
   String _logLevel = 'off'; // 日志级别：debug, release, off - 默认关闭
   String _mobileOrientation = 'portrait'; // 手机端屏幕方向：portrait, landscape, auto - 默认竖屏
@@ -133,6 +136,7 @@ class SettingsProvider extends ChangeNotifier {
   List<int?> get lastMultiScreenChannels => _lastMultiScreenChannels;
   List<int> get lastMultiScreenSourceIndexes => _lastMultiScreenSourceIndexes;
   bool get showMultiScreenChannelName => _showMultiScreenChannelName;
+  int get seekStepSeconds => _seekStepSeconds;
   String get darkColorScheme => _darkColorScheme;
   String get lightColorScheme => _lightColorScheme;
   String get fontFamily => _fontFamily;
@@ -157,7 +161,7 @@ class SettingsProvider extends ChangeNotifier {
     _checkVersionUpdate();
   }
 
-  void _loadSettings() {
+  Future<void> _loadSettings() async {
     final prefs = ServiceLocator.prefs;
 
     _themeMode = prefs.getString(_keyThemeMode) ?? 'dark';
@@ -198,6 +202,7 @@ class SettingsProvider extends ChangeNotifier {
     _activeScreenIndex = prefs.getInt(_keyActiveScreenIndex) ?? 0;
     _lastPlayMode = prefs.getString(_keyLastPlayMode) ?? 'single';
     _showMultiScreenChannelName = prefs.getBool(_keyShowMultiScreenChannelName) ?? false;
+    _seekStepSeconds = prefs.getInt(_keySeekStepSeconds) ?? 10;
     ServiceLocator.log.d('SettingsProvider: loaded showMultiScreenChannelName=$_showMultiScreenChannelName');
     
     // 加载分屏频道ID列表
@@ -239,6 +244,22 @@ class SettingsProvider extends ChangeNotifier {
     
     // 加载字体设置
     _fontFamily = prefs.getString(_keyFontFamily) ?? 'System';
+    
+    // ✅ 字体迁移逻辑：将旧的侵权字体自动迁移到System
+    if (AppTheme.fontMigrationMap.containsKey(_fontFamily)) {
+      final oldFont = _fontFamily;
+      _fontFamily = AppTheme.fontMigrationMap[_fontFamily]!;
+      ServiceLocator.log.i('字体迁移: $oldFont → $_fontFamily');
+      // 保存迁移后的字体，避免下次再检查
+      await prefs.setString(_keyFontFamily, _fontFamily);
+    }
+    
+    // 再次检查字体是否有效（防御性编程）
+    if (!AppTheme.fontMap.containsKey(_fontFamily)) {
+      ServiceLocator.log.w('字体无效: $_fontFamily，重置为System');
+      _fontFamily = 'System';
+      await prefs.setString(_keyFontFamily, _fontFamily);
+    }
     
     // 加载简单菜单设置
     _simpleMenu = prefs.getBool(_keySimpleMenu) ?? true;
@@ -337,6 +358,7 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.setString(_keyLastMultiScreenSourceIndexes,
         _lastMultiScreenSourceIndexes.map((e) => e.toString()).join(','));
     await prefs.setBool(_keyShowMultiScreenChannelName, _showMultiScreenChannelName);
+    await prefs.setInt(_keySeekStepSeconds, _seekStepSeconds);
     await prefs.setString(_keyDarkColorScheme, _darkColorScheme);
     await prefs.setString(_keyLightColorScheme, _lightColorScheme);
     await prefs.setString(_keyFontFamily, _fontFamily);
@@ -552,6 +574,15 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 设置快进/快退跨度（秒）
+  Future<void> setSeekStepSeconds(int seconds) async {
+    if (seconds == 5 || seconds == 10 || seconds == 30 || seconds == 60 || seconds == 120) {
+      _seekStepSeconds = seconds;
+      await _saveSettings();
+      notifyListeners();
+    }
+  }
+
   /// 设置上次播放模式
   Future<void> setLastPlayMode(String mode) async {
     _lastPlayMode = mode;
@@ -726,13 +757,14 @@ class SettingsProvider extends ChangeNotifier {
     _showNetworkSpeed = true;
     _showVideoInfo = true;
     _progressBarMode = 'auto';
+    _seekStepSeconds = 10;
     _enableMultiScreen = true;
     _defaultScreenPosition = 1;
     _activeScreenIndex = 0;
     _lastMultiScreenSourceIndexes = [0, 0, 0, 0];
     _darkColorScheme = 'ocean';
     _lightColorScheme = 'sky';
-    _fontFamily = 'Arial';
+    _fontFamily = 'System';
     _userAgent = '';
 
     await _saveSettings();

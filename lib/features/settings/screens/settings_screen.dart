@@ -447,6 +447,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icons.linear_scale_rounded,
                 onTap: () => _showProgressBarModeDialog(context, settings),
               ),
+              if (PlatformDetector.isTV) ...[
+                _buildDivider(),
+                _buildSelectTile(
+                  context,
+                  title: AppStrings.of(context)?.seekStepSeconds ?? '快进/快退跨度',
+                  subtitle: _getSeekStepLabel(context, settings.seekStepSeconds),
+                  icon: Icons.fast_forward_rounded,
+                  onTap: () => _showSeekStepDialog(context, settings),
+                ),
+              ],
               if (PlatformDetector.isDesktop || PlatformDetector.isTV) ...[
                 _buildDivider(),
                 _buildSwitchTile(
@@ -1893,6 +1903,87 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  void _showSeekStepDialog(BuildContext context, SettingsProvider settings) {
+    final style = _getDialogStyle(context);
+    final options = [5, 10, 30, 60, 120];
+    final strings = AppStrings.of(context);
+    final labels = {
+      5: strings?.seekStep5s ?? '5秒',
+      10: strings?.seekStep10s ?? '10秒',
+      30: strings?.seekStep30s ?? '30秒',
+      60: strings?.seekStep60s ?? '60秒',
+      120: strings?.seekStep120s ?? '120秒',
+    };
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: style['backgroundColor'],
+          shape: style['shape'],
+          titlePadding: style['titlePadding'],
+          title: Text(
+            strings?.seekStepSeconds ?? '快进/快退跨度',
+            style: TextStyle(
+              color: AppTheme.getTextPrimary(context),
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          contentPadding: style['contentPadding'],
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: options.map((seconds) {
+                return RadioListTile<int>(
+                  title: Text(
+                    labels[seconds] ?? '$seconds秒',
+                    style: TextStyle(
+                      color: AppTheme.getTextPrimary(dialogContext),
+                      fontSize: 14,
+                    ),
+                  ),
+                  value: seconds,
+                  groupValue: settings.seekStepSeconds,
+                  onChanged: (value) {
+                    if (value != null) {
+                      settings.setSeekStepSeconds(value);
+                      Navigator.pop(dialogContext);
+                      final message = (strings?.seekStepSet ?? '快进/快退跨度已设置为：{seconds}秒')
+                          .replaceFirst('{seconds}', value.toString());
+                      _showSuccess(context, message);
+                    }
+                  },
+                  activeColor: AppTheme.getPrimaryColor(dialogContext),
+                  contentPadding: style['itemPadding'],
+                  visualDensity: style['visualDensity'],
+                );
+              }).toList(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _getSeekStepLabel(BuildContext context, int seconds) {
+    final strings = AppStrings.of(context);
+    switch (seconds) {
+      case 5:
+        return strings?.seekStep5s ?? '5秒';
+      case 10:
+        return strings?.seekStep10s ?? '10秒';
+      case 30:
+        return strings?.seekStep30s ?? '30秒';
+      case 60:
+        return strings?.seekStep60s ?? '60秒';
+      case 120:
+        return strings?.seekStep120s ?? '120秒';
+      default:
+        return '$seconds秒';
+    }
+  }
+
   void _showBufferSizeDialog(BuildContext context, SettingsProvider settings) {
     final options = [10, 20, 30, 45, 60];
 
@@ -2682,35 +2773,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     switch (fontFamily) {
       case 'System':
         return isChinese ? '系统字体' : 'System Font';
-      // 中文字体
-      case 'Microsoft YaHei':
-        return isChinese ? '微软雅黑' : 'Microsoft YaHei';
-      case 'SimHei':
-        return isChinese ? '黑体' : 'SimHei';
-      case 'SimSun':
-        return isChinese ? '宋体' : 'SimSun';
-      case 'KaiTi':
-        return isChinese ? '楷体' : 'KaiTi';
-      case 'FangSong':
-        return isChinese ? '仿宋' : 'FangSong';
-      // 英文字体
-      case 'Arial':
-        return 'Arial';
-      case 'Calibri':
-        return 'Calibri';
-      case 'Georgia':
-        return 'Georgia';
-      case 'Verdana':
-        return 'Verdana';
-      case 'Tahoma':
-        return 'Tahoma';
-      case 'Times New Roman':
-        return 'Times New Roman';
-      case 'Segoe UI':
-        return 'Segoe UI';
-      case 'Impact':
-        return 'Impact';
+      case 'Source Han Sans SC Normal':
+        return isChinese ? '思源黑体 常规' : 'Source Han Sans SC Normal';
+      case 'Source Han Sans SC Bold':
+        return isChinese ? '思源黑体 粗体' : 'Source Han Sans SC Bold';
       default:
+        // 如果是旧字体，显示为"思源黑体 粗体"
+        if (AppTheme.fontMigrationMap.containsKey(fontFamily)) {
+          return isChinese ? '思源黑体 粗体' : 'Source Han Sans SC Bold';
+        }
         return fontFamily;
     }
   }
