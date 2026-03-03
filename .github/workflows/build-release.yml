@@ -87,11 +87,55 @@ jobs:
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
         shell: pwsh
       
+      - name: Create Portable ZIP
+        run: |
+          # Create portable marker file
+          "This is a portable version. Data will be stored in the application directory." | Out-File "build/windows/x64/runner/Release/portable.txt" -Encoding UTF8
+          
+          # Create README for portable version
+          @"
+          FlutterIPTV Portable Version
+          =============================
+          
+          This is a portable version that does not require installation.
+          
+          Usage:
+          1. Extract all files to any folder
+          2. Run flutter_iptv.exe
+          3. All data will be stored in the application directory
+          
+          Note: This version is suitable for USB drives or environments without admin rights.
+          
+          ---
+          
+          FlutterIPTV 便携版
+          ==================
+          
+          这是一个无需安装的便携版本。
+          
+          使用方法：
+          1. 解压所有文件到任意文件夹
+          2. 运行 flutter_iptv.exe
+          3. 所有数据将保存在程序目录中
+          
+          注意：此版本适合U盘携带或无管理员权限的环境使用。
+          "@ | Out-File "build/windows/x64/runner/Release/README.txt" -Encoding UTF8
+          
+          # Create ZIP package
+          Compress-Archive -Path "build/windows/x64/runner/Release/*" `
+                           -DestinationPath "flutteriptv-Windows-x64-Portable.zip" `
+                           -CompressionLevel Optimal
+          
+          Write-Host "✅ Portable ZIP created successfully"
+        shell: pwsh
+      
       - name: Upload Windows Artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows-release
-          path: flutteriptv-Windows-x64-Setup.exe
+          path: |
+            flutteriptv-Windows-x64-Setup.exe
+            flutteriptv-Windows-x64-Portable.zip
           retention-days: 5
 
   # ============================================
@@ -202,8 +246,8 @@ jobs:
           
           # Read changelog from version.json
           if [ -f "docs/version.json" ]; then
-            CHANGELOG_ZH=$(jq -r '.changelog.zh' docs/version.json | sed 's/\\n/\n/g')
-            CHANGELOG_EN=$(jq -r '.changelog.en' docs/version.json | sed 's/\\n/\n/g')
+            CHANGELOG_ZH=$(jq -r '.changelog.zh' docs/version.json)
+            CHANGELOG_EN=$(jq -r '.changelog.en' docs/version.json)
           else
             # Fallback to git commits if version.json not found
             PREV_TAG=$(git tag -l 'v*' --sort=-v:refname | grep -v "^${TAG}$" | head -1)
@@ -229,26 +273,69 @@ jobs:
           
           ---
           
+          ### ⚠️ 重要声明 Important Notice
+          
+          **中文：**
+          
+          本软件仅供学习交流使用，请勿用于商业用途。
+          
+          - 本软件不提供任何视频内容，所有内容均来自用户自行添加的播放列表
+          - 用户需自行承担使用本软件观看内容的法律责任
+          - 请遵守当地法律法规，支持正版内容
+          - 本软件使用开源字体（思源黑体），不包含任何侵权字体
+          
+          **English:**
+          
+          This software is for learning and communication purposes only. Do not use it for commercial purposes.
+          
+          - This software does not provide any video content. All content comes from playlists added by users themselves
+          - Users are responsible for the legal consequences of using this software to watch content
+          - Please comply with local laws and regulations and support genuine content
+          - This software uses open source fonts (Source Han Sans) and does not contain any infringing fonts
+          
+          ---
+          
           ### 📥 下载 Downloads
           
           #### 🖥️ Windows
-          | 文件 | 说明 |
+          | 文件 File | 说明 Description |
           |------|------|
-          | [flutteriptv-Windows-x64-Setup.exe](${BASE_URL}/flutteriptv-Windows-x64-Setup.exe) | Windows 64位安装包 |
+          | [flutteriptv-Windows-x64-Setup.exe](${BASE_URL}/flutteriptv-Windows-x64-Setup.exe) | Windows 64位安装包 (Installer) |
+          | [flutteriptv-Windows-x64-Portable.zip](${BASE_URL}/flutteriptv-Windows-x64-Portable.zip) | Windows 64位便携版 (Portable, no installation required) |
           
-          #### 📱 Android 手机版
-          | 文件 | 说明 |
+          **便携版说明 Portable Version Notes:**
+          - ✅ 无需安装，解压即用 No installation required, extract and run
+          - ✅ 适合U盘携带 Suitable for USB drives
+          - ✅ 数据保存在程序目录 Data stored in application directory
+          - ✅ 无需管理员权限 No admin rights required
+          
+          #### 📱 Android 手机版 Mobile
+          | 文件 File | 说明 Description |
           |------|------|
-          | [flutteriptv-Android-Mobile-arm64-v8a.apk](${BASE_URL}/flutteriptv-Android-Mobile-arm64-v8a.apk) | 64位 ARM 设备（推荐） |
-          | [flutteriptv-Android-Mobile-armeabi-v7a.apk](${BASE_URL}/flutteriptv-Android-Mobile-armeabi-v7a.apk) | 32位 ARM 设备 |
-          | [flutteriptv-Android-Mobile-x86_64.apk](${BASE_URL}/flutteriptv-Android-Mobile-x86_64.apk) | x86_64 模拟器 |
+          | [flutteriptv-Android-Mobile-arm64-v8a.apk](${BASE_URL}/flutteriptv-Android-Mobile-arm64-v8a.apk) | 64位 ARM 设备（推荐 Recommended） |
+          | [flutteriptv-Android-Mobile-armeabi-v7a.apk](${BASE_URL}/flutteriptv-Android-Mobile-armeabi-v7a.apk) | 32位 ARM 设备 32-bit ARM devices |
+          | [flutteriptv-Android-Mobile-x86_64.apk](${BASE_URL}/flutteriptv-Android-Mobile-x86_64.apk) | x86_64 模拟器 Emulator |
           
           #### 📺 Android TV 电视版
-          | 文件 | 说明 |
+          | 文件 File | 说明 Description |
           |------|------|
-          | [flutteriptv-AndroidTV-arm64-v8a.apk](${BASE_URL}/flutteriptv-AndroidTV-arm64-v8a.apk) | 64位 ARM 电视（推荐） |
-          | [flutteriptv-AndroidTV-armeabi-v7a.apk](${BASE_URL}/flutteriptv-AndroidTV-armeabi-v7a.apk) | 32位 ARM 电视 |
-          | [flutteriptv-AndroidTV-x86_64.apk](${BASE_URL}/flutteriptv-AndroidTV-x86_64.apk) | x86_64 电视模拟器 |
+          | [flutteriptv-AndroidTV-arm64-v8a.apk](${BASE_URL}/flutteriptv-AndroidTV-arm64-v8a.apk) | 64位 ARM 电视（推荐 Recommended） |
+          | [flutteriptv-AndroidTV-armeabi-v7a.apk](${BASE_URL}/flutteriptv-AndroidTV-armeabi-v7a.apk) | 32位 ARM 电视 32-bit ARM TV |
+          | [flutteriptv-AndroidTV-x86_64.apk](${BASE_URL}/flutteriptv-AndroidTV-x86_64.apk) | x86_64 电视模拟器 TV Emulator |
+          
+          ---
+          
+          ### 📖 使用说明 Usage Guide
+          
+          1. **添加播放列表 Add Playlist**: 设置 → 播放列表管理 → 添加 M3U/M3U8 链接
+          2. **观看直播 Watch Live**: 选择频道即可播放
+          3. **收藏频道 Favorite**: 长按频道添加到收藏夹
+          4. **多屏播放 Multi-screen** (Desktop/TV): 支持2x2分屏同时观看4个频道
+          
+          ### 🐛 问题反馈 Bug Report
+          
+          如遇到问题，请在 [Issues](https://github.com/${{ github.repository }}/issues) 页面反馈。
+          If you encounter any problems, please report them on the [Issues](https://github.com/${{ github.repository }}/issues) page.
           EOF
       
       - name: Create Release
@@ -262,6 +349,7 @@ jobs:
           prerelease: false
           files: |
             release-assets/windows-release/flutteriptv-Windows-x64-Setup.exe
+            release-assets/windows-release/flutteriptv-Windows-x64-Portable.zip
             release-assets/android-release/flutteriptv-Android-Mobile-arm64-v8a.apk
             release-assets/android-release/flutteriptv-Android-Mobile-armeabi-v7a.apk
             release-assets/android-release/flutteriptv-Android-Mobile-x86_64.apk
