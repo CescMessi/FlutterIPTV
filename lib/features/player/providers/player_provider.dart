@@ -1122,27 +1122,17 @@ class PlayerProvider extends ChangeNotifier {
     if (_useNativePlayer || _mediaKitPlayer == null) return;
     if (index < 0 || index >= _audioTracks.length) return;
     _currentAudioTrack = index;
-    _mediaKitPlayer?.setProperty('aid', index + 1);
+    _mediaKitPlayer?.setAudioTrack(_audioTracks[index]);
     notifyListeners();
   }
 
   void toggleAudioPassthrough() {
-    if (_useNativePlayer || _mediaKitPlayer == null) return;
     _audioPassthrough = !_audioPassthrough;
-    _mediaKitPlayer?.setProperty(
-      'audio-passthrough',
-      _audioPassthrough ? 'yes' : 'no',
-    );
     notifyListeners();
   }
 
   void setAudioPassthrough(bool enabled) {
-    if (_useNativePlayer || _mediaKitPlayer == null) return;
     _audioPassthrough = enabled;
-    _mediaKitPlayer?.setProperty(
-      'audio-passthrough',
-      enabled ? 'yes' : 'no',
-    );
     notifyListeners();
   }
 
