@@ -40,6 +40,10 @@ class PlayerProvider extends ChangeNotifier {
   bool _isFullscreen = false;
   bool _controlsVisible = true;
   int _volumeBoostDb = 0;
+  List<AudioTrack> _audioTracks = [];
+  int _currentAudioTrack = -1;
+  bool _audioPassthrough = false;
+  String _audioCodec = '';
 
   int _retryCount = 0;
   static const int _maxRetries = 2;  // 改为重试2次
@@ -73,6 +77,11 @@ class PlayerProvider extends ChangeNotifier {
   double get playbackSpeed => _playbackSpeed;
   bool get isFullscreen => _isFullscreen;
   bool get controlsVisible => _controlsVisible;
+
+  List<AudioTrack> get audioTracks => _audioTracks;
+  int get currentAudioTrack => _currentAudioTrack;
+  bool get audioPassthrough => _audioPassthrough;
+  String get audioCodec => _audioCodec;
 
   bool get isPlaying => _state == PlayerState.playing;
   bool get isLoading => _state == PlayerState.loading || _state == PlayerState.buffering;
@@ -590,25 +599,30 @@ class PlayerProvider extends ChangeNotifier {
     });
     
     _mediaKitPlayer!.stream.tracks.listen((tracks) {
-      ServiceLocator.log.d('轨ㄩ亾淇℃伅更存柊: 视嗛轨?${tracks.video.length}, 音抽轨?${tracks.audio.length}', tag: 'PlayerProvider');
+      ServiceLocator.log.d('轨道信息更新: 视频轨${tracks.video.length}, 音频轨${tracks.audio.length}', tag: 'PlayerProvider');
       
       for (final track in tracks.video) {
         if (track.codec != null) {
           _videoCodec = track.codec!;
-          ServiceLocator.log.i('视嗛缂栫爜: ${track.codec}', tag: 'PlayerProvider');
+          ServiceLocator.log.i('视频编码: ${track.codec}', tag: 'PlayerProvider');
         }
         if (track.fps != null) {
           _fps = track.fps!;
-          ServiceLocator.log.i('视嗛甯х巼: ${track.fps} fps', tag: 'PlayerProvider');
+          ServiceLocator.log.i('视频帧率: ${track.fps} fps', tag: 'PlayerProvider');
         }
         if (track.w != null && track.h != null) {
-          ServiceLocator.log.i('视嗛分嗚鲸率? ${track.w}x${track.h}', tag: 'PlayerProvider');
+          ServiceLocator.log.i('视频分辨率: ${track.w}x${track.h}', tag: 'PlayerProvider');
         }
       }
       
+      _audioTracks = tracks.audio;
+      if (tracks.audio.isNotEmpty && _currentAudioTrack < 0) {
+        _currentAudioTrack = 0;
+      }
       for (final track in tracks.audio) {
         if (track.codec != null) {
-          ServiceLocator.log.i('音抽缂栫爜: ${track.codec}', tag: 'PlayerProvider');
+          _audioCodec = track.codec!;
+          ServiceLocator.log.i('音频编码: ${track.codec}', tag: 'PlayerProvider');
         }
       }
       
@@ -1052,6 +1066,9 @@ class PlayerProvider extends ChangeNotifier {
     _lastErrorTime = null;
     _isAutoSwitching = false;
     _isAutoDetecting = false;
+    _audioTracks = [];
+    _currentAudioTrack = -1;
+    _audioCodec = '';
     
     if (!_useNativePlayer) {
       _mediaKitPlayer?.stop();
@@ -1098,6 +1115,34 @@ class PlayerProvider extends ChangeNotifier {
       _volume = _volumeBeforeMute;
     }
     _applyVolume();
+    notifyListeners();
+  }
+
+  void switchAudioTrack(int index) {
+    if (_useNativePlayer || _mediaKitPlayer == null) return;
+    if (index < 0 || index >= _audioTracks.length) return;
+    _currentAudioTrack = index;
+    _mediaKitPlayer?.setProperty('aid', index + 1);
+    notifyListeners();
+  }
+
+  void toggleAudioPassthrough() {
+    if (_useNativePlayer || _mediaKitPlayer == null) return;
+    _audioPassthrough = !_audioPassthrough;
+    _mediaKitPlayer?.setProperty(
+      'audio-passthrough',
+      _audioPassthrough ? 'yes' : 'no',
+    );
+    notifyListeners();
+  }
+
+  void setAudioPassthrough(bool enabled) {
+    if (_useNativePlayer || _mediaKitPlayer == null) return;
+    _audioPassthrough = enabled;
+    _mediaKitPlayer?.setProperty(
+      'audio-passthrough',
+      enabled ? 'yes' : 'no',
+    );
     notifyListeners();
   }
 

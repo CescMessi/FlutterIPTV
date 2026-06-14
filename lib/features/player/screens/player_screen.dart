@@ -2485,6 +2485,33 @@ class _PlayerScreenState extends State<PlayerScreen>
                     ),
                   ],
 
+                  // Audio button
+                  TVFocusable(
+                    onSelect: () => _showAudioSheet(context),
+                    focusScale: 1.0,
+                    showFocusBorder: false,
+                    builder: (context, isFocused, child) {
+                      return Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: isFocused
+                              ? AppTheme.getPrimaryColor(context)
+                              : const Color(0x33FFFFFF),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isFocused
+                                ? AppTheme.getPrimaryColor(context)
+                                : const Color(0x1AFFFFFF),
+                            width: isFocused ? 2 : 1,
+                          ),
+                        ),
+                        child: child,
+                      );
+                    },
+                    child: const Icon(Icons.audio_file_rounded,
+                        color: Colors.white, size: 18),
+                  ),
+
                   const SizedBox(width: 16),
 
                   // Settings button (smaller)
@@ -2813,6 +2840,141 @@ class _PlayerScreenState extends State<PlayerScreen>
                   ),
 
                   const SizedBox(height: 24),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showAudioSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.getSurfaceColor(context),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Consumer<PlayerProvider>(
+          builder: (context, provider, _) {
+            return Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Audio',
+                    style: const TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Audio Codec info
+                  if (provider.audioCodec.isNotEmpty) ...[
+                    Text(
+                      'Codec: ${provider.audioCodec}',
+                      style: const TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Audio Track Selection
+                  if (provider.audioTracks.isNotEmpty) ...[
+                    Text(
+                      'Audio Track',
+                      style: const TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: Column(
+                        children: List.generate(provider.audioTracks.length, (i) {
+                          final track = provider.audioTracks[i];
+                          final isSelected = provider.currentAudioTrack == i;
+                          return ListTile(
+                            dense: true,
+                            leading: Icon(
+                              isSelected
+                                  ? Icons.radio_button_checked
+                                  : Icons.radio_button_unchecked,
+                              color: isSelected
+                                  ? AppTheme.getPrimaryColor(context)
+                                  : AppTheme.textSecondary,
+                              size: 18,
+                            ),
+                            title: Text(
+                              track.title ?? 'Track ${i + 1}',
+                              style: TextStyle(
+                                color: isSelected
+                                    ? AppTheme.textPrimary
+                                    : AppTheme.textSecondary,
+                                fontSize: 14,
+                              ),
+                            ),
+                            subtitle: track.codec != null
+                                ? Text(
+                                    track.codec!,
+                                    style: const TextStyle(fontSize: 11),
+                                  )
+                                : null,
+                            onTap: () => provider.switchAudioTrack(i),
+                          );
+                        }),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Audio Passthrough
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Audio Passthrough',
+                              style: const TextStyle(
+                                color: AppTheme.textPrimary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              'Bypass decoding, output raw bitstream to HDMI/SPDIF',
+                              style: TextStyle(
+                                color: AppTheme.textSecondary,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: provider.audioPassthrough,
+                        onChanged: (value) {
+                          provider.setAudioPassthrough(value);
+                          context
+                              .read<SettingsProvider>()
+                              .setAudioPassthrough(value);
+                        },
+                        activeColor: AppTheme.getPrimaryColor(context),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             );

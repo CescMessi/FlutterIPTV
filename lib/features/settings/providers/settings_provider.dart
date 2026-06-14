@@ -53,6 +53,7 @@ class SettingsProvider extends ChangeNotifier {
   static const String _keyShowWatchHistoryOnHome = 'show_watch_history_on_home'; // 首页是否显示观看记录
   static const String _keyShowFavoritesOnHome = 'show_favorites_on_home'; // 首页是否显示收藏夹
   static const String _keyUserAgent = 'user_agent';
+  static const String _keyAudioPassthrough = 'audio_passthrough';
 
   // Settings values
   String _themeMode = 'dark';
@@ -77,6 +78,7 @@ class SettingsProvider extends ChangeNotifier {
   Locale? _locale;
   bool _volumeNormalization = false;
   int _volumeBoost = 0; // -20 to +20 dB
+  bool _audioPassthrough = false;
   String _bufferStrength = 'fast'; // fast, balanced, stable
   bool _showFps = true; // 默认显示FPS
   bool _showClock = true; // 默认显示时间
@@ -123,6 +125,7 @@ class SettingsProvider extends ChangeNotifier {
   Locale? get locale => _locale;
   bool get volumeNormalization => _volumeNormalization;
   int get volumeBoost => _volumeBoost;
+  bool get audioPassthrough => _audioPassthrough;
   String get bufferStrength => _bufferStrength;
   bool get showFps => _showFps;
   bool get showClock => _showClock;
@@ -191,6 +194,7 @@ class SettingsProvider extends ChangeNotifier {
     }
     _volumeNormalization = prefs.getBool(_keyVolumeNormalization) ?? false;
     _volumeBoost = prefs.getInt(_keyVolumeBoost) ?? 0;
+    _audioPassthrough = prefs.getBool(_keyAudioPassthrough) ?? false;
     _bufferStrength = prefs.getString(_keyBufferStrength) ?? 'fast';
     _showFps = prefs.getBool(_keyShowFps) ?? true;
     _showClock = prefs.getBool(_keyShowClock) ?? true;
@@ -344,6 +348,7 @@ class SettingsProvider extends ChangeNotifier {
     }
     await prefs.setBool(_keyVolumeNormalization, _volumeNormalization);
     await prefs.setInt(_keyVolumeBoost, _volumeBoost);
+    await prefs.setBool(_keyAudioPassthrough, _audioPassthrough);
     await prefs.setString(_keyBufferStrength, _bufferStrength);
     await prefs.setBool(_keyShowFps, _showFps);
     await prefs.setBool(_keyShowClock, _showClock);
@@ -506,6 +511,12 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> setVolumeBoost(int db) async {
     _volumeBoost = db.clamp(-20, 20);
+    await _saveSettings();
+    notifyListeners();
+  }
+
+  Future<void> setAudioPassthrough(bool enabled) async {
+    _audioPassthrough = enabled;
     await _saveSettings();
     notifyListeners();
   }
@@ -751,6 +762,7 @@ class SettingsProvider extends ChangeNotifier {
     _rememberLastChannel = true;
     _volumeNormalization = false;
     _volumeBoost = 0;
+    _audioPassthrough = false;
     _bufferStrength = 'fast';
     _showFps = true;
     _showClock = true;
