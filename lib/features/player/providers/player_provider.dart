@@ -500,6 +500,18 @@ class PlayerProvider extends ChangeNotifier {
 
     _videoController = VideoController(_mediaKitPlayer!, configuration: config);
     _setupMediaKitListeners();
+
+    // Set audio output to stereo downmix for compatibility with multi-channel streams
+    // (e.g. Dolby Atmos 5.1/7.1). media_kit doesn't expose this via public API,
+    // so we access the native player's setProperty directly via dynamic dispatch.
+    try {
+      (_mediaKitPlayer!.platform as dynamic)
+          .setProperty('audio-channels', 'stereo');
+      ServiceLocator.log.i('音频输出设置为立体声降混', tag: 'PlayerProvider');
+    } catch (e) {
+      ServiceLocator.log.d('设置音频声道失败: $e', tag: 'PlayerProvider');
+    }
+
     _updateDebugInfo();
     
     ServiceLocator.log.i('播放器初始化完成', tag: 'PlayerProvider');
