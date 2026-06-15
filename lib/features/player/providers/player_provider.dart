@@ -501,13 +501,15 @@ class PlayerProvider extends ChangeNotifier {
     _videoController = VideoController(_mediaKitPlayer!, configuration: config);
     _setupMediaKitListeners();
 
-    // Set audio output to stereo downmix for compatibility with multi-channel streams
-    // (e.g. Dolby Atmos 5.1/7.1). media_kit doesn't expose this via public API,
-    // so we access the native player's setProperty directly via dynamic dispatch.
+    // Set audio output to auto-safe to let mpv negotiate channel layout with the device.
+    // On Dolby-capable devices (e.g. Xiaomi Pad 6 Pro), multi-channel audio is passed
+    // through to Android's Dolby engine for proper spatial rendering.
+    // On non-Dolby devices, mpv automatically falls back to stereo downmix.
+    // media_kit doesn't expose this via public API, so we use dynamic dispatch.
     try {
       (_mediaKitPlayer!.platform as dynamic)
-          .setProperty('audio-channels', 'stereo');
-      ServiceLocator.log.i('音频输出设置为立体声降混', tag: 'PlayerProvider');
+          .setProperty('audio-channels', 'auto-safe');
+      ServiceLocator.log.i('音频声道设置为 auto-safe（自动协商）', tag: 'PlayerProvider');
     } catch (e) {
       ServiceLocator.log.d('设置音频声道失败: $e', tag: 'PlayerProvider');
     }
