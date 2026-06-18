@@ -501,24 +501,15 @@ class PlayerProvider extends ChangeNotifier {
     _videoController = VideoController(_mediaKitPlayer!, configuration: config);
     _setupMediaKitListeners();
 
-    // Configure audio output for E-AC-3 (Dolby Digital Plus) compatibility.
-    // On Android, mpv's FFmpeg may fail to decode E-AC-3 silently.
-    // We try two approaches via dynamic dispatch on the native player:
-    // 1. audio-spdif: pass E-AC-3/AC-3/DTS to Android's native decoder (MediaCodec)
-    // 2. audio-channels: fallback to stereo if native decode also fails
-    try {
-      final platform = _mediaKitPlayer!.platform;
-      // Try native passthrough first - lets Android's Dolby engine handle decoding
-      (platform as dynamic).setProperty('audio-spdif', 'eac3,ac3,dts');
-      ServiceLocator.log.i('音频 SPDIF 直通设置为 eac3,ac3,dts', tag: 'PlayerProvider');
-    } catch (e) {
-      ServiceLocator.log.d('设置 audio-spdif 失败: $e', tag: 'PlayerProvider');
+    // media_kit defaults to OpenSL ES (opensles) audio output on Android physical devices.
+    // OpenSL ES may not handle E-AC-3 (Dolby Digital Plus) decoding properly.
+    // Force AudioTrack output which has better codec support.
+    if (Platform.isAndroid) {
       try {
-        (_mediaKitPlayer!.platform as dynamic)
-            .setProperty('audio-channels', 'stereo');
-        ServiceLocator.log.i('音频降混回退到立体声', tag: 'PlayerProvider');
-      } catch (e2) {
-        ServiceLocator.log.d('设置 audio-channels 失败: $e2', tag: 'PlayerProvider');
+        (_mediaKitPlayer!.platform as dynamic).setProperty('ao', 'audiotrack');
+        ServiceLocator.log.i('音频输出驱动设置为 audiotrack', tag: 'PlayerProvider');
+      } catch (e) {
+        ServiceLocator.log.d('设置 ao 失败: $e', tag: 'PlayerProvider');
       }
     }
 
