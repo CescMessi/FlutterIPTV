@@ -501,17 +501,39 @@ class PlayerProvider extends ChangeNotifier {
     _videoController = VideoController(_mediaKitPlayer!, configuration: config);
     _setupMediaKitListeners();
 
-    // Force stereo downmix for multi-channel audio (e.g. E-AC-3 5.1).
-    // The libmpv full FFmpeg variant includes the eac3 decoder; this ensures
-    // the decoded 5.1 PCM is downmixed to stereo for device speakers.
+    // Force audio to stereo for multi-channel streams (e.g. E-AC-3 5.1).
+    // Two-level approach:
+    // 1. ad-lavc-downmix=yes: forces FFmpeg decoder-level downmix (bypasses
+    //    audio chain bugs on some Android devices with OpenSL ES).
+    // 2. audio-channels=stereo: tells mpv's audio chain to output stereo
+    //    (safety net in case decoder-level downmix doesn't apply).
+    // 3. audio-format=s16: forces 16-bit PCM output compatible with all
+    //    Android audio drivers.
     if (Platform.isAndroid) {
-      try {
-        (_mediaKitPlayer!.platform as dynamic)
-            .setProperty('audio-channels', 'stereo');
-        ServiceLocator.log.i('音频声道设置为立体声降混', tag: 'PlayerProvider');
-      } catch (e) {
-        ServiceLocator.log.d('设置音频声道失败: $e', tag: 'PlayerProvider');
-      }
+      final player = _mediaKitPlayer!;
+      Future(() async {
+        try {
+          await (player.platform as dynamic)
+              .setProperty('ad-lavc-downmix', 'yes');
+          ServiceLocator.log.i('ad-lavc-downmix=yes 已设置', tag: 'PlayerProvider');
+        } catch (e) {
+          ServiceLocator.log.d('设置 ad-lavc-downmix 失败: $e', tag: 'PlayerProvider');
+        }
+        try {
+          await (player.platform as dynamic)
+              .setProperty('audio-channels', 'stereo');
+          ServiceLocator.log.i('audio-channels=stereo 已设置', tag: 'PlayerProvider');
+        } catch (e) {
+          ServiceLocator.log.d('设置 audio-channels 失败: $e', tag: 'PlayerProvider');
+        }
+        try {
+          await (player.platform as dynamic)
+              .setProperty('audio-format', 's16');
+          ServiceLocator.log.i('audio-format=s16 已设置', tag: 'PlayerProvider');
+        } catch (e) {
+          ServiceLocator.log.d('设置 audio-format 失败: $e', tag: 'PlayerProvider');
+        }
+      });
     }
 
     _updateDebugInfo();
