@@ -176,6 +176,9 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
       
+      - name: Patch media_kit to use full FFmpeg variant (E-AC-3 support)
+        run: bash scripts/patch_media_kit_full.sh
+      
       - name: Build Mobile APKs
         run: |
           flutter clean

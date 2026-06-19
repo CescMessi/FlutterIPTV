@@ -501,15 +501,16 @@ class PlayerProvider extends ChangeNotifier {
     _videoController = VideoController(_mediaKitPlayer!, configuration: config);
     _setupMediaKitListeners();
 
-    // media_kit defaults to OpenSL ES (opensles) audio output on Android physical devices.
-    // OpenSL ES may not handle E-AC-3 (Dolby Digital Plus) decoding properly.
-    // Force AudioTrack output which has better codec support.
+    // Force stereo downmix for multi-channel audio (e.g. E-AC-3 5.1).
+    // The libmpv full FFmpeg variant includes the eac3 decoder; this ensures
+    // the decoded 5.1 PCM is downmixed to stereo for device speakers.
     if (Platform.isAndroid) {
       try {
-        (_mediaKitPlayer!.platform as dynamic).setProperty('ao', 'audiotrack');
-        ServiceLocator.log.i('音频输出驱动设置为 audiotrack', tag: 'PlayerProvider');
+        (_mediaKitPlayer!.platform as dynamic)
+            .setProperty('audio-channels', 'stereo');
+        ServiceLocator.log.i('音频声道设置为立体声降混', tag: 'PlayerProvider');
       } catch (e) {
-        ServiceLocator.log.d('设置 ao 失败: $e', tag: 'PlayerProvider');
+        ServiceLocator.log.d('设置音频声道失败: $e', tag: 'PlayerProvider');
       }
     }
 
