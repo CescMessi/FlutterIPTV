@@ -60,6 +60,7 @@ class _PlayerScreenState extends State<PlayerScreen>
   PlayerProvider? _playerProvider;
   MultiScreenProvider? _multiScreenProvider;
   SettingsProvider? _settingsProvider;
+  DlnaProvider? _dlnaProvider;
 
   // 本地分屏模式状态（不影响设置）
   bool _localMultiScreenMode = false;
@@ -138,6 +139,11 @@ class _PlayerScreenState extends State<PlayerScreen>
       // 保存 settings 和 multi-screen provider 引用（用于 dispose 时保存状态）
       _settingsProvider = context.read<SettingsProvider>();
       _multiScreenProvider = context.read<MultiScreenProvider>();
+      try {
+        _dlnaProvider = context.read<DlnaProvider>();
+      } catch (_) {
+        _dlnaProvider = null;
+      }
 
       // 检查是否是 DLNA 投屏模式
       bool isDlnaMode = false;
@@ -185,9 +191,10 @@ class _PlayerScreenState extends State<PlayerScreen>
     }
 
     // 只有 DLNA 投屏会话时才同步播放状态
+    // 注意：这里每次 notifyListeners 都会被调用，不能在热路径上反复 context.read
+    final dlnaProvider = _dlnaProvider;
     try {
-      final dlnaProvider = context.read<DlnaProvider>();
-      if (dlnaProvider.isActiveSession) {
+      if (dlnaProvider != null && dlnaProvider.isActiveSession) {
         dlnaProvider.syncPlayerState(
           isPlaying: provider.isPlaying,
           isPaused: provider.state == PlayerState.paused,

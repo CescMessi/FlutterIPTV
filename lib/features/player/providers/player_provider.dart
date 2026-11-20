@@ -20,6 +20,74 @@ enum PlayerState {
   buffering,
 }
 
+/// 缓冲强度档位 → libmpv 直播调优参数。
+///
+/// 旧实现只把档位换算成 `demuxer-max-bytes`（媒体缓存上限），
+/// 而真正决定「能不能扛住网络抖动」的是 `demuxer-readahead-secs`、
+/// `cache-secs` 与 `stream-buffer-size`，所以三档在实机上几乎没有区别。
+class _MpvTuning {
+  const _MpvTuning({
+    required this.demuxerMaxBytes,
+    required this.readaheadSecs,
+    required this.cacheSecs,
+    required this.streamBufferBytes,
+    required this.networkTimeoutSecs,
+  });
+
+  /// 解码缓存上限（mpv: demuxer-max-bytes）
+  final int demuxerMaxBytes;
+
+  /// demuxer 预读窗口（mpv: demuxer-readahead-secs，默认 1s）
+  final int readaheadSecs;
+
+  /// 流缓存秒数（mpv: cache-secs）
+  final int cacheSecs;
+
+  /// 网络读缓冲（mpv: stream-buffer-size，默认 128KiB）
+  final int streamBufferBytes;
+
+  /// 单次网络操作超时（mpv: network-timeout，media_kit 默认 5s）
+  final int networkTimeoutSecs;
+
+  static const Map<String, _MpvTuning> _profiles = {
+    // 换台优先：预读 2s，刚好覆盖一次 CDN 抖动
+    'fast': _MpvTuning(
+      demuxerMaxBytes: 32 * 1024 * 1024,
+      readaheadSecs: 2,
+      cacheSecs: 6,
+      streamBufferBytes: 1 * 1024 * 1024,
+      networkTimeoutSecs: 15,
+    ),
+    // 平衡：预读 4s
+    'balanced': _MpvTuning(
+      demuxerMaxBytes: 64 * 1024 * 1024,
+      readaheadSecs: 4,
+      cacheSecs: 12,
+      streamBufferBytes: 2 * 1024 * 1024,
+      networkTimeoutSecs: 20,
+    ),
+    // 稳定优先：预读 8s / 缓存 25s，容忍明显抖动
+    'stable': _MpvTuning(
+      demuxerMaxBytes: 128 * 1024 * 1024,
+      readaheadSecs: 8,
+      cacheSecs: 25,
+      streamBufferBytes: 4 * 1024 * 1024,
+      networkTimeoutSecs: 30,
+    ),
+    // 低延迟（未在设置页暴露）：预读 1s
+    'low_latency': _MpvTuning(
+      demuxerMaxBytes: 16 * 1024 * 1024,
+      readaheadSecs: 1,
+      cacheSecs: 3,
+      streamBufferBytes: 512 * 1024,
+      networkTimeoutSecs: 10,
+    ),
+  };
+
+  static _MpvTuning of(String? strength) =>
+      _profiles[strength] ?? _profiles['fast']!;
+}
+
 /// Unified player provider that uses:
 /// - Native Android Activity (via MethodChannel) on Android TV for best 4K performance
 /// - media_kit on all other platforms (Windows, Android phone/tablet, etc.)
@@ -52,12 +120,32 @@ class PlayerProvider extends ChangeNotifier {
   bool _isAutoDetecting = false; // 标记是否正在自动检测源
   bool _isSoftwareDecoding = false;
   bool _noVideoFallbackAttempted = false;
+  bool _softwareFallbackUsed = false;
   bool _allowSoftwareFallback = true;
   String _windowsHwdecMode = 'auto-safe';
   bool _isDisposed = false;
   String _videoOutput = 'auto';
   String _vo = 'unknown';
   String _configuredVo = 'auto';
+
+  // ===== 播放统计（读取 mpv 属性，用于真实掉帧 / 缓存观测） =====
+  int _droppedFrames = 0; // container/解码链累计丢帧（mpv: frame-drop-count）
+  int _decoderDroppedFrames = 0; // 解码器丢帧（mpv: decoder-frame-drop-count）
+  double _cacheSeconds = 0; // 已缓存时长（mpv: demuxer-cache-time）
+  double _liveFps = 0; // 实际输出帧率（mpv: estimated-vf-fps）
+  String _statsSignature = '';
+
+  // ===== 通知节流（避免 position 流把 UI 线程刷成每秒几十次重建） =====
+  DateTime _lastPositionNotify = DateTime.fromMillisecondsSinceEpoch(0);
+
+  // ===== mpv 日志节流（debug 级别下 mpv 每秒可吐上百行） =====
+  DateTime? _mpvLogWindowStart;
+  int _mpvLogWindowCount = 0;
+
+  // ===== 临时性流错误的软重载（不重建播放器，不触发换源） =====
+  Timer? _softReloadTimer;
+  int _softReloadCount = 0;
+  DateTime? _lastSoftReloadAt;
 
   // On Android TV, we use native player via Activity, so don't init any Flutter player
   // On Android phone/tablet and other platforms, use media_kit
@@ -349,6 +437,9 @@ class PlayerProvider extends ChangeNotifier {
   int get videoWidth => _videoWidth;
   int get videoHeight => _videoHeight;
   double get downloadSpeed => _downloadSpeed;
+  int get droppedFrames => _droppedFrames;
+  int get decoderDroppedFrames => _decoderDroppedFrames;
+  double get cacheSeconds => _cacheSeconds;
 
   String get videoInfo {
     if (_mediaKitPlayer == null) return '';
@@ -365,6 +456,12 @@ class PlayerProvider extends ChangeNotifier {
     final voInfo = _formatVoInfo();
     if (voInfo.isNotEmpty) {
       parts.add('vo: $voInfo');
+    }
+    if (_droppedFrames > 0 || _decoderDroppedFrames > 0) {
+      parts.add('drop: $_droppedFrames/$_decoderDroppedFrames');
+    }
+    if (_cacheSeconds > 0) {
+      parts.add('cache: ${_cacheSeconds.toStringAsFixed(1)}s');
     }
     return parts.join(' | ');
   }
@@ -404,7 +501,8 @@ class PlayerProvider extends ChangeNotifier {
     // 目前只做实例初始化，不做无效流程预加载
   }
 
-  void _initMediaKitPlayer({bool useSoftwareDecoding = false, String bufferStrength = 'fast'}) {
+  void _initMediaKitPlayer(
+      {bool useSoftwareDecoding = false, String? bufferStrength}) {
     _mediaKitPlayer?.dispose();
     _debugInfoTimer?.cancel();
     // Load decoding settings (overridden by explicit useSoftwareDecoding)
@@ -416,18 +514,18 @@ class PlayerProvider extends ChangeNotifier {
     final effectiveSoftware = useSoftwareDecoding || decodingMode == 'software';
     _isSoftwareDecoding = effectiveSoftware;
 
+    // 启动时必须使用用户保存的缓冲强度；此前只有从设置页切换时才会传入，
+    // 导致「稳定优先(128MB)」重启后又变回 fast(32MB)。
+    final resolvedStrength =
+        bufferStrength ?? prefs.getString('buffer_strength') ?? 'fast';
+    final tuning = _MpvTuning.of(resolvedStrength);
+
     ServiceLocator.log.i('========== 初始化播放器 ==========', tag: 'PlayerProvider');
     ServiceLocator.log.i('平台: ${Platform.operatingSystem}', tag: 'PlayerProvider');
     ServiceLocator.log.i('软解码模式: $useSoftwareDecoding', tag: 'PlayerProvider');
-    ServiceLocator.log.i('缓冲强度: $bufferStrength', tag: 'PlayerProvider');
+    ServiceLocator.log.i('缓冲强度: $resolvedStrength', tag: 'PlayerProvider');
 
-    // 根据缓冲强度设置缓冲区大小
-    final bufferSize = switch (bufferStrength) {
-      'fast' => 32 * 1024 * 1024,      // 32MB - 快速启动
-      'balanced' => 64 * 1024 * 1024,  // 64MB - 平衡模式
-      'stable' => 128 * 1024 * 1024,   // 128MB - 稳定优先
-      _ => 32 * 1024 * 1024,
-    };
+    final bufferSize = tuning.demuxerMaxBytes;
 
     String? vo;
     switch (_videoOutput) {
@@ -501,6 +599,10 @@ class PlayerProvider extends ChangeNotifier {
     _videoController = VideoController(_mediaKitPlayer!, configuration: config);
     _setupMediaKitListeners();
 
+    // IPTV 直播流缓存 / 超时 / 重连参数：media_kit 的默认值对直播偏激进
+    // （network-timeout=5s、仅 1s 预读、开启磁盘缓存）。
+    unawaited(_applyStreamTuning(tuning));
+
     // Force audio to stereo for multi-channel streams (e.g. E-AC-3 5.1).
     // Two-level approach:
     // 1. ad-lavc-downmix=yes: forces FFmpeg decoder-level downmix (bypasses
@@ -537,8 +639,48 @@ class PlayerProvider extends ChangeNotifier {
     }
 
     _updateDebugInfo();
-    
+
     ServiceLocator.log.i('播放器初始化完成', tag: 'PlayerProvider');
+  }
+
+  /// 给 libmpv 下发直播流相关的缓存 / 超时参数。
+  ///
+  /// media_kit 在创建播放器时会写入一组固定值：
+  ///   cache=yes, cache-on-disk=yes, network-timeout=5,
+  ///   demuxer-max-bytes=<bufferSize>, demuxer-max-back-bytes=<bufferSize>
+  /// 其中磁盘缓存失败后（"Failed to create file cache."）会退化成 128KiB 流缓冲，
+  /// 而 5s 网络超时对抖动较大的 IPTV 源过于激进，因此这里逐项覆盖。
+  Future<void> _applyStreamTuning(_MpvTuning tuning) async {
+    final player = _mediaKitPlayer;
+    if (player == null) return;
+
+    final properties = <String, String>{
+      // 直播不需要磁盘缓存：磁盘 I/O 抖动 + 创建失败后会丢失缓存能力
+      'cache-on-disk': 'no',
+      // 只保留少量回退缓存，避免 128MB × 2 的内存占用
+      'demuxer-max-back-bytes': '${tuning.demuxerMaxBytes ~/ 4}',
+      // 真正的预读窗口（demuxer-max-bytes 只是上限，不设这里仍然只有 1s）
+      'demuxer-readahead-secs': '${tuning.readaheadSecs}',
+      'cache-secs': '${tuning.cacheSecs}',
+      // 默认流缓冲 128KiB，突然的 CDN/组播抖动就会直接饿死
+      'stream-buffer-size': '${tuning.streamBufferBytes}',
+      'network-timeout': '${tuning.networkTimeoutSecs}',
+      // 说明：http/https 的断流重连交给应用层软重载处理
+      // （_scheduleSoftReload）。这里不写 stream-lavf-o，
+      // 避免把 http 专用选项传给 udp/rtp/rtsp 源导致打开失败。
+    };
+
+    for (final entry in properties.entries) {
+      try {
+        await (player.platform as dynamic)
+            .setProperty(entry.key, entry.value);
+        ServiceLocator.log.d('mpv 参数: ${entry.key}=${entry.value}',
+            tag: 'PlayerProvider');
+      } catch (e) {
+        ServiceLocator.log.d('mpv 参数设置失败 ${entry.key}=${entry.value}: $e',
+            tag: 'PlayerProvider');
+      }
+    }
   }
 
   void _setupMediaKitListeners() {
@@ -548,51 +690,47 @@ class PlayerProvider extends ChangeNotifier {
       if (ServiceLocator.log.currentLevel != LogLevel.off) {
         _mediaKitPlayer!.stream.log.listen((log) {
           final message = log.text.toLowerCase();
-          ServiceLocator.log.d('MPV log: ${log.text}', tag: 'PlayerProvider');
-          
-          // // 检测并记录解码信息
-        if (message.contains('using hardware decoding') || 
-            message.contains('hwdec') ||
-            message.contains('d3d11va') ||
-            message.contains('nvdec') ||
-            message.contains('dxva2') ||
-            message.contains('qsv')) {
-            ServiceLocator.log.i('使用硬件解码: ${log.text}', tag: 'PlayerProvider');
+          final isError = log.level == 'error';
+          final isWarn = log.level == 'warn';
+
+          // 1) 限速：debug 级别下 mpv 每秒可输出上百行，逐行转发 + 落盘会拖慢主 isolate
+          final now = DateTime.now();
+          if (_mpvLogWindowStart == null ||
+              now.difference(_mpvLogWindowStart!) >=
+                  const Duration(seconds: 1)) {
+            _mpvLogWindowStart = now;
+            _mpvLogWindowCount = 0;
+          }
+          _mpvLogWindowCount++;
+
+          // 2) 超长行（GL 扩展列表、解码器 GUID 列表）截断，避免反复写几 KB
+          final text = log.text.length > 400
+              ? '${log.text.substring(0, 400)}…'
+              : log.text;
+
+          if (!isError && !isWarn && _mpvLogWindowCount > 30) {
+            return; // 超出窗口配额的普通日志直接丢弃
+          }
+
+          ServiceLocator.log.d('MPV log: $text', tag: 'PlayerProvider');
+
+          // 3) 只在真正相关的行上做识别，避免每行跑 4 条 contains 链
+          if (message.contains('using hardware decoding')) {
+            _updateHwdecFromLog(message);
+            ServiceLocator.log.i('使用硬件解码: $text', tag: 'PlayerProvider');
+          } else if (message.contains('vo:') ||
+              message.contains('video output')) {
+            _updateVoFromLog(message);
+          } else if (message.contains('software decoding')) {
             _updateHwdecFromLog(message);
           }
-        
-        // // 检测到 GPU 解码
-        if (message.contains('gpu') || 
-            message.contains('nvidia') || 
-            message.contains('intel') || 
-            message.contains('amd') ||
-            message.contains('adapter') ||
-            message.contains('device')) {
-          ServiceLocator.log.i('使用 GPU 解码: ${log.text}', tag: 'PlayerProvider');
-        }
-        
-        // // 检测到软件解码
-          if (message.contains('vo/gpu') || 
-              message.contains('opengl') || 
-              message.contains('d3d11') ||
-              message.contains('vulkan') ||
-              message.contains('video output') ||
-              message.contains('vo:')) {
-            ServiceLocator.log.i('使用软件解码 ${log.text}', tag: 'PlayerProvider');
-            _updateVoFromLog(message);
+
+          // 记录错误和警告
+          if (isError) {
+            ServiceLocator.log.e('MPV错误: $text', tag: 'PlayerProvider');
+          } else if (isWarn) {
+            ServiceLocator.log.w('MPV警告: $text', tag: 'PlayerProvider');
           }
-        
-        // // 检测到解码选项
-        if (message.contains('decoder') || message.contains('codec')) {
-          ServiceLocator.log.d('检测解码方式 ${log.text}', tag: 'PlayerProvider');
-        }
-        
-        // 记录错误和警告
-        if (log.level == MPVLogLevel.error) {
-          ServiceLocator.log.e('MPV错误: ${log.text}', tag: 'PlayerProvider');
-        } else if (log.level == MPVLogLevel.warn) {
-          ServiceLocator.log.w('MPV警告: ${log.text}', tag: 'PlayerProvider');
-        }
         });
       }
     
@@ -606,6 +744,7 @@ class PlayerProvider extends ChangeNotifier {
           if (_state == PlayerState.playing && _currentChannel != null) {
             ServiceLocator.log.d('PlayerProvider: Playback stable, reset retry count');
             _retryCount = 0;
+            _softReloadCount = 0; // 连续稳定 3s 后重置软重载配额
           }
         });
       } else if (_state == PlayerState.playing) {
@@ -625,11 +764,22 @@ class PlayerProvider extends ChangeNotifier {
     });
 
     _mediaKitPlayer!.stream.position.listen((pos) {
+      if (pos == _position) return;
+      final previous = _position;
       _position = pos;
-      notifyListeners();
+      final now = DateTime.now();
+      // 进度条 250ms 粒度足够；seek / 换源造成的跳变立即通知
+      final isJump = (pos - previous).abs() > const Duration(seconds: 2);
+      if (isJump ||
+          now.difference(_lastPositionNotify) >=
+              const Duration(milliseconds: 250)) {
+        _lastPositionNotify = now;
+        notifyListeners();
+      }
     });
-    
+
     _mediaKitPlayer!.stream.duration.listen((dur) {
+      if (dur == _duration) return;
       _duration = dur;
       notifyListeners();
     });
@@ -666,12 +816,23 @@ class PlayerProvider extends ChangeNotifier {
     });
     
     _mediaKitPlayer!.stream.volume.listen((vol) {
-      _volume = vol / 100;
+      final nextVolume = vol / 100;
+      if ((nextVolume - _volume).abs() < 0.005) return;
+      _volume = nextVolume;
       notifyListeners();
     });
     
     _mediaKitPlayer!.stream.error.listen((err) {
       if (err.isNotEmpty) {
+        // 临时性网络 / 缓存错误：软重载同一个 URL，不重建播放器、不换源、不弹错误。
+        // 旧逻辑会走 _setError → 重试 2 次 → 换源 → 重建播放器，
+        // 一次 1s 的网络抖动会被放大成数秒黑屏。
+        if (_isTransientStreamError(err)) {
+          ServiceLocator.log.w('检测到临时性流错误，软重载当前源: $err',
+              tag: 'PlayerProvider');
+          _scheduleSoftReload(err);
+          return;
+        }
         ServiceLocator.log.e('播放器错误: $err', tag: 'PlayerProvider');
         
         // 分析错误类型
@@ -695,6 +856,9 @@ class PlayerProvider extends ChangeNotifier {
     });
     
     _mediaKitPlayer!.stream.width.listen((width) {
+      final nextWidth = width ?? 0;
+      if (nextWidth == _videoWidth) return;
+      _videoWidth = nextWidth;
       if (width != null && width > 0) {
         ServiceLocator.log.d('视嗛瀹藉害: $width', tag: 'PlayerProvider');
       }
@@ -702,6 +866,9 @@ class PlayerProvider extends ChangeNotifier {
     });
     
     _mediaKitPlayer!.stream.height.listen((height) {
+      final nextHeight = height ?? 0;
+      if (nextHeight == _videoHeight) return;
+      _videoHeight = nextHeight;
       if (height != null && height > 0) {
         ServiceLocator.log.d('视嗛高樺害: $height', tag: 'PlayerProvider');
       }
@@ -714,8 +881,12 @@ class PlayerProvider extends ChangeNotifier {
   void _updateDebugInfo() {
     _debugInfoTimer?.cancel();
     
-    _debugInfoTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+    _debugInfoTimer = Timer.periodic(const Duration(seconds: 1), (_) async {
       if (_mediaKitPlayer == null) return;
+
+      // 读取 mpv 的真实统计（掉帧 / 缓存 / 实际输出帧率），
+      // 让「卡顿」可以被量化，而不是只看容器帧率。
+      await _refreshMpvStats();
       
       // 如果线程未开启或尚未解析到实际值，使用配置值兜底
       if (ServiceLocator.log.currentLevel == LogLevel.off &&
@@ -741,8 +912,9 @@ class PlayerProvider extends ChangeNotifier {
       
       // Windows 端直接使用 track 中的 fps 信息
       // media_kit (mpv) 的勬覆查撳抚率囧熀帧瓑浜庤棰戞簮甯х巼
-      if (_state == PlayerState.playing && _fps > 0) {
-        _currentFps = _fps;
+      if (_state == PlayerState.playing) {
+        // 优先使用 mpv 的实际输出帧率（estimated-vf-fps），没有统计值时退回容器帧率
+        _currentFps = _liveFps > 0 ? _liveFps : _fps;
       } else {
         _currentFps = 0;
       }
@@ -770,8 +942,45 @@ class PlayerProvider extends ChangeNotifier {
         _downloadSpeed = 0;
       }
       
-      notifyListeners();
+      // 只在统计值真的变化时通知，避免每秒无条件重建一次 UI
+      final signature = '${_videoWidth}x$_videoHeight|$_videoCodec|$_fps|'
+          '${_liveFps.toStringAsFixed(1)}|$_droppedFrames|'
+          '$_decoderDroppedFrames|${_cacheSeconds.toStringAsFixed(1)}|'
+          '${_hwdecMode}|${_vo}|${_state.index}';
+      if (signature != _statsSignature) {
+        _statsSignature = signature;
+        notifyListeners();
+      }
     });
+  }
+
+  /// 读取 mpv 真实统计属性；失败时静默保留旧值。
+  Future<void> _refreshMpvStats() async {
+    final player = _mediaKitPlayer;
+    if (player == null) return;
+    final dynamic platform = player.platform;
+
+    Future<double?> readDouble(String property) async {
+      try {
+        final raw = (await platform.getProperty(property)).toString();
+        if (raw.isEmpty || raw == 'no' || raw == 'nan') return null;
+        return double.tryParse(raw);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    final vfFps = await readDouble('estimated-vf-fps');
+    if (vfFps != null) _liveFps = vfFps;
+
+    final dropped = await readDouble('frame-drop-count');
+    if (dropped != null) _droppedFrames = dropped.round();
+
+    final decoderDropped = await readDouble('decoder-frame-drop-count');
+    if (decoderDropped != null) _decoderDroppedFrames = decoderDropped.round();
+
+    final cache = await readDouble('demuxer-cache-time');
+    _cacheSeconds = cache ?? 0;
   }
 
   void _updateHwdecFromLog(String lowerMessage) {
@@ -860,10 +1069,93 @@ class PlayerProvider extends ChangeNotifier {
 
   void _attemptSoftwareFallback() {
     if (!_allowSoftwareFallback) return;
+    if (_isDisposed) return;
+    if (_softwareFallbackUsed) return; // 一次播放只回退一次，避免反复重建播放器
+    _softwareFallbackUsed = true;
+    _softReloadTimer?.cancel();
     _retryCount++;
     final channelToPlay = _currentChannel;
     _initMediaKitPlayer(useSoftwareDecoding: true);
     if (channelToPlay != null) playChannel(channelToPlay);
+  }
+
+  /// 是否是「等一下重连就能好」的临时性错误（网络抖动、取流超时、缓存饿死）。
+  /// 这类错误不应该触发换源 / 重建播放器。
+  bool _isTransientStreamError(String message) {
+    final m = message.toLowerCase();
+    const fatalMarkers = [
+      '404',
+      '403',
+      '401',
+      'not found',
+      'forbidden',
+      'unsupported',
+      'no video',
+      'invalid data',
+      'unknown format',
+    ];
+    if (fatalMarkers.any(m.contains)) return false;
+    const transientMarkers = [
+      'failed to open',
+      'timed out',
+      'timeout',
+      'connection',
+      'reset by peer',
+      'network',
+      'cache',
+      'stalled',
+      'i/o error',
+      'end of file',
+      'http error 5',
+      'unable to open',
+    ];
+    return transientMarkers.any(m.contains);
+  }
+
+  /// 软重载：保留播放器实例与渲染管线，只重新打开当前 URL。
+  void _scheduleSoftReload(String reason) {
+    if (_isDisposed || _currentChannel == null) return;
+    if (_softReloadTimer?.isActive == true) return;
+
+    final now = DateTime.now();
+    final tooMany = _softReloadCount >= 3 &&
+        _lastSoftReloadAt != null &&
+        now.difference(_lastSoftReloadAt!).inSeconds < 60;
+    if (tooMany) {
+      // 60s 内已软重载 3 次，交给硬错误链路（重试 / 换源 / 提示）
+      _softReloadCount = 0;
+      ServiceLocator.log.w('软重载过于频繁，转入硬错误处理: $reason',
+          tag: 'PlayerProvider');
+      _setError(reason);
+      return;
+    }
+
+    _softReloadCount++;
+    _lastSoftReloadAt = now;
+    _state = PlayerState.buffering;
+    notifyListeners();
+
+    _softReloadTimer = Timer(const Duration(milliseconds: 1500), () async {
+      final channel = _currentChannel;
+      if (_isDisposed || channel == null) return;
+      try {
+        final realUrl = await ServiceLocator.redirectCache
+            .resolveRealPlayUrl(channel.currentUrl);
+        await _mediaKitPlayer?.open(
+          Media(
+            realUrl,
+            httpHeaders: {
+              if (ServiceLocator.userAgent.userAgent != null)
+                'User-Agent': ServiceLocator.userAgent.userAgent!,
+            },
+          ),
+        );
+        ServiceLocator.log.i('软重载完成: $realUrl', tag: 'PlayerProvider');
+      } catch (e) {
+        ServiceLocator.log.w('软重载失败: $e', tag: 'PlayerProvider');
+        _setError('软重载失败: $e');
+      }
+    });
   }
 
   // ============ Public API ============
@@ -884,6 +1176,11 @@ class PlayerProvider extends ChangeNotifier {
     _retryTimer?.cancel(); // 取消任何正在进行的重试
     _isAutoDetecting = false; // 取消任何正在进行的自动检测
     _noVideoFallbackAttempted = false;
+    _softwareFallbackUsed = false;
+    _softReloadTimer?.cancel();
+    _softReloadTimer = null;
+    _softReloadCount = 0;
+    _statsSignature = '';
     loadVolumeSettings(); // Apply volume boost settings
     notifyListeners();
 
@@ -1032,6 +1329,11 @@ class PlayerProvider extends ChangeNotifier {
     _lastErrorMessage = null; // 重置错误防抖
     _errorDisplayed = false; // 重置错误显示标记
     _noVideoFallbackAttempted = false;
+    _softwareFallbackUsed = false;
+    _softReloadTimer?.cancel();
+    _softReloadTimer = null;
+    _softReloadCount = 0;
+    _statsSignature = '';
     loadVolumeSettings(); // Apply volume boost settings
     notifyListeners();
 
@@ -1391,6 +1693,7 @@ class PlayerProvider extends ChangeNotifier {
     _isDisposed = true;
     _debugInfoTimer?.cancel();
     _retryTimer?.cancel();
+    _softReloadTimer?.cancel();
     _mediaKitPlayer?.dispose();
     super.dispose();
   }
