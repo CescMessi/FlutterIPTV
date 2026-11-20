@@ -1573,6 +1573,25 @@ class _PlayerScreenState extends State<PlayerScreen>
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.white24, fontSize: 11),
               ),
+              if (ServiceLocator.streamProxy.recentRequests.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text(
+                  ServiceLocator.streamProxy.recentRequests
+                      .skip(
+                        ServiceLocator.streamProxy.recentRequests.length > 4
+                            ? ServiceLocator.streamProxy.recentRequests.length - 4
+                            : 0,
+                      )
+                      .map((line) => line.replaceFirst(
+                          RegExp(r'^\d{4}-\d{2}-\d{2}T[\d:\.]+ '), ''))
+                      .join('\n'),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      color: Colors.white24,
+                      fontSize: 10,
+                      fontFamily: 'Consolas'),
+                ),
+              ],
               const SizedBox(height: 22),
               FilledButton.icon(
                 onPressed: () async {

@@ -1219,19 +1219,26 @@ class PlayerProvider extends ChangeNotifier {
           'User-Agent': ServiceLocator.userAgent.userAgent!,
       };
 
-      // 预检：上游连不上就别把播放器拉起来，否则用户只会看到一个空白窗口干等。
-      // 预检失败时回退到内置播放，让应用自己的重试 / 换源 / 错误提示接管。
-      final reachable = await ServiceLocator.streamProxy.probe(
-        url: realUrl,
-        headers: headers,
-        timeout: const Duration(seconds: 6),
-      );
-      if (!reachable) {
-        ServiceLocator.log.w(
-          '外挂播放预检失败（上游不可达），回退到内置播放: $realUrl',
-          tag: 'PlayerProvider',
+      // 预检：上游连不上就别把播放器拉起来。
+      // 但带签名/一次性 token 的地址（sign= / token= / auth_token= ...）不能预检——
+      // 这些源常常只允许一次并发连接，预检会把名额用掉，导致播放器随后取流卡死。
+      final looksSigned = RegExp(
+        r'(sign|signature|token|auth_token|expire|expires|key)=',
+        caseSensitive: false,
+      ).hasMatch(realUrl);
+      if (!looksSigned) {
+        final reachable = await ServiceLocator.streamProxy.probe(
+          url: realUrl,
+          headers: headers,
+          timeout: const Duration(seconds: 6),
         );
-        return false;
+        if (!reachable) {
+          ServiceLocator.log.w(
+            '外挂播放预检失败（上游不可达），回退到内置播放: $realUrl',
+            tag: 'PlayerProvider',
+          );
+          return false;
+        }
       }
 
       // 切换频道时先关掉上一路外挂播放，避免两个播放器/两路音频并存
