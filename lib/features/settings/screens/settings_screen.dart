@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,6 +12,7 @@ import '../../../core/widgets/color_scheme_dialog.dart';
 import '../../../core/platform/platform_detector.dart';
 import '../../../core/i18n/app_strings.dart';
 import '../../../core/services/service_locator.dart';
+import '../../../core/services/external_player_service.dart';
 import '../../player/providers/player_provider.dart';
 import '../../multi_screen/providers/multi_screen_provider.dart';
 import '../providers/settings_provider.dart';
@@ -247,6 +248,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle: _getVideoOutputLabel(context, settings.videoOutput),
                   icon: Icons.display_settings_rounded,
                   onTap: () => _showVideoOutputDialog(context, settings),
+                ),
+                _buildDivider(),
+                _buildSelectTile(
+                  context,
+                  title:
+                      AppStrings.of(context)?.externalPlayer ?? 'External Player',
+                  subtitle: _getExternalPlayerLabel(
+                      context, settings.externalPlayer),
+                  icon: Icons.open_in_new_rounded,
+                  onTap: () => _showExternalPlayerDialog(context, settings),
                 ),
               ] else if (isAndroid && isMobile) ...[
                 _buildDivider(),
@@ -1113,6 +1124,195 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return strings?.videoOutputAutoDesc ??
             'Default embedded output (recommended).';
     }
+  }
+
+  String _getExternalPlayerLabel(BuildContext context, String kind) {
+    final strings = AppStrings.of(context);
+    switch (kind) {
+      case 'mpv':
+        return strings?.externalPlayerMpv ?? 'mpv';
+      case 'potplayer':
+        return strings?.externalPlayerPotPlayer ?? 'PotPlayer';
+      case 'vlc':
+        return strings?.externalPlayerVlc ?? 'VLC';
+      case 'custom':
+        return strings?.externalPlayerCustom ?? 'Custom program';
+      case 'builtin':
+      default:
+        return strings?.externalPlayerBuiltin ?? 'Built-in player';
+    }
+  }
+
+  void _showExternalPlayerDialog(
+    BuildContext context,
+    SettingsProvider settings,
+  ) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isLandscape =
+        screenWidth > 600 && screenWidth < 900 && screenHeight < screenWidth;
+    const options = ['builtin', 'mpv', 'potplayer', 'vlc', 'custom'];
+    final strings = AppStrings.of(context);
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppTheme.getSurfaceColor(dialogContext),
+          title: Text(
+            strings?.externalPlayer ?? 'External Player',
+            style: TextStyle(
+              color: AppTheme.getTextPrimary(context),
+              fontSize: isLandscape ? 14 : 18,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                  child: Text(
+                    strings?.externalPlayerDesc ?? '',
+                    style: TextStyle(
+                      color: AppTheme.getTextMuted(context),
+                      fontSize: isLandscape ? 10 : 12,
+                    ),
+                  ),
+                ),
+                ...options.map(
+                  (kind) => RadioListTile<String>(
+                    title: Text(
+                      _getExternalPlayerLabel(context, kind),
+                      style: TextStyle(
+                        color: AppTheme.getTextPrimary(context),
+                        fontSize: isLandscape ? 12 : 14,
+                      ),
+                    ),
+                    subtitle: kind == 'custom' &&
+                            settings.externalPlayerPath.isNotEmpty
+                        ? Text(
+                            settings.externalPlayerPath,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: AppTheme.getTextMuted(context),
+                              fontSize: isLandscape ? 9 : 11,
+                            ),
+                          )
+                        : null,
+                    value: kind,
+                    groupValue: settings.externalPlayer,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: isLandscape ? 8 : 16,
+                      vertical: 0,
+                    ),
+                    activeColor: AppTheme.getPrimaryColor(dialogContext),
+                    onChanged: (value) async {
+                      if (value == null) return;
+                      if (value == 'custom') {
+                        Navigator.pop(dialogContext);
+                        await _showExternalPlayerPathDialog(context, settings);
+                        return;
+                      }
+                      await settings.setExternalPlayer(value);
+                      final executable = await ExternalPlayerService
+                          .resolveExecutable(value, settings.externalPlayerPath);
+                      if (!dialogContext.mounted) return;
+                      Navigator.pop(dialogContext);
+                      if (!context.mounted) return;
+                      final currentStrings = AppStrings.of(context);
+                      if (value != 'builtin' && executable == null) {
+                        _showError(
+                          context,
+                          currentStrings?.externalPlayerNotFound ??
+                              'Player not found. Install it first or set the path manually.',
+                        );
+                        return;
+                      }
+                      _showSuccess(
+                        context,
+                        (currentStrings?.externalPlayerSet ??
+                                'External player set to: {mode}')
+                            .replaceFirst('{mode}',
+                                _getExternalPlayerLabel(context, value)),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showExternalPlayerPathDialog(
+    BuildContext context,
+    SettingsProvider settings,
+  ) async {
+    final controller =
+        TextEditingController(text: settings.externalPlayerPath);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        final localizations = MaterialLocalizations.of(dialogContext);
+        return AlertDialog(
+          backgroundColor: AppTheme.getSurfaceColor(dialogContext),
+          title: Text(
+            AppStrings.of(context)?.externalPlayerPath ?? 'Custom player path',
+            style: TextStyle(color: AppTheme.getTextPrimary(context)),
+          ),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            style: TextStyle(color: AppTheme.getTextPrimary(context)),
+            decoration: InputDecoration(
+              hintText:
+                  AppStrings.of(context)?.externalPlayerPathHint ?? '',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(localizations.cancelButtonLabel),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, controller.text),
+              child: Text(localizations.okButtonLabel),
+            ),
+          ],
+        );
+      },
+    );
+    controller.dispose();
+    if (result == null) return;
+
+    final path = result.trim();
+    await settings.setExternalPlayerPath(path);
+    await settings.setExternalPlayer('custom');
+    final executable = await ExternalPlayerService.resolveExecutable(
+      'custom',
+      path,
+    );
+    if (!context.mounted) return;
+
+    final strings = AppStrings.of(context);
+    if (executable == null) {
+      _showError(
+        context,
+        strings?.externalPlayerNotFound ??
+            'Player not found. Install it first or set the path manually.',
+      );
+      return;
+    }
+    _showSuccess(
+      context,
+      (strings?.externalPlayerSet ?? 'External player set to: {mode}')
+          .replaceFirst('{mode}', strings?.externalPlayerCustom ?? 'Custom'),
+    );
   }
 
   void _showVideoOutputDialog(

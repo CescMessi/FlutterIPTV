@@ -9,6 +9,7 @@ import '../../../core/models/channel.dart';
 import '../../../core/platform/platform_detector.dart';
 import '../../../core/services/service_locator.dart';
 import '../../../core/services/channel_test_service.dart';
+import '../../../core/services/external_player_service.dart';
 import '../../../core/services/log_service.dart';
 
 enum PlayerState {
@@ -127,6 +128,13 @@ class PlayerProvider extends ChangeNotifier {
   String _videoOutput = 'auto';
   String _vo = 'unknown';
   String _configuredVo = 'auto';
+
+  // ===== 外部播放器（本地代理转发） =====
+  bool _isExternalPlayback = false;
+  Process? _externalProcess;
+  String? _externalProxyToken;
+  String _externalPlayerKind = 'builtin';
+  DateTime? _externalStartedAt;
 
   // ===== 播放统计（读取 mpv 属性，用于真实掉帧 / 缓存观测） =====
   int _droppedFrames = 0; // container/解码链累计丢帧（mpv: frame-drop-count）
@@ -389,15 +397,21 @@ class PlayerProvider extends ChangeNotifier {
         ServiceLocator.log.d('>>> 重试: 使用播放地址: $realUrl', tag: 'PlayerProvider');
         
         final playStartTime = DateTime.now();
-        await _mediaKitPlayer?.open(
-          Media(
-            realUrl,
-            httpHeaders: {
-              if (ServiceLocator.userAgent.userAgent != null)
-                'User-Agent': ServiceLocator.userAgent.userAgent!,
-            },
-          ),
-        );
+        // 设置了外挂播放器时，把地址交给外部播放器（通过 127.0.0.1 代理转发）
+        if (!await _startExternalIfEnabled(
+          realUrl,
+          sourceUrl: _currentChannel?.currentUrl ?? realUrl,
+        )) {
+          await _mediaKitPlayer?.open(
+            Media(
+              realUrl,
+              httpHeaders: {
+                if (ServiceLocator.userAgent.userAgent != null)
+                  'User-Agent': ServiceLocator.userAgent.userAgent!,
+              },
+            ),
+          );
+        }
         
         final playTime = DateTime.now().difference(playStartTime).inMilliseconds;
         final totalTime = DateTime.now().difference(startTime).inMilliseconds;
@@ -440,6 +454,12 @@ class PlayerProvider extends ChangeNotifier {
   int get droppedFrames => _droppedFrames;
   int get decoderDroppedFrames => _decoderDroppedFrames;
   double get cacheSeconds => _cacheSeconds;
+
+  /// 当前是否正在用外部播放器（PotPlayer/mpv/VLC）播放
+  bool get isExternalPlayback => _isExternalPlayback;
+
+  /// 外部播放器种类：builtin/mpv/potplayer/vlc/custom
+  String get externalPlayerKind => _externalPlayerKind;
 
   String get videoInfo {
     if (_mediaKitPlayer == null) return '';
@@ -736,6 +756,8 @@ class PlayerProvider extends ChangeNotifier {
     
     _mediaKitPlayer!.stream.playing.listen((playing) {
       ServiceLocator.log.d('播放状态变化: playing=$playing', tag: 'PlayerProvider');
+      // 外挂播放期间内嵌播放器是停着的，它的 playing=false 不能覆盖外挂状态
+      if (_isExternalPlayback) return;
       if (playing) {
         _state = PlayerState.playing;
         // 只有在播放稳定后才重置重试计数
@@ -1139,21 +1161,163 @@ class PlayerProvider extends ChangeNotifier {
       try {
         final realUrl = await ServiceLocator.redirectCache
             .resolveRealPlayUrl(channel.currentUrl);
-        await _mediaKitPlayer?.open(
-          Media(
-            realUrl,
-            httpHeaders: {
-              if (ServiceLocator.userAgent.userAgent != null)
-                'User-Agent': ServiceLocator.userAgent.userAgent!,
-            },
-          ),
-        );
+        // 设置了外挂播放器时，把地址交给外部播放器（通过 127.0.0.1 代理转发）
+        if (!await _startExternalIfEnabled(
+          realUrl,
+          sourceUrl: _currentChannel?.currentUrl ?? realUrl,
+        )) {
+          await _mediaKitPlayer?.open(
+            Media(
+              realUrl,
+              httpHeaders: {
+                if (ServiceLocator.userAgent.userAgent != null)
+                  'User-Agent': ServiceLocator.userAgent.userAgent!,
+              },
+            ),
+          );
+        }
         ServiceLocator.log.i('软重载完成: $realUrl', tag: 'PlayerProvider');
       } catch (e) {
         ServiceLocator.log.w('软重载失败: $e', tag: 'PlayerProvider');
         _setError('软重载失败: $e');
       }
     });
+  }
+
+  // ============ 外部播放器（T1：本地代理 + 外挂进程） ============
+
+  /// 若设置里启用了外挂播放器，则把 [realUrl] 通过本地回环代理交给外部播放器。
+  ///
+  /// 返回 true 表示已经接管播放，调用方不要再走内嵌 media_kit。
+  /// 这样做的好处：网络请求（UA / Referer / 防盗链 / 302）仍由本软件负责，
+  /// 解码、渲染、补帧交给 PotPlayer / mpv，彻底绕开 Flutter 纹理渲染链路。
+  Future<bool> _startExternalIfEnabled(
+    String realUrl, {
+    required String sourceUrl,
+  }) async {
+    if (Platform.isAndroid || _useNativePlayer) return false;
+
+    final prefs = ServiceLocator.prefs;
+    final kind = prefs.getString('external_player') ?? 'builtin';
+    if (kind == 'builtin') return false;
+
+    final executable = await ExternalPlayerService.resolveExecutable(
+      kind,
+      prefs.getString('external_player_path'),
+    );
+    if (executable == null) {
+      ServiceLocator.log.w(
+        '外挂播放器不可用（kind=$kind），回退到内嵌播放',
+        tag: 'PlayerProvider',
+      );
+      return false;
+    }
+
+    try {
+      // 切换频道时先关掉上一路外挂播放，避免两个播放器/两路音频并存
+      await _stopExternalProcess();
+
+      final headers = <String, String>{
+        if (ServiceLocator.userAgent.userAgent != null)
+          'User-Agent': ServiceLocator.userAgent.userAgent!,
+      };
+      final session = await ServiceLocator.streamProxy.register(
+        url: realUrl,
+        headers: headers,
+        reload: () => ServiceLocator.redirectCache.resolveRealPlayUrl(sourceUrl),
+      );
+      _externalProxyToken = session.token;
+
+      // 先停掉内嵌播放，避免两路音频同时出声
+      await _mediaKitPlayer?.stop();
+
+      final args = ExternalPlayerService.buildArguments(
+        kind,
+        session.url,
+        argsTemplate: prefs.getString('external_player_args'),
+      );
+      final process = await Process.start(
+        executable,
+        args,
+        mode: ProcessStartMode.normal,
+      );
+
+      _externalProcess = process;
+      _externalStartedAt = DateTime.now();
+      _externalPlayerKind = kind;
+      _isExternalPlayback = true;
+      _state = PlayerState.playing;
+      notifyListeners();
+
+      unawaited(process.exitCode.then((_) => _onExternalProcessExit(process)));
+
+      ServiceLocator.log.i(
+        '外挂播放已启动: kind=$kind exec=$executable proxy=${session.url}',
+        tag: 'PlayerProvider',
+      );
+      return true;
+    } catch (e) {
+      ServiceLocator.log.e('外挂播放启动失败: $e', tag: 'PlayerProvider');
+      await _releaseExternalProxy();
+      return false;
+    }
+  }
+
+  Future<void> _onExternalProcessExit(Process process) async {
+    if (!identical(process, _externalProcess)) return; // 已被新进程替换
+
+    // PotPlayer / VLC 是单实例：重复启动时新进程只负责把地址转交给已有窗口，
+    // 1~2 秒内就退出。这种情况不能当成「播放结束」，否则会把代理会话也回收掉。
+    final startedAt = _externalStartedAt;
+    final lived = startedAt == null
+        ? const Duration(days: 1)
+        : DateTime.now().difference(startedAt);
+    if (lived < const Duration(seconds: 5)) {
+      ServiceLocator.log.i(
+        '外部播放器进程已转交（单实例播放器），保留代理会话',
+        tag: 'PlayerProvider',
+      );
+      _externalProcess = null;
+      return;
+    }
+
+    _externalProcess = null;
+    _isExternalPlayback = false;
+    await _releaseExternalProxy();
+    if (_isDisposed) return;
+    _state = PlayerState.idle;
+    notifyListeners();
+    ServiceLocator.log.i('外部播放器已退出', tag: 'PlayerProvider');
+  }
+
+  Future<void> _releaseExternalProxy() async {
+    final token = _externalProxyToken;
+    _externalProxyToken = null;
+    if (token != null) {
+      await ServiceLocator.streamProxy.release(token);
+    }
+  }
+
+  Future<void> _stopExternalProcess() async {
+    final process = _externalProcess;
+    _externalProcess = null;
+    _isExternalPlayback = false;
+    if (process != null) {
+      try {
+        process.kill();
+      } catch (e) {
+        ServiceLocator.log.d('关闭外部播放器失败: $e', tag: 'PlayerProvider');
+      }
+    }
+    await _releaseExternalProxy();
+  }
+
+  /// 用户主动停止外挂播放（播放页「停止」按钮 / 返回键）。
+  Future<void> stopExternalPlayback() async {
+    await _stopExternalProcess();
+    _currentChannel = null;
+    _state = PlayerState.idle;
+    notifyListeners();
   }
 
   // ============ Public API ============
@@ -1228,15 +1392,21 @@ class PlayerProvider extends ChangeNotifier {
         ServiceLocator.log.i('>>> Start initializing player', tag: 'PlayerProvider');
         final playStartTime = DateTime.now();
 
-        await _mediaKitPlayer?.open(
-          Media(
-            realUrl,
-            httpHeaders: {
-              if (ServiceLocator.userAgent.userAgent != null)
-                'User-Agent': ServiceLocator.userAgent.userAgent!,
-            },
-          ),
-        );
+        // 设置了外挂播放器时，把地址交给外部播放器（通过 127.0.0.1 代理转发）
+        if (!await _startExternalIfEnabled(
+          realUrl,
+          sourceUrl: _currentChannel?.currentUrl ?? realUrl,
+        )) {
+          await _mediaKitPlayer?.open(
+            Media(
+              realUrl,
+              httpHeaders: {
+                if (ServiceLocator.userAgent.userAgent != null)
+                  'User-Agent': ServiceLocator.userAgent.userAgent!,
+              },
+            ),
+          );
+        }
 
         final playTime = DateTime.now().difference(playStartTime).inMilliseconds;
         ServiceLocator.log.i('>>> 播放器初始化完成，耗时: ${playTime}ms', tag: 'PlayerProvider');
@@ -1409,6 +1579,7 @@ class PlayerProvider extends ChangeNotifier {
     if (!_useNativePlayer) {
       _mediaKitPlayer?.stop();
     }
+    await _stopExternalProcess();
     _state = PlayerState.idle;
     _currentChannel = null;
     
@@ -1646,15 +1817,21 @@ class PlayerProvider extends ChangeNotifier {
         ServiceLocator.log.d('>>> 切换源: 使用播放地址: $realUrl', tag: 'PlayerProvider');
         
         final playStartTime = DateTime.now();
-        await _mediaKitPlayer?.open(
-          Media(
-            realUrl,
-            httpHeaders: {
-              if (ServiceLocator.userAgent.userAgent != null)
-                'User-Agent': ServiceLocator.userAgent.userAgent!,
-            },
-          ),
-        );
+        // 设置了外挂播放器时，把地址交给外部播放器（通过 127.0.0.1 代理转发）
+        if (!await _startExternalIfEnabled(
+          realUrl,
+          sourceUrl: _currentChannel?.currentUrl ?? realUrl,
+        )) {
+          await _mediaKitPlayer?.open(
+            Media(
+              realUrl,
+              httpHeaders: {
+                if (ServiceLocator.userAgent.userAgent != null)
+                  'User-Agent': ServiceLocator.userAgent.userAgent!,
+              },
+            ),
+          );
+        }
         
         final playTime = DateTime.now().difference(playStartTime).inMilliseconds;
         final totalTime = DateTime.now().difference(startTime).inMilliseconds;
@@ -1692,12 +1869,14 @@ class PlayerProvider extends ChangeNotifier {
     _debugInfoTimer?.cancel();
     _retryTimer?.cancel();
     _softReloadTimer?.cancel();
+    unawaited(_stopExternalProcess());
     _mediaKitPlayer?.dispose();
     super.dispose();
   }
 
   void _scheduleNoVideoFallbackIfNeeded() {
     if (_useNativePlayer) return;
+    if (_isExternalPlayback) return;
     if (!Platform.isWindows) return;
     if (_isSoftwareDecoding) return;
     if (!_allowSoftwareFallback) return;

@@ -1491,6 +1491,11 @@ class _PlayerScreenState extends State<PlayerScreen>
 
     return Consumer<PlayerProvider>(
       builder: (context, provider, _) {
+        // 外挂播放器模式：视频在 PotPlayer/mpv 里播放，这里只显示占位与停止按钮
+        if (provider.isExternalPlayback) {
+          return _buildExternalPlaybackView(context, provider);
+        }
+
         // 已熶竴使用敤 media_kit
         if (provider.videoController == null) {
           return const SizedBox.expand(
@@ -1505,6 +1510,80 @@ class _PlayerScreenState extends State<PlayerScreen>
           controls: NoVideoControls,
         );
       },
+    );
+  }
+
+  // 外挂播放器占位页：视频在 PotPlayer / mpv / VLC 里播放
+  Widget _buildExternalPlaybackView(
+    BuildContext context,
+    PlayerProvider provider,
+  ) {
+    final strings = AppStrings.of(context);
+    final channelName = provider.currentChannel?.name ?? '';
+    final kindLabel = switch (provider.externalPlayerKind) {
+      'potplayer' => 'PotPlayer',
+      'mpv' => 'mpv',
+      'vlc' => 'VLC',
+      'custom' => strings?.externalPlayerCustom ?? 'Custom',
+      _ => strings?.externalPlayer ?? 'External Player',
+    };
+
+    return ColoredBox(
+      color: Colors.black,
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.open_in_new_rounded,
+                  size: 56, color: Colors.white70),
+              const SizedBox(height: 16),
+              if (channelName.isNotEmpty)
+                Text(
+                  channelName,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              const SizedBox(height: 8),
+              Text(
+                (strings?.externalPlaybackPlaying ??
+                        'Playing in {player} (external player)')
+                    .replaceFirst('{player}', kindLabel),
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white70, fontSize: 14),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                strings?.externalPlaybackHint ??
+                    'Close the player window to return here automatically. '
+                        'Network requests are still handled by this app '
+                        'through a local 127.0.0.1 proxy.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white38, fontSize: 12),
+              ),
+              const SizedBox(height: 22),
+              FilledButton.icon(
+                onPressed: () async {
+                  await provider.stopExternalPlayback();
+                  if (!context.mounted) return;
+                  if (Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  }
+                },
+                icon: const Icon(Icons.stop_rounded),
+                label: Text(
+                  strings?.externalPlaybackStop ?? 'Stop and return',
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

@@ -15,6 +15,8 @@ class SettingsProvider extends ChangeNotifier {
   static const String _keyWindowsHwdecMode = 'windows_hwdec_mode'; // auto-safe, auto-copy, d3d11va, dxva2
   static const String _keyAllowSoftwareFallback = 'allow_software_fallback';
   static const String _keyVideoOutput = 'video_output'; // auto, libmpv, gpu
+  static const String _keyExternalPlayer = 'external_player'; // builtin, mpv, potplayer, vlc, custom
+  static const String _keyExternalPlayerPath = 'external_player_path';
   static const String _keyChannelMergeRule = 'channel_merge_rule'; // New: name, name_group
   static const String _keyBufferSize = 'buffer_size';
   static const String _keyLastPlaylistId = 'last_playlist_id';
@@ -65,6 +67,8 @@ class SettingsProvider extends ChangeNotifier {
   String _windowsHwdecMode = 'auto-safe';
   bool _allowSoftwareFallback = true;
   String _videoOutput = 'auto';
+  String _externalPlayer = 'builtin';
+  String _externalPlayerPath = '';
   String _channelMergeRule = 'name_group'; // New: name, name_group
   int _bufferSize = 30; // seconds
   int? _lastPlaylistId;
@@ -113,6 +117,8 @@ class SettingsProvider extends ChangeNotifier {
   String get windowsHwdecMode => _windowsHwdecMode;
   bool get allowSoftwareFallback => _allowSoftwareFallback;
   String get videoOutput => _videoOutput;
+  String get externalPlayer => _externalPlayer;
+  String get externalPlayerPath => _externalPlayerPath;
   String get channelMergeRule => _channelMergeRule;
   int get bufferSize => _bufferSize;
   int? get lastPlaylistId => _lastPlaylistId;
@@ -176,6 +182,8 @@ class SettingsProvider extends ChangeNotifier {
     _windowsHwdecMode = prefs.getString(_keyWindowsHwdecMode) ?? 'auto-safe';
     _allowSoftwareFallback = prefs.getBool(_keyAllowSoftwareFallback) ?? true;
     _videoOutput = prefs.getString(_keyVideoOutput) ?? 'auto';
+    _externalPlayer = prefs.getString(_keyExternalPlayer) ?? 'builtin';
+    _externalPlayerPath = prefs.getString(_keyExternalPlayerPath) ?? '';
     _channelMergeRule = prefs.getString(_keyChannelMergeRule) ?? 'name_group';
     _bufferSize = prefs.getInt(_keyBufferSize) ?? 30;
     _lastPlaylistId = prefs.getInt(_keyLastPlaylistId);
@@ -323,6 +331,8 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.setString(_keyWindowsHwdecMode, _windowsHwdecMode);
     await prefs.setBool(_keyAllowSoftwareFallback, _allowSoftwareFallback);
     await prefs.setString(_keyVideoOutput, _videoOutput);
+    await prefs.setString(_keyExternalPlayer, _externalPlayer);
+    await prefs.setString(_keyExternalPlayerPath, _externalPlayerPath);
     await prefs.setString(_keyChannelMergeRule, _channelMergeRule);
     await prefs.setInt(_keyBufferSize, _bufferSize);
     if (_lastPlaylistId != null) {
@@ -429,6 +439,19 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> setVideoOutput(String output) async {
     _videoOutput = output;
+    await _saveSettings();
+    notifyListeners();
+  }
+
+  /// 外部播放器：builtin / mpv / potplayer / vlc / custom
+  Future<void> setExternalPlayer(String player) async {
+    _externalPlayer = player;
+    await _saveSettings();
+    notifyListeners();
+  }
+
+  Future<void> setExternalPlayerPath(String path) async {
+    _externalPlayerPath = path;
     await _saveSettings();
     notifyListeners();
   }
@@ -753,6 +776,8 @@ class SettingsProvider extends ChangeNotifier {
     _windowsHwdecMode = 'auto-safe';
     _allowSoftwareFallback = true;
     _videoOutput = 'auto';
+    _externalPlayer = 'builtin';
+    _externalPlayerPath = '';
     _bufferSize = 30;
     _enableEpg = true;
     _epgUrl = null;

@@ -8,6 +8,7 @@ import 'update_service.dart';
 import 'log_service.dart';
 import 'channel_logo_service.dart';
 import 'redirect_cache_service.dart';
+import 'stream_proxy_service.dart';
 import 'watch_history_service.dart';
 import 'user_agent_service.dart';
 import '../managers/update_manager.dart';
@@ -22,6 +23,7 @@ class ServiceLocator {
   static late LogService _logService;
   static late ChannelLogoService _channelLogoService;
   static late RedirectCacheService _redirectCache;
+  static late StreamProxyService _streamProxy;
   static late WatchHistoryService _watchHistory;
   static late UserAgentService _userAgent;
 
@@ -33,6 +35,7 @@ class ServiceLocator {
   static LogService get log => _logService;
   static ChannelLogoService get channelLogo => _channelLogoService;
   static RedirectCacheService get redirectCache => _redirectCache;
+  static StreamProxyService get streamProxy => _streamProxy;
   static WatchHistoryService get watchHistory => _watchHistory;
   static UserAgentService get userAgent => _userAgent;
   
@@ -88,9 +91,17 @@ class ServiceLocator {
     
     // Initialize redirect cache service
     _redirectCache = RedirectCacheService();
+
+    // Initialize local stream proxy (仅按需监听 127.0.0.1，不占端口)
+    _streamProxy = StreamProxyService();
   }
 
   static Future<void> dispose() async {
+    try {
+      await _streamProxy.dispose();
+    } catch (e) {
+      print('ServiceLocator: 关闭流代理失败 - $e');
+    }
     // 刷新日志缓冲区
     try {
       await _logService.flush();

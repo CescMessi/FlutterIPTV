@@ -1,4 +1,4 @@
-﻿import 'package:flutter/widgets.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/foundation.dart';
 
 class AppStrings {
@@ -429,6 +429,27 @@ class AppStrings {
   String get videoOutputLibmpvDesc => _localizedValues['videoOutputLibmpvDesc']!;
   String get videoOutputGpuDesc => _localizedValues['videoOutputGpuDesc']!;
   String get videoOutputSet => _localizedValues['videoOutputSet']!;
+  String get externalPlayer => _localizedValues['externalPlayer']!;
+  String get externalPlayerDesc => _localizedValues['externalPlayerDesc']!;
+  String get externalPlayerBuiltin =>
+      _localizedValues['externalPlayerBuiltin']!;
+  String get externalPlayerBuiltinDesc =>
+      _localizedValues['externalPlayerBuiltinDesc']!;
+  String get externalPlayerMpv => _localizedValues['externalPlayerMpv']!;
+  String get externalPlayerPotPlayer =>
+      _localizedValues['externalPlayerPotPlayer']!;
+  String get externalPlayerVlc => _localizedValues['externalPlayerVlc']!;
+  String get externalPlayerCustom => _localizedValues['externalPlayerCustom']!;
+  String get externalPlayerPath => _localizedValues['externalPlayerPath']!;
+  String get externalPlayerPathHint =>
+      _localizedValues['externalPlayerPathHint']!;
+  String get externalPlayerSet => _localizedValues['externalPlayerSet']!;
+  String get externalPlayerNotFound =>
+      _localizedValues['externalPlayerNotFound']!;
+  String get externalPlaybackPlaying =>
+      _localizedValues['externalPlaybackPlaying']!;
+  String get externalPlaybackHint => _localizedValues['externalPlaybackHint']!;
+  String get externalPlaybackStop => _localizedValues['externalPlaybackStop']!;
   String get windowsHwdecMode => _localizedValues['windowsHwdecMode']!;
   String get windowsHwdecModeSet => _localizedValues['windowsHwdecModeSet']!;
   String get windowsHwdecAutoSafe => _localizedValues['windowsHwdecAutoSafe']!;
@@ -989,6 +1010,21 @@ class _AppStringsDelegate extends LocalizationsDelegate<AppStrings> {
     'videoOutputLibmpvDesc': '使用 libmpv 嵌入渲染（推荐）',
     'videoOutputGpuDesc': '使用 GPU 输出，可能打开独立窗口',
     'videoOutputSet': '视频输出已设置为: {mode}',
+    'externalPlayer': '外部播放器',
+    'externalPlayerDesc': '由本软件负责取流（UA / 防盗链 / 302），视频交给 PotPlayer、mpv、VLC 播放',
+    'externalPlayerBuiltin': '内置播放器（推荐）',
+    'externalPlayerBuiltinDesc': '在当前界面内播放，支持分屏与遥控操作',
+    'externalPlayerMpv': 'mpv',
+    'externalPlayerPotPlayer': 'PotPlayer',
+    'externalPlayerVlc': 'VLC',
+    'externalPlayerCustom': '自定义程序',
+    'externalPlayerPath': '自定义播放器路径',
+    'externalPlayerPathHint': '例如 C:\\Program Files\\DAUM\\PotPlayer\\PotPlayerMini64.exe',
+    'externalPlayerSet': '外部播放器已设置为: {mode}',
+    'externalPlayerNotFound': '未找到该播放器，请先安装或手动指定路径',
+    'externalPlaybackPlaying': '正在使用 {player} 播放',
+    'externalPlaybackHint': '关闭播放器窗口后会自动回到这里；取流仍由本软件通过 127.0.0.1 代理完成',
+    'externalPlaybackStop': '停止并返回',
     'windowsHwdecMode': 'Windows 硬解方案',
     'windowsHwdecModeSet': 'Windows 硬解方案已设置为: {mode}',
     'windowsHwdecAutoSafe': '自动（安全）',
@@ -1521,6 +1557,26 @@ class _AppStringsDelegate extends LocalizationsDelegate<AppStrings> {
     'videoOutputLibmpvDesc': 'Use libmpv embedded renderer (recommended)',
     'videoOutputGpuDesc': 'Use GPU output; may open a separate window',
     'videoOutputSet': 'Video output set to: {mode}',
+    'externalPlayer': 'External Player',
+    'externalPlayerDesc':
+        'This app handles streaming (UA / anti-leech / 302); video decodes in PotPlayer, mpv or VLC',
+    'externalPlayerBuiltin': 'Built-in player (recommended)',
+    'externalPlayerBuiltinDesc':
+        'Play inside the app with multi-screen and remote support',
+    'externalPlayerMpv': 'mpv',
+    'externalPlayerPotPlayer': 'PotPlayer',
+    'externalPlayerVlc': 'VLC',
+    'externalPlayerCustom': 'Custom program',
+    'externalPlayerPath': 'Custom player path',
+    'externalPlayerPathHint':
+        r'e.g. C:\Program Files\DAUM\PotPlayer\PotPlayerMini64.exe',
+    'externalPlayerSet': 'External player set to: {mode}',
+    'externalPlayerNotFound':
+        'Player not found. Install it first or set the path manually.',
+    'externalPlaybackPlaying': 'Playing in {player}',
+    'externalPlaybackHint':
+        'Close the player window to return here. Streaming is still proxied by this app via 127.0.0.1.',
+    'externalPlaybackStop': 'Stop and return',
     'windowsHwdecMode': 'Windows HW Decoder',
     'windowsHwdecModeSet': 'Windows HW decode set to: {mode}',
     'windowsHwdecAutoSafe': 'Auto (Safe)',
