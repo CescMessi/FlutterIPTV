@@ -5,6 +5,18 @@ All notable changes to FlutterIPTV will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.33] - 2026-11-21
+
+### Fixed
+- 外挂播放器“打开空窗口/一直卡住”：拉起播放器前先预检上游（6s），不可达时回退内置播放
+- 代理对「上游接了连接却不回响应头」会无限等待：现在 8s 中止并返回 504
+- 流式转发增加 20s 无数据看门狗，主动断开让播放器重连
+
+### Changed
+- 代理入口 URL 带真实扩展名（`.m3u8` / `.ts` / `.mp4` / `.flv` / `.mkv`）
+- HLS 子资源改为 `/p/<token>/s/<base64>.<ext>`，密钥用 `.key`、init 段用 `.mp4`
+- 新增代理请求环形记录（`requestCount` / `recentRequests`），便于排障
+
 ## [1.5.32] - 2026-11-21
 
 ### Added

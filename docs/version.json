@@ -1,26 +1,26 @@
 {
-  "version": "1.5.32",
-  "build": 192,
+  "version": "1.5.33",
+  "build": 193,
   "releaseDate": "2026-11-21",
   "assets": {
     "windows": {
-      "installer": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.32/flutteriptv-Windows-x64-Setup.exe",
-      "portable": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.32/flutteriptv-Windows-x64-Portable.zip"
+      "installer": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.33/flutteriptv-Windows-x64-Setup.exe",
+      "portable": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.33/flutteriptv-Windows-x64-Portable.zip"
     },
     "android_mobile": {
-      "arm64-v8a": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.32/flutteriptv-Android-Mobile-arm64-v8a.apk",
-      "armeabi-v8a": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.32/flutteriptv-Android-Mobile-armeabi-v7a.apk",
-      "x86_64": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.32/flutteriptv-Android-Mobile-x86_64.apk"
+      "arm64-v8a": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.33/flutteriptv-Android-Mobile-arm64-v8a.apk",
+      "armeabi-v8a": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.33/flutteriptv-Android-Mobile-armeabi-v7a.apk",
+      "x86_64": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.33/flutteriptv-Android-Mobile-x86_64.apk"
     },
     "android_tv": {
-      "arm64-v8a": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.32/flutteriptv-AndroidTV-arm64-v8a.apk",
-      "armeabi-v7a": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.32/flutteriptv-AndroidTV-armeabi-v7a.apk",
-      "x86_64": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.32/flutteriptv-AndroidTV-x86_64.apk"
+      "arm64-v8a": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.33/flutteriptv-AndroidTV-arm64-v8a.apk",
+      "armeabi-v7a": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.33/flutteriptv-AndroidTV-armeabi-v7a.apk",
+      "x86_64": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.33/flutteriptv-AndroidTV-x86_64.apk"
     }
   },
   "changelog": {
-    "zh": "- 新增：外部播放器（T1）——取流仍由本软件负责（UA/防盗链/302），视频交给 PotPlayer / mpv / VLC 播放\n- 新增：本地回环代理（127.0.0.1 随机端口 + 一次性 token），自动重写 HLS 清单的分片/密钥/子清单地址\n- 新增：代理内上游 403/404/410 自动重新解析真实地址，防盗链过期不中断\n- 新增：设置 → 播放 → 外部播放器（内置 / mpv / PotPlayer / VLC / 自定义路径），自动探测注册表安装位置\n- 优化：外挂播放时自动停用内置解码，关闭外部播放器后自动恢复界面\n- 说明：外挂播放器可自行开启 display-resample / 插帧（如 SVP、vs-rife），不再受 Flutter 纹理渲染链路限制",
-    "en": "- New: external player mode (T1) — this app keeps handling streaming (UA / anti-leech / 302), video is decoded by PotPlayer / mpv / VLC\n- New: loopback proxy (127.0.0.1, random port, one-time token) that rewrites HLS playlists (segments / keys / variant playlists)\n- New: automatic upstream re-resolution on 403/404/410 inside the proxy, so expiring anti-leech tokens do not kill playback\n- New: Settings → Playback → External Player (built-in / mpv / PotPlayer / VLC / custom path) with registry auto-detection\n- Improvement: built-in decoding is stopped while the external player is active, and the UI restores when it closes\n- Note: with an external player you can enable display-resample or frame interpolation (SVP, vs-rife) without the Flutter texture pipeline"
+    "zh": "- 修复：外挂播放器打开空窗口/一直卡住——拉起播放器前先预检上游（6s），不可达时回退内置播放并提示\n- 修复：代理对「上游接了连接却不回响应头」会无限等待，现在 8s 中止并返回 504\n- 修复：流式转发增加 20s 无数据看门狗，主动断开让播放器重连\n- 优化：代理入口 URL 带真实扩展名（.m3u8/.ts/.mp4/.flv/.mkv），提升播放器兼容性\n- 优化：HLS 子资源改为 /s/<base64>.<ext>，密钥用 .key、init 段用 .mp4\n- 新增：代理请求记录（requestCount / recentRequests），便于排障",
+    "en": "- Fix: external player opened a blank window / hung — the app now pre-checks the upstream (6s) and falls back to built-in playback with a hint\n- Fix: proxy no longer waits forever when the upstream accepts the connection but never sends headers (aborts after 8s, returns 504)\n- Fix: 20s no-data watchdog closes the relay so the player can reconnect\n- Improvement: proxy entry URLs carry a real extension (.m3u8/.ts/.mp4/.flv/.mkv)\n- Improvement: HLS child resources became /s/<base64>.<ext>, keys use .key and init segments use .mp4\n- New: proxy request ring buffer (requestCount / recentRequests) for troubleshooting"
   },
   "minVersion": "1.0.0"
 }
