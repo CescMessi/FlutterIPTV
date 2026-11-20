@@ -1,26 +1,26 @@
 {
-  "version": "1.5.31",
-  "build": 191,
-  "releaseDate": "2026-11-20",
+  "version": "1.5.32",
+  "build": 192,
+  "releaseDate": "2026-11-21",
   "assets": {
     "windows": {
-      "installer": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.31/flutteriptv-Windows-x64-Setup.exe",
-      "portable": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.31/flutteriptv-Windows-x64-Portable.zip"
+      "installer": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.32/flutteriptv-Windows-x64-Setup.exe",
+      "portable": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.32/flutteriptv-Windows-x64-Portable.zip"
     },
     "android_mobile": {
-      "arm64-v8a": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.31/flutteriptv-Android-Mobile-arm64-v8a.apk",
-      "armeabi-v8a": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.31/flutteriptv-Android-Mobile-armeabi-v7a.apk",
-      "x86_64": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.31/flutteriptv-Android-Mobile-x86_64.apk"
+      "arm64-v8a": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.32/flutteriptv-Android-Mobile-arm64-v8a.apk",
+      "armeabi-v8a": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.32/flutteriptv-Android-Mobile-armeabi-v7a.apk",
+      "x86_64": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.32/flutteriptv-Android-Mobile-x86_64.apk"
     },
     "android_tv": {
-      "arm64-v8a": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.31/flutteriptv-AndroidTV-arm64-v8a.apk",
-      "armeabi-v7a": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.31/flutteriptv-AndroidTV-armeabi-v7a.apk",
-      "x86_64": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.31/flutteriptv-AndroidTV-x86_64.apk"
+      "arm64-v8a": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.32/flutteriptv-AndroidTV-arm64-v8a.apk",
+      "armeabi-v7a": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.32/flutteriptv-AndroidTV-armeabi-v7a.apk",
+      "x86_64": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.32/flutteriptv-AndroidTV-x86_64.apk"
     }
   },
   "changelog": {
-    "zh": "- 修复：直播偶发卡顿——启动时“缓冲强度”设置不生效（重启后固定回 32MB/fast）\n- 修复：磁盘缓存创建失败后退化为 128KiB 流缓冲，网络一抖动就卡死\n- 优化：缓冲强度真正控制预读窗口/缓存秒数/流缓冲/网络超时（快速 2s、平衡 4s、稳定 8s）\n- 优化：临时性网络错误改为原地软重载，不再触发换源或重建播放器（避免数秒黑屏）\n- 优化：软解回退每路播放只触发一次，减少重复重建\n- 新增：播放统计改用 mpv 真实数据（实际帧率、丢帧数、缓存时长）\n- 优化：降低播放页 UI 刷新频率与 mpv 日志开销，减轻高刷屏上的轻微抖动",
-    "en": "- Fix: occasional live playback stutter — buffer strength was ignored at startup (always 32MB/fast after restart)\n- Fix: a failed file cache degraded to a 128KiB stream buffer, so any network jitter froze video\n- Improvement: buffer strength now really controls readahead / cache seconds / stream buffer / network timeout (fast 2s, balanced 4s, stable 8s)\n- Improvement: transient network errors now soft-reload in place instead of switching source or rebuilding the player\n- Improvement: software fallback runs at most once per playback\n- New: real playback stats from mpv (estimated fps, dropped frames, cache seconds)\n- Improvement: lower UI refresh rate and mpv log overhead to reduce micro-stutter on high refresh displays"
+    "zh": "- 新增：外部播放器（T1）——取流仍由本软件负责（UA/防盗链/302），视频交给 PotPlayer / mpv / VLC 播放\n- 新增：本地回环代理（127.0.0.1 随机端口 + 一次性 token），自动重写 HLS 清单的分片/密钥/子清单地址\n- 新增：代理内上游 403/404/410 自动重新解析真实地址，防盗链过期不中断\n- 新增：设置 → 播放 → 外部播放器（内置 / mpv / PotPlayer / VLC / 自定义路径），自动探测注册表安装位置\n- 优化：外挂播放时自动停用内置解码，关闭外部播放器后自动恢复界面\n- 说明：外挂播放器可自行开启 display-resample / 插帧（如 SVP、vs-rife），不再受 Flutter 纹理渲染链路限制",
+    "en": "- New: external player mode (T1) — this app keeps handling streaming (UA / anti-leech / 302), video is decoded by PotPlayer / mpv / VLC\n- New: loopback proxy (127.0.0.1, random port, one-time token) that rewrites HLS playlists (segments / keys / variant playlists)\n- New: automatic upstream re-resolution on 403/404/410 inside the proxy, so expiring anti-leech tokens do not kill playback\n- New: Settings → Playback → External Player (built-in / mpv / PotPlayer / VLC / custom path) with registry auto-detection\n- Improvement: built-in decoding is stopped while the external player is active, and the UI restores when it closes\n- Note: with an external player you can enable display-resample or frame interpolation (SVP, vs-rife) without the Flutter texture pipeline"
   },
   "minVersion": "1.0.0"
 }

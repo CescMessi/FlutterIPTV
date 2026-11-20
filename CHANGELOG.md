@@ -5,6 +5,19 @@ All notable changes to FlutterIPTV will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.32] - 2026-11-21
+
+### Added
+- 外部播放器（T1 方案）：取流（User-Agent / 防盗链 / 302）仍由本软件完成，视频解码交给 PotPlayer / mpv / VLC
+- 本地回环流代理 `StreamProxyService`：随机端口 + 一次性 token，仅接受 `127.0.0.1` 连接
+  - HLS 清单自动重写：分片、`EXT-X-KEY`、`EXT-X-MAP`、子清单全部指向代理
+  - 上游 403/404/410 时自动重新解析真实地址，防盗链过期不中断
+  - 透传 `Range`，点播可拖动
+- 设置 → 播放 → 外部播放器：内置 / mpv / PotPlayer / VLC / 自定义路径，自动从注册表探测安装位置
+
+### Changed
+- 外挂播放期间自动停止内置解码，避免两路音频；外部播放器退出后自动回到列表
+
 ## [1.5.31] - 2026-11-20
 
 ### Fixed
