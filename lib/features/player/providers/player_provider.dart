@@ -1214,13 +1214,29 @@ class PlayerProvider extends ChangeNotifier {
     }
 
     try {
-      // 切换频道时先关掉上一路外挂播放，避免两个播放器/两路音频并存
-      await _stopExternalProcess();
-
       final headers = <String, String>{
         if (ServiceLocator.userAgent.userAgent != null)
           'User-Agent': ServiceLocator.userAgent.userAgent!,
       };
+
+      // 预检：上游连不上就别把播放器拉起来，否则用户只会看到一个空白窗口干等。
+      // 预检失败时回退到内置播放，让应用自己的重试 / 换源 / 错误提示接管。
+      final reachable = await ServiceLocator.streamProxy.probe(
+        url: realUrl,
+        headers: headers,
+        timeout: const Duration(seconds: 6),
+      );
+      if (!reachable) {
+        ServiceLocator.log.w(
+          '外挂播放预检失败（上游不可达），回退到内置播放: $realUrl',
+          tag: 'PlayerProvider',
+        );
+        return false;
+      }
+
+      // 切换频道时先关掉上一路外挂播放，避免两个播放器/两路音频并存
+      await _stopExternalProcess();
+
       final session = await ServiceLocator.streamProxy.register(
         url: realUrl,
         headers: headers,

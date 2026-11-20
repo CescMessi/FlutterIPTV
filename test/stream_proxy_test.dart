@@ -56,17 +56,21 @@ void main() {
     final client = HttpClient();
 
     try {
+      // 入口地址必须带扩展名，否则 PotPlayer 会直接忽略（不取流）
+      expect(session.url, endsWith('/stream.m3u8'));
+
       final playlistResponse =
           await (await client.getUrl(Uri.parse(session.url))).close();
       final playlist = await playlistResponse.transform(utf8.decoder).join();
 
       expect(playlist, contains('#EXTM3U'));
-      expect(playlist, contains('127.0.0.1:$proxyPort/p/${session.token}/seg'));
+      expect(playlist, contains('127.0.0.1:$proxyPort/p/${session.token}/s/'));
 
       final keyLine = playlist
           .split('\n')
           .firstWhere((line) => line.startsWith('#EXT-X-KEY'));
-      expect(keyLine, contains('127.0.0.1:$proxyPort/p/${session.token}/seg'));
+      expect(keyLine, contains('127.0.0.1:$proxyPort/p/${session.token}/s/'));
+      expect(keyLine, contains('.key"'));
 
       final mediaLines = playlist
           .split('\n')
@@ -75,6 +79,7 @@ void main() {
       expect(mediaLines, hasLength(2));
       for (final line in mediaLines) {
         expect(line, startsWith('http://127.0.0.1:$proxyPort/p/'));
+        expect(line, endsWith('.ts'));
       }
 
       final firstSegment =

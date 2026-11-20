@@ -1566,6 +1566,13 @@ class _PlayerScreenState extends State<PlayerScreen>
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.white38, fontSize: 12),
               ),
+              const SizedBox(height: 6),
+              const Text(
+                '若 10 秒后仍无画面：多半是该源当前不可达，请点下方按钮停止，'
+                '用内置播放器确认源是否可用。',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white24, fontSize: 11),
+              ),
               const SizedBox(height: 22),
               FilledButton.icon(
                 onPressed: () async {
