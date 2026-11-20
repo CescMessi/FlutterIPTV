@@ -54,7 +54,7 @@ class _MpvTuning {
     'fast': _MpvTuning(
       demuxerMaxBytes: 32 * 1024 * 1024,
       readaheadSecs: 2,
-      cacheSecs: 6,
+      cacheSecs: 10,
       streamBufferBytes: 1 * 1024 * 1024,
       networkTimeoutSecs: 15,
     ),
@@ -62,15 +62,15 @@ class _MpvTuning {
     'balanced': _MpvTuning(
       demuxerMaxBytes: 64 * 1024 * 1024,
       readaheadSecs: 4,
-      cacheSecs: 12,
+      cacheSecs: 15,
       streamBufferBytes: 2 * 1024 * 1024,
       networkTimeoutSecs: 20,
     ),
-    // 稳定优先：预读 8s / 缓存 25s，容忍明显抖动
+    // 稳定优先：预读 8s / 缓存 30s，容忍明显抖动
     'stable': _MpvTuning(
       demuxerMaxBytes: 128 * 1024 * 1024,
       readaheadSecs: 8,
-      cacheSecs: 25,
+      cacheSecs: 30,
       streamBufferBytes: 4 * 1024 * 1024,
       networkTimeoutSecs: 30,
     ),
@@ -1096,7 +1096,6 @@ class PlayerProvider extends ChangeNotifier {
     ];
     if (fatalMarkers.any(m.contains)) return false;
     const transientMarkers = [
-      'failed to open',
       'timed out',
       'timeout',
       'connection',
@@ -1107,7 +1106,6 @@ class PlayerProvider extends ChangeNotifier {
       'i/o error',
       'end of file',
       'http error 5',
-      'unable to open',
     ];
     return transientMarkers.any(m.contains);
   }
