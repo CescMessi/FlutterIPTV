@@ -5,6 +5,22 @@ All notable changes to FlutterIPTV will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.31] - 2026-11-20
+
+### Fixed
+- 桌面端直播偶发卡顿：启动时读取并应用「缓冲强度」设置（此前只有从设置页切换才生效，重启后固定回 fast/32MB）
+- 磁盘缓存（cache-on-disk）创建失败后退化为 128KiB 流缓冲，网络抖动会直接卡死
+- 临时性网络/缓存错误不再触发「重试 → 换源 → 重建播放器」链路，改为原地软重载当前地址
+- 软解回退每路播放只允许触发一次，避免解码错误反复重建播放器
+
+### Changed
+- 缓冲强度改为完整的 mpv 调优档位：`demuxer-readahead-secs` / `cache-secs` / `stream-buffer-size` / `network-timeout`
+- 播放页 position/volume/宽高通知节流，调试定时器仅在统计值变化时刷新
+- mpv 日志限速（30 行/秒）并截断超长行，降低 debug 级别下的主线程开销
+
+### Added
+- 播放统计改用 mpv 真实属性：`estimated-vf-fps` / `frame-drop-count` / `decoder-frame-drop-count` / `demuxer-cache-time`
+
 ## [1.1.30] - 2024-12-21
 
 ### Added

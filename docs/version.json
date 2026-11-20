@@ -1,26 +1,26 @@
 {
-  "version": "1.5.18",
-  "build": 178,
-  "releaseDate": "2026-03-02",
+  "version": "1.5.31",
+  "build": 191,
+  "releaseDate": "2026-11-20",
   "assets": {
     "windows": {
-      "installer": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.5.18/flutteriptv-Windows-x64-Setup.exe",
-      "portable": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.5.18/flutteriptv-Windows-x64-Portable.zip"
+      "installer": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.31/flutteriptv-Windows-x64-Setup.exe",
+      "portable": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.31/flutteriptv-Windows-x64-Portable.zip"
     },
     "android_mobile": {
-      "arm64-v8a": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.5.18/flutteriptv-Android-Mobile-arm64-v8a.apk",
-      "armeabi-v8a": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.5.18/flutteriptv-Android-Mobile-armeabi-v7a.apk",
-      "x86_64": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.5.18/flutteriptv-Android-Mobile-x86_64.apk"
+      "arm64-v8a": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.31/flutteriptv-Android-Mobile-arm64-v8a.apk",
+      "armeabi-v8a": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.31/flutteriptv-Android-Mobile-armeabi-v7a.apk",
+      "x86_64": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.31/flutteriptv-Android-Mobile-x86_64.apk"
     },
     "android_tv": {
-      "arm64-v8a": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.5.18/flutteriptv-AndroidTV-arm64-v8a.apk",
-      "armeabi-v7a": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.5.18/flutteriptv-AndroidTV-armeabi-v7a.apk",
-      "x86_64": "https://gh-proxy.org/https://github.com/shnulaa/FlutterIPTV/releases/download/v1.5.18/flutteriptv-AndroidTV-x86_64.apk"
+      "arm64-v8a": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.31/flutteriptv-AndroidTV-arm64-v8a.apk",
+      "armeabi-v7a": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.31/flutteriptv-AndroidTV-armeabi-v7a.apk",
+      "x86_64": "https://gh-proxy.org/https://github.com/CescMessi/FlutterIPTV/releases/download/v1.5.31/flutteriptv-AndroidTV-x86_64.apk"
     }
   },
   "changelog": {
-    "zh": "- 新增：Windows便携版（免安装ZIP包）\n- 优化：GitHub Actions自动构建便携版\n- 优化：Release Notes添加侵权声明和使用说明\n- 优化：便携版包含README和portable标识文件",
-    "en": "- New: Windows Portable Version (No installation ZIP package)\n- Optimization: GitHub Actions auto-build portable version\n- Optimization: Added copyright notice and usage guide to Release Notes\n- Optimization: Portable version includes README and portable marker file"
+    "zh": "- 修复：直播偶发卡顿——启动时“缓冲强度”设置不生效（重启后固定回 32MB/fast）\n- 修复：磁盘缓存创建失败后退化为 128KiB 流缓冲，网络一抖动就卡死\n- 优化：缓冲强度真正控制预读窗口/缓存秒数/流缓冲/网络超时（快速 2s、平衡 4s、稳定 8s）\n- 优化：临时性网络错误改为原地软重载，不再触发换源或重建播放器（避免数秒黑屏）\n- 优化：软解回退每路播放只触发一次，减少重复重建\n- 新增：播放统计改用 mpv 真实数据（实际帧率、丢帧数、缓存时长）\n- 优化：降低播放页 UI 刷新频率与 mpv 日志开销，减轻高刷屏上的轻微抖动",
+    "en": "- Fix: occasional live playback stutter — buffer strength was ignored at startup (always 32MB/fast after restart)\n- Fix: a failed file cache degraded to a 128KiB stream buffer, so any network jitter froze video\n- Improvement: buffer strength now really controls readahead / cache seconds / stream buffer / network timeout (fast 2s, balanced 4s, stable 8s)\n- Improvement: transient network errors now soft-reload in place instead of switching source or rebuilding the player\n- Improvement: software fallback runs at most once per playback\n- New: real playback stats from mpv (estimated fps, dropped frames, cache seconds)\n- Improvement: lower UI refresh rate and mpv log overhead to reduce micro-stutter on high refresh displays"
   },
   "minVersion": "1.0.0"
 }
